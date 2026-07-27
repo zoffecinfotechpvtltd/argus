@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Light is the default; dark is the marketing site's natural home (matches the "Monolith
-  // Signal" brand concept it's built around) — toggled via [data-theme] same as the product app,
-  // see src/hooks/useTheme.ts. Defaults to dark on first visit (see index.html's theme-init.js).
+  // Light is this site's flagship system (editorial, Apple-inspired) — dark is a derived
+  // secondary, toggled via [data-theme] same as the product app, see src/hooks/useTheme.ts.
+  // Defaults to light on first visit (see public/theme-init.js).
   darkMode: ["selector", '[data-theme="dark"]'],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
@@ -31,13 +31,13 @@ export default {
         },
       },
       fontFamily: {
-        display: ["Space Grotesk", "ui-sans-serif", "sans-serif"],
-        sans: ["Manrope", "ui-sans-serif", "sans-serif"],
+        display: ["Inter", "ui-sans-serif", "sans-serif"],
+        sans: ["Inter", "ui-sans-serif", "sans-serif"],
         mono: ["Fira Code", "ui-monospace", "monospace"],
       },
       boxShadow: {
-        accent: "0 0 0 1px rgb(var(--color-accent) / 0.4), 0 12px 40px -12px rgb(var(--color-accent) / 0.55)",
-        "accent-lg": "0 0 0 1px rgb(var(--color-accent) / 0.55), 0 18px 48px -12px rgb(var(--color-accent) / 0.7)",
+        soft: "0 1px 2px rgba(0,0,0,0.04), 0 24px 48px -24px rgba(0,0,0,0.12)",
+        "soft-lg": "0 1px 2px rgba(0,0,0,0.04), 0 40px 80px -32px rgba(0,0,0,0.18)",
       },
     },
   },

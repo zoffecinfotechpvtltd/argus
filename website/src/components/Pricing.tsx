@@ -28,39 +28,36 @@ const INCLUDED = [
 
 export function Pricing({ onSelectPlan }: { onSelectPlan: (plan: string) => void }) {
   return (
-    <section id="pricing" className="relative bg-canvas py-24">
-      <div className="mx-auto max-w-6xl px-6">
-        <ScrollReveal className="mx-auto mb-4 max-w-2xl text-center">
-          <span className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-accent">Pricing</span>
-          <h2 className="mt-3 font-display text-[clamp(1.6rem,3vw,2.2rem)] font-bold text-fog">One product, licensed by device count.</h2>
-          <p className="mt-3 text-muted">
-            Every tier ships the exact same feature set — nothing is gated behind a higher plan. The only thing that changes is
-            how many devices your license allows. Sold directly, no self-serve checkout: tell us your device count and we'll
-            quote it.
+    <section id="pricing" className="relative bg-canvas py-24 sm:py-32">
+      <div className="mx-auto max-w-5xl px-6">
+        <ScrollReveal className="mx-auto mb-16 max-w-xl text-center">
+          <span className="text-[13px] font-medium text-accent">Pricing</span>
+          <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
+            One product, licensed by device count.
+          </h2>
+          <p className="mt-4 text-[15px] text-muted">
+            Every tier ships the exact same feature set — nothing gated behind a higher plan. Sold directly, no
+            self-serve checkout: tell us your device count and we'll quote it.
           </p>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 divide-y divide-border border-y border-border sm:grid-cols-5 sm:divide-x sm:divide-y-0">
           {TIERS.map((t, i) => (
-            <ScrollReveal key={t.key} delay={i * 0.06}>
-              <div
-                className={`flex h-full flex-col rounded-lg border p-5 transition-colors ${
-                  t.popular ? "border-accent bg-surface" : "border-border bg-surface hover:border-dim"
-                }`}
-              >
-                {t.popular && (
-                  <span className="mb-3 inline-block w-fit rounded-sm bg-accent px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-accent-text-on">
+            <ScrollReveal key={t.key} delay={i * 0.05}>
+              <div className="flex h-full flex-col px-5 py-8 text-center">
+                {t.popular ? (
+                  <span className="mx-auto mb-3 w-fit rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-text-on">
                     Most common
                   </span>
+                ) : (
+                  <span className="mb-3 h-[19px]" />
                 )}
-                <h3 className="font-display text-lg font-bold text-fog">{t.label}</h3>
-                <p className={`mt-1 font-mono text-sm ${t.popular ? "text-accent" : "text-accent-secondary"}`}>{t.range}</p>
-                <p className="mt-2 text-[13px] text-muted">{t.blurb}</p>
+                <h3 className="font-display text-[15px] font-bold text-fog">{t.label}</h3>
+                <p className="mt-1 font-mono text-[13px] text-accent">{t.range}</p>
+                <p className="mt-2 text-[12.5px] text-muted">{t.blurb}</p>
                 <button
                   onClick={() => onSelectPlan(t.label)}
-                  className={`mt-5 cursor-pointer rounded-md px-4 py-2.5 text-sm font-bold transition-colors ${
-                    t.popular ? "bg-accent text-accent-text-on hover:bg-accent-hover" : "border border-border text-fog hover:border-accent/50"
-                  }`}
+                  className="mt-5 cursor-pointer rounded-full border border-border px-4 py-2 text-[13px] font-semibold text-fog transition-colors hover:border-dim"
                 >
                   Contact sales
                 </button>
@@ -69,9 +66,9 @@ export function Pricing({ onSelectPlan }: { onSelectPlan: (plan: string) => void
           ))}
         </div>
 
-        <ScrollReveal delay={0.2} className="mx-auto mt-10 max-w-2xl rounded-lg border border-border bg-surface p-6">
-          <p className="mb-3 font-display text-sm font-bold text-fog">Included in every tier</p>
-          <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        <ScrollReveal delay={0.2} className="mx-auto mt-14 max-w-2xl text-center">
+          <p className="mb-5 text-[13px] font-semibold uppercase tracking-wide text-dim">Included in every tier</p>
+          <ul className="mx-auto grid max-w-md grid-cols-1 gap-x-8 gap-y-2.5 text-left sm:grid-cols-2">
             {INCLUDED.map((f) => (
               <li key={f} className="flex items-start gap-2 text-[13.5px] text-muted">
                 <Check size={15} className="mt-0.5 shrink-0 text-accent" aria-hidden="true" />
@@ -79,8 +76,8 @@ export function Pricing({ onSelectPlan }: { onSelectPlan: (plan: string) => void
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs text-dim">
-            Trial mode monitors up to 5 devices, free, with no time limit — install and try it before you talk to us.
+          <p className="mt-6 text-[13px] text-dim">
+            Trial mode monitors up to 5 devices, free, with no time limit.
           </p>
         </ScrollReveal>
       </div>

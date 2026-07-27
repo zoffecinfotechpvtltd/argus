@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navbar } from "./components/Navbar";
 import { Hero } from "./components/Hero";
 import { Outcomes } from "./components/Outcomes";
+import { StatBand } from "./components/StatBand";
 import { Comparison } from "./components/Comparison";
 import { Features } from "./components/Features";
 import { HowItWorks } from "./components/HowItWorks";
@@ -25,6 +26,7 @@ export function App() {
       <Navbar downloadUrl={RELEASE.downloadUrl} />
       <Hero downloadUrl={RELEASE.downloadUrl} version={RELEASE.version} sizeMb={RELEASE.sizeMb} />
       <Outcomes />
+      <StatBand />
       <Comparison />
       <Features />
       <HowItWorks />

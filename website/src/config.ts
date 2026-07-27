@@ -19,7 +19,7 @@ export const RELEASE = {
 // optionally VITE_COMPANY_NAME/VITE_COMPANY_URL) at deploy time; the fallback below is a generic
 // placeholder, not a real inbox — the site should never ship with a wrong or stale email baked in.
 export const SITE = {
-  contactEmail: import.meta.env.VITE_CONTACT_EMAIL || "sales@example.com",
+  contactEmail: import.meta.env.VITE_CONTACT_EMAIL || "sales@ztplsolutions.com",
   companyName: import.meta.env.VITE_COMPANY_NAME || "",
   companyUrl: import.meta.env.VITE_COMPANY_URL || "",
 };

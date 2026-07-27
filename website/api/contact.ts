@@ -6,7 +6,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { escapeHtml, sendMail } from "../lib/mail.js";
 import { rateLimit } from "../lib/rateLimit.js";
 
-const SALES_INBOX = process.env.CONTACT_TO_EMAIL || "sales@example.com";
+const SALES_INBOX = process.env.CONTACT_TO_EMAIL || "sales@ztplsolutions.com";
 const MAX_ATTEMPTS_PER_WINDOW = 5;
 const WINDOW_SECONDS = 15 * 60;
 

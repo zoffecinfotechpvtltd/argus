@@ -1,4 +1,3 @@
-import { XCircle, CheckCircle2 } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
 
 const WITHOUT = [
@@ -8,45 +7,41 @@ const WITHOUT = [
 ];
 
 const WITH = [
-  { time: "03:14", text: "db-primary misses 3 consecutive TCP:5432 checks. Argus opens an alert." },
+  { time: "03:14", text: "db-primary misses 3 consecutive checks. Argus opens an alert." },
   { time: "03:15", text: "Device owner is emailed immediately, by name — not \"something's wrong somewhere.\"" },
   { time: "03:26", text: "Unacknowledged after 10 minutes → Tier 2 is paged. Acked, fixed, logged in the uptime report." },
 ];
 
 export function Comparison() {
   return (
-    <section className="relative bg-canvas py-24">
-      <div className="mx-auto max-w-5xl px-6">
-        <ScrollReveal className="mx-auto mb-14 max-w-2xl text-center">
-          <span className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-accent">The difference</span>
-          <h2 className="mt-3 font-display text-[clamp(1.6rem,3vw,2.2rem)] font-bold text-fog">Same outage. Two timelines.</h2>
+    <section className="relative bg-canvas py-24 sm:py-32">
+      <div className="mx-auto max-w-4xl px-6">
+        <ScrollReveal className="mx-auto mb-16 max-w-xl text-center">
+          <span className="text-[13px] font-medium text-accent">The difference</span>
+          <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
+            Same outage. Two timelines.
+          </h2>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <ScrollReveal className="rounded-lg border border-border bg-surface p-6">
-            <div className="mb-5 flex items-center gap-2">
-              <XCircle size={17} className="text-status-critical" aria-hidden="true" />
-              <h3 className="font-display text-sm font-bold uppercase tracking-wide text-dim">Without Argus</h3>
-            </div>
-            <ol className="grid gap-4">
+        <div className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border lg:grid-cols-2">
+          <ScrollReveal className="bg-canvas p-8">
+            <h3 className="mb-6 text-[12px] font-semibold uppercase tracking-wide text-dim">Without Argus</h3>
+            <ol className="grid gap-5">
               {WITHOUT.map((r) => (
-                <li key={r.time} className="grid grid-cols-[52px_1fr] gap-3">
-                  <span className="font-mono text-xs text-dim">{r.time}</span>
+                <li key={r.time} className="grid grid-cols-[48px_1fr] gap-3">
+                  <span className="font-mono text-[12px] text-dim">{r.time}</span>
                   <span className="text-[13.5px] leading-relaxed text-muted">{r.text}</span>
                 </li>
               ))}
             </ol>
           </ScrollReveal>
 
-          <ScrollReveal delay={0.1} className="rounded-lg border border-accent/40 bg-surface p-6">
-            <div className="mb-5 flex items-center gap-2">
-              <CheckCircle2 size={17} className="text-accent" aria-hidden="true" />
-              <h3 className="font-display text-sm font-bold uppercase tracking-wide text-fog">With Argus</h3>
-            </div>
-            <ol className="grid gap-4">
+          <ScrollReveal delay={0.1} className="bg-canvas p-8">
+            <h3 className="mb-6 text-[12px] font-semibold uppercase tracking-wide text-accent">With Argus</h3>
+            <ol className="grid gap-5">
               {WITH.map((r) => (
-                <li key={r.time} className="grid grid-cols-[52px_1fr] gap-3">
-                  <span className="font-mono text-xs text-accent">{r.time}</span>
+                <li key={r.time} className="grid grid-cols-[48px_1fr] gap-3">
+                  <span className="font-mono text-[12px] text-accent">{r.time}</span>
                   <span className="text-[13.5px] leading-relaxed text-fog">{r.text}</span>
                 </li>
               ))}

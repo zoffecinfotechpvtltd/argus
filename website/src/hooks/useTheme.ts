@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 const STORAGE_KEY = "argus-site-theme";
 
 function readInitialTheme(): "light" | "dark" {
-  return document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
 }
 
 /** Mirrors the product app's useTheme hook (ui/src/hooks/useTheme.ts) — same storage-key pattern,

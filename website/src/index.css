@@ -1,51 +1,54 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Manrope:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* "Monolith Signal" brand palette (steps/ concept sheet, Visual System §01/§04) — Monolith Purple
-   primary, Echo Violet hover, Deep Plum active, Night Void neutrals. Dark is this site's natural
-   home (the brand concept it's built around); light is a derived counterpart in the same purple
-   family so the toggle isn't just an inverted dark theme. */
+/* Light is the flagship now — a restrained, editorial system (single Inter family, one
+   deliberately muted purple accent, generous whitespace) rather than the dark neon-on-black
+   treatment this site used before. Dark stays available as a toggle with the old palette. */
 :root {
-  --color-canvas: 250 250 252; /* #FAFAFC */
+  --color-canvas: 251 251 253; /* #FBFBFD */
   --color-surface: 255 255 255;
   --color-elevated: 255 255 255;
-  --color-border: 228 225 238; /* #E4E1EE */
-  --color-text-primary: 24 24 27; /* #18181B */
-  --color-text-secondary: 82 82 91; /* #52525B */
-  --color-text-muted: 139 140 163; /* #8B8CA3 */
-  --color-accent: 124 58 237; /* #7C3AED Monolith Purple */
-  --color-accent-hover: 109 40 217; /* #6D28D9 */
-  --color-accent-active: 91 33 182; /* #5B21B6 */
+  --color-border: 210 210 215; /* #D2D2D7 */
+  --color-text-primary: 29 29 31; /* #1D1D1F */
+  --color-text-secondary: 110 110 115; /* #6E6E73 */
+  --color-text-muted: 134 134 139; /* #86868B */
+  --color-accent: 109 40 217; /* #6D28D9 */
+  --color-accent-hover: 91 33 182; /* #5B21B6 */
+  --color-accent-active: 76 29 149; /* #4C1D95 */
   --color-accent-subtle: 243 238 255; /* #F3EEFF */
-  --color-accent-secondary: 79 70 229; /* #4F46E5 Nebula Indigo */
+  --color-accent-secondary: 79 70 229; /* #4F46E5 */
   --color-accent-text-on: 255 255 255;
   --color-success: 16 185 129; /* #10B981 */
-  --color-warning: 245 158 11; /* #F59E0B */
-  --color-critical: 239 68 68; /* #EF4444 */
-  --color-info: 59 130 246; /* #3B82F6 */
+  --color-warning: 217 119 6; /* #D97706, darker for AA on white */
+  --color-critical: 220 38 38; /* #DC2626, darker for AA on white */
+  --color-info: 37 99 235; /* #2563EB */
 }
 
+/* Dark is a true secondary system here — same restrained editorial spirit as light (near-black
+   canvas, one accent, minimal chrome), not the old neon-on-black treatment. accent-text-on flips
+   to a near-black so button text stays readable against the lighter accent this theme needs for
+   contrast against black. */
 [data-theme="dark"] {
-  --color-canvas: 11 7 18; /* #0B0712 Night Void */
-  --color-surface: 18 16 26; /* #12101A */
-  --color-elevated: 26 23 38; /* #1A1726 */
-  --color-border: 42 40 56; /* #2A2838 */
-  --color-text-primary: 230 231 238; /* #E6E7EE */
-  --color-text-secondary: 139 140 163; /* #8B8CA3 */
-  --color-text-muted: 107 108 130; /* #6B6C82, dimmed further than --color-text-secondary */
-  --color-accent: 124 58 237; /* #7C3AED Monolith Purple */
-  --color-accent-hover: 139 92 246; /* #8B5CF6 Echo Violet — lighter on hover against a dark surface */
-  --color-accent-active: 45 24 78; /* #2D184E Deep Plum */
-  --color-accent-subtle: 36 27 61; /* #241B3D */
-  --color-accent-secondary: 79 70 229; /* #4F46E5 Nebula Indigo */
-  --color-accent-text-on: 255 255 255;
-  --color-success: 16 185 129;
-  --color-warning: 245 158 11;
-  --color-critical: 239 68 68;
-  --color-info: 59 130 246;
+  --color-canvas: 0 0 0; /* #000000 */
+  --color-surface: 28 28 30; /* #1C1C1E */
+  --color-elevated: 44 44 46; /* #2C2C2E */
+  --color-border: 56 56 58; /* #38383A */
+  --color-text-primary: 245 245 247; /* #F5F5F7 */
+  --color-text-secondary: 152 152 157; /* #98989D */
+  --color-text-muted: 110 110 115; /* #6E6E73 */
+  --color-accent: 167 139 250; /* #A78BFA */
+  --color-accent-hover: 196 181 253; /* #C4B5FD */
+  --color-accent-active: 124 58 237; /* #7C3AED */
+  --color-accent-subtle: 45 33 74; /* #2D214A */
+  --color-accent-secondary: 129 140 248; /* #818CF8 */
+  --color-accent-text-on: 17 17 19; /* #111113 */
+  --color-success: 52 211 153; /* #34D399 */
+  --color-warning: 251 191 36; /* #FBBF24 */
+  --color-critical: 248 113 113; /* #F87171 */
+  --color-info: 96 165 250; /* #60A5FA */
 }
 
 html, body, #root { height: 100%; }
@@ -54,8 +57,8 @@ body { font-feature-settings: "ss01" 1; }
 
 @layer components {
   .input {
-    @apply w-full rounded-lg border border-border bg-canvas px-3.5 py-2.5 text-sm text-fog placeholder:text-dim;
-    @apply transition-colors focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40;
+    @apply w-full border-0 border-b border-border bg-transparent px-0 py-2.5 text-sm text-fog placeholder:text-dim;
+    @apply transition-colors focus:border-fog focus:outline-none;
   }
 }
 

@@ -39,10 +39,10 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
 
   if (status === "sent") {
     return (
-      <section id="contact" className="bg-canvas py-24">
+      <section id="contact" className="bg-canvas py-24 sm:py-32">
         <div className="mx-auto max-w-lg px-6 text-center">
-          <CheckCircle2 size={40} className="mx-auto text-accent" aria-hidden="true" />
-          <h2 className="mt-4 font-display text-xl font-bold text-fog">Message sent.</h2>
+          <CheckCircle2 size={36} className="mx-auto text-accent" aria-hidden="true" />
+          <h2 className="mt-4 font-display text-xl font-bold tracking-tight text-fog">Message sent.</h2>
           <p className="mt-2 text-muted">We'll get back to you at the email you gave us, usually within one business day.</p>
         </div>
       </section>
@@ -50,11 +50,13 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
   }
 
   return (
-    <section id="contact" className="bg-canvas py-24">
+    <section id="contact" className="bg-canvas py-24 sm:py-32">
       <div className="mx-auto max-w-lg px-6">
-        <ScrollReveal className="mb-10 text-center">
-          <span className="font-display text-xs font-bold uppercase tracking-[0.16em] text-accent">Talk to sales</span>
-          <h2 className="mt-3 font-display text-[clamp(1.6rem,3vw,2.2rem)] font-bold text-fog">Tell us about your network.</h2>
+        <ScrollReveal className="mb-12 text-center">
+          <span className="text-[13px] font-medium text-accent">Talk to sales</span>
+          <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
+            Tell us about your network.
+          </h2>
           <p className="mt-3 text-muted">
             Or email us directly at{" "}
             <a href={`mailto:${SITE.contactEmail}`} className="text-accent underline underline-offset-2">
@@ -65,16 +67,10 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
         </ScrollReveal>
 
         <ScrollReveal delay={0.1}>
-          <form onSubmit={handleSubmit} className="grid gap-4 rounded-lg border border-border bg-surface p-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <form onSubmit={handleSubmit} className="grid gap-5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <Field label="Name">
-                <input
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input"
-                  autoComplete="name"
-                />
+                <input required value={name} onChange={(e) => setName(e.target.value)} className="input" autoComplete="name" />
               </Field>
               <Field label="Work email">
                 <input
@@ -87,7 +83,7 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <Field label="Company">
                 <input value={company} onChange={(e) => setCompany(e.target.value)} className="input" autoComplete="organization" />
               </Field>
@@ -109,7 +105,8 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="input h-28 resize-none"
+                className="w-full resize-none rounded-lg border border-border bg-transparent px-3.5 py-2.5 text-sm text-fog placeholder:text-dim transition-colors focus:border-fog focus:outline-none"
+                rows={4}
                 placeholder="Anything else we should know?"
               />
             </Field>
@@ -123,7 +120,7 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
             <button
               type="submit"
               disabled={status === "submitting"}
-              className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-accent-text-on transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-accent-text-on transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Mail size={15} aria-hidden="true" />
               {status === "submitting" ? "Sending…" : "Send message"}
