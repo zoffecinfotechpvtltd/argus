@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Download, ShieldCheck, WifiOff, Server } from "lucide-react";
-import { NetworkGraphic } from "./NetworkGraphic";
+import { TelemetryPanel } from "./TelemetryPanel";
+import { ArgusMark } from "./ArgusMark";
 import { SITE } from "../config";
 
 const BADGES = [
@@ -15,20 +16,22 @@ export function Hero({ downloadUrl, version, sizeMb }: { downloadUrl: string; ve
   return (
     <section id="top" className="relative overflow-hidden bg-canvas pt-16">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[600px]"
-        style={{ background: "radial-gradient(ellipse 900px 500px at 50% 0%, rgb(124 58 237 / 0.3), transparent 70%)" }}
+        className="pointer-events-none absolute -right-24 top-8 opacity-[0.05]"
+        style={{ width: 560, height: 560 }}
         aria-hidden="true"
-      />
+      >
+        <ArgusMark size={560} className="h-full w-full" />
+      </div>
 
-      <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-20 lg:grid-cols-2 lg:py-28">
+      <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-6 py-20 lg:grid-cols-2 lg:py-28">
         <div className="text-center lg:text-left">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: easeOut }}
-            className="inline-flex items-center gap-2 font-display text-xs font-bold uppercase tracking-[0.16em] text-accent"
+            className="inline-flex items-center gap-2 font-mono text-xs font-medium uppercase tracking-[0.16em] text-accent"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_8px_rgb(124_58_237/0.7)]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
             {SITE.companyName ? `${SITE.companyName} · ` : ""}Network Monitoring System
           </motion.span>
 
@@ -49,9 +52,10 @@ export function Hero({ downloadUrl, version, sizeMb }: { downloadUrl: string; ve
             transition={{ duration: 0.6, delay: 0.16, ease: easeOut }}
             className="mx-auto mt-6 max-w-xl text-lg text-muted lg:mx-0"
           >
-            Argus discovers what's on your network, runs real ICMP, TCP, HTTP/HTTPS, and SNMP checks continuously, and escalates
-            through your team — Tier 1, Tier 2, Tier 3 — until someone acknowledges. Installed as a background Windows service.
-            No cloud, no account, your data never leaves the machine.
+            Argus watches every router, server, and access point on your network around the clock, and tells the right person
+            the moment one goes down — before a customer has to tell you first. Real ICMP, TCP, HTTP/HTTPS, and SNMP checks
+            underneath, a background Windows service you never have to think about on top. No cloud, no account, your data
+            never leaves the machine.
           </motion.p>
 
           <motion.div
@@ -63,7 +67,7 @@ export function Hero({ downloadUrl, version, sizeMb }: { downloadUrl: string; ve
             <a
               href={downloadUrl}
               download
-              className="inline-flex cursor-pointer items-center gap-3 rounded-xl bg-accent px-7 py-4 text-base font-bold text-accent-text-on shadow-accent transition-transform hover:-translate-y-0.5 hover:shadow-accent-lg"
+              className="inline-flex cursor-pointer items-center gap-3 rounded-lg bg-accent px-7 py-4 text-base font-bold text-accent-text-on transition-colors hover:bg-accent-hover"
             >
               <Download size={19} strokeWidth={2.6} aria-hidden="true" />
               Download for Windows
@@ -92,17 +96,12 @@ export function Hero({ downloadUrl, version, sizeMb }: { downloadUrl: string; ve
         </div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.94 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2, ease: easeOut }}
-          className="relative mx-auto aspect-[480/380] w-full max-w-lg rounded-2xl border border-border bg-surface/50 p-4 shadow-[0_40px_80px_-32px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+          className="mx-auto w-full max-w-md"
         >
-          <div
-            className="pointer-events-none absolute inset-0 rounded-2xl opacity-60"
-            style={{ background: "radial-gradient(ellipse 320px 260px at 50% 55%, rgb(124 58 237 / 0.2), transparent 70%)" }}
-            aria-hidden="true"
-          />
-          <NetworkGraphic className="h-full w-full" />
+          <TelemetryPanel variant="hero" />
         </motion.div>
       </div>
     </section>

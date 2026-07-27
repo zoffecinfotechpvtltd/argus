@@ -1,7 +1,7 @@
 /** The ARGUS brand mark — cropped from the approved "Monolith Signal" brand sheet, same asset as
  * the product app's ArgusMark (ui/src/components/ArgusMark.tsx). Kept as a plain <img> here too:
- * the marketing site is the one place this dark/purple brand concept is meant to live (see
- * steps/00-README-BUILD-ORDER.md — the product UI itself moved to a light-first system). */
+ * the marketing site is the one place this dark/purple brand concept is meant to live — the
+ * product UI itself moved to a light-first system (see GUIDE.md). */
 export function ArgusMark({ size = 28, sweep = false, className = "" }: { size?: number; sweep?: boolean; className?: string }) {
   return (
     <>

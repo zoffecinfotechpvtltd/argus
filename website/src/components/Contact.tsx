@@ -65,7 +65,7 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
         </ScrollReveal>
 
         <ScrollReveal delay={0.1}>
-          <form onSubmit={handleSubmit} className="grid gap-4 rounded-2xl border border-border bg-surface/50 p-6 backdrop-blur-xl">
+          <form onSubmit={handleSubmit} className="grid gap-4 rounded-lg border border-border bg-surface p-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Field label="Name">
                 <input

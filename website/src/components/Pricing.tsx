@@ -31,7 +31,7 @@ export function Pricing({ onSelectPlan }: { onSelectPlan: (plan: string) => void
     <section id="pricing" className="relative bg-canvas py-24">
       <div className="mx-auto max-w-6xl px-6">
         <ScrollReveal className="mx-auto mb-4 max-w-2xl text-center">
-          <span className="font-display text-xs font-bold uppercase tracking-[0.16em] text-accent">Pricing</span>
+          <span className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-accent">Pricing</span>
           <h2 className="mt-3 font-display text-[clamp(1.6rem,3vw,2.2rem)] font-bold text-fog">One product, licensed by device count.</h2>
           <p className="mt-3 text-muted">
             Every tier ships the exact same feature set — nothing is gated behind a higher plan. The only thing that changes is
@@ -44,12 +44,12 @@ export function Pricing({ onSelectPlan }: { onSelectPlan: (plan: string) => void
           {TIERS.map((t, i) => (
             <ScrollReveal key={t.key} delay={i * 0.06}>
               <div
-                className={`flex h-full flex-col rounded-2xl border p-5 backdrop-blur-xl transition-transform hover:-translate-y-1 ${
-                  t.popular ? "border-accent/60 bg-accent/[0.06] shadow-accent" : "border-border bg-surface/50 hover:border-fog/20"
+                className={`flex h-full flex-col rounded-lg border p-5 transition-colors ${
+                  t.popular ? "border-accent bg-surface" : "border-border bg-surface hover:border-dim"
                 }`}
               >
                 {t.popular && (
-                  <span className="mb-3 inline-block w-fit rounded-full bg-accent px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-accent-text-on">
+                  <span className="mb-3 inline-block w-fit rounded-sm bg-accent px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide text-accent-text-on">
                     Most common
                   </span>
                 )}
@@ -58,8 +58,8 @@ export function Pricing({ onSelectPlan }: { onSelectPlan: (plan: string) => void
                 <p className="mt-2 text-[13px] text-muted">{t.blurb}</p>
                 <button
                   onClick={() => onSelectPlan(t.label)}
-                  className={`mt-5 cursor-pointer rounded-lg px-4 py-2.5 text-sm font-bold transition-transform hover:-translate-y-0.5 ${
-                    t.popular ? "bg-accent text-accent-text-on" : "border border-border text-fog hover:border-accent/40"
+                  className={`mt-5 cursor-pointer rounded-md px-4 py-2.5 text-sm font-bold transition-colors ${
+                    t.popular ? "bg-accent text-accent-text-on hover:bg-accent-hover" : "border border-border text-fog hover:border-accent/50"
                   }`}
                 >
                   Contact sales
@@ -69,7 +69,7 @@ export function Pricing({ onSelectPlan }: { onSelectPlan: (plan: string) => void
           ))}
         </div>
 
-        <ScrollReveal delay={0.2} className="mx-auto mt-10 max-w-2xl rounded-2xl border border-border bg-surface/50 p-6 backdrop-blur-xl">
+        <ScrollReveal delay={0.2} className="mx-auto mt-10 max-w-2xl rounded-lg border border-border bg-surface p-6">
           <p className="mb-3 font-display text-sm font-bold text-fog">Included in every tier</p>
           <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {INCLUDED.map((f) => (

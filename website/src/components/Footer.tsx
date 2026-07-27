@@ -7,7 +7,7 @@ export function Footer({ downloadUrl, version, builtDate }: { downloadUrl: strin
     { href: `mailto:${SITE.contactEmail}`, label: SITE.contactEmail },
   ];
   return (
-    <footer className="border-t border-border bg-canvas py-10">
+    <footer className="border-t border-border bg-canvas pt-10">
       <div className="mx-auto max-w-6xl px-6">
         <div className="grid grid-cols-1 gap-8 pb-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -24,12 +24,21 @@ export function Footer({ downloadUrl, version, builtDate }: { downloadUrl: strin
           <FooterCol title="Download" links={[{ href: downloadUrl, label: "For Windows", download: true }, { href: "#pricing", label: "Pricing" }]} />
           <FooterCol title="Company" links={companyLinks} />
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 font-mono text-xs text-dim">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border py-6 font-mono text-xs text-dim">
           <span>© {SITE.companyName || "Argus"}</span>
           <span>
             v{version} · built {builtDate}
           </span>
         </div>
+      </div>
+
+      <div className="select-none overflow-hidden border-t border-border py-4 text-center" aria-hidden="true">
+        <span
+          className="font-display font-extrabold leading-none tracking-tight text-fog/[0.05]"
+          style={{ fontSize: "clamp(4rem, 18vw, 13rem)" }}
+        >
+          ARGUS
+        </span>
       </div>
     </footer>
   );

@@ -26,21 +26,21 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
   return (
     <div className="sticky top-0 z-50 px-3 pt-3 sm:px-5 sm:pt-4">
       <nav
-        className={`mx-auto max-w-6xl rounded-2xl border backdrop-blur-xl transition-colors duration-300 ${
-          scrolled ? "border-border bg-canvas/85 shadow-[0_16px_40px_-20px_rgba(0,0,0,0.35)]" : "border-transparent bg-canvas/40"
+        className={`mx-auto max-w-6xl rounded-xl border bg-canvas transition-colors duration-300 ${
+          scrolled ? "border-border" : "border-transparent"
         }`}
       >
         <div className="flex items-center justify-between px-4 py-3 sm:px-5">
           <a href="#top" className="flex items-center gap-2.5">
-            <ArgusMark size={26} />
-            <span className="font-display text-lg font-extrabold tracking-[0.08em] text-fog">ARGUS</span>
+            <ArgusMark size={24} />
+            <span className="font-display text-base font-bold tracking-[0.06em] text-fog">ARGUS</span>
           </a>
 
           <div className="hidden items-center gap-7 md:flex">
             {LINKS.map((l) => (
               <a key={l.href} href={l.href} className="group relative py-1 text-sm font-medium text-muted transition-colors hover:text-fog">
                 {l.label}
-                <span className="absolute inset-x-0 -bottom-0.5 h-0.5 origin-left scale-x-0 bg-accent transition-transform duration-200 group-hover:scale-x-100" />
+                <span className="absolute inset-x-0 -bottom-0.5 h-px origin-left scale-x-0 bg-accent transition-transform duration-200 group-hover:scale-x-100" />
               </a>
             ))}
           </div>
@@ -63,7 +63,7 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
             <a
               href={downloadUrl}
               download
-              className="hidden cursor-pointer items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-bold text-accent-text-on transition-transform hover:-translate-y-0.5 hover:shadow-accent sm:inline-flex"
+              className="hidden cursor-pointer items-center gap-2 rounded-md bg-accent px-4 py-2 text-sm font-bold text-accent-text-on transition-colors hover:bg-accent-hover sm:inline-flex"
             >
               <Download size={14} strokeWidth={2.8} aria-hidden="true" />
               Download
@@ -90,7 +90,7 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
               <a href={`mailto:${SITE.contactEmail}`} className="text-sm font-medium text-muted">
                 Contact sales
               </a>
-              <a href={downloadUrl} download className="rounded-lg bg-accent px-4 py-2.5 text-center text-sm font-bold text-accent-text-on">
+              <a href={downloadUrl} download className="rounded-md bg-accent px-4 py-2.5 text-center text-sm font-bold text-accent-text-on">
                 Download for Windows
               </a>
             </div>

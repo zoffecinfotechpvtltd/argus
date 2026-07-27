@@ -17,16 +17,16 @@ export function FAQ() {
     <section id="faq" className="relative bg-canvas py-24">
       <div className="mx-auto max-w-3xl px-6">
         <ScrollReveal className="mb-12 text-center">
-          <span className="font-display text-xs font-bold uppercase tracking-[0.16em] text-accent">FAQ</span>
+          <span className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-accent">FAQ</span>
           <h2 className="mt-3 font-display text-[clamp(1.6rem,3vw,2.2rem)] font-bold text-fog">Before you install.</h2>
         </ScrollReveal>
 
-        <div className="grid gap-3">
+        <div className="grid gap-2">
           {FAQS.map((f, i) => {
             const expanded = open === i;
             return (
               <ScrollReveal key={f.q} delay={i * 0.05}>
-                <div className="overflow-hidden rounded-xl border border-border bg-surface/50 backdrop-blur-xl transition-colors hover:border-fog/20">
+                <div className="overflow-hidden rounded-lg border border-border bg-surface transition-colors hover:border-dim">
                   <button
                     onClick={() => setOpen(expanded ? null : i)}
                     aria-expanded={expanded}

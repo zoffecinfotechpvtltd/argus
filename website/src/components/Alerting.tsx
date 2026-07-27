@@ -1,6 +1,5 @@
-import { ArrowRight } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
-import { NetworkGraphic } from "./NetworkGraphic";
+import { TelemetryPanel } from "./TelemetryPanel";
 
 const TIERS = [
   { label: "Tier 1", delay: "0–10 min", desc: "Device owner, then the first on-call contact." },
@@ -10,10 +9,10 @@ const TIERS = [
 
 export function Alerting() {
   return (
-    <section id="alerting" className="relative overflow-hidden bg-canvas py-24">
+    <section id="alerting" className="relative bg-canvas py-24">
       <div className="mx-auto max-w-6xl px-6">
         <ScrollReveal className="mx-auto mb-14 max-w-2xl text-center">
-          <span className="font-display text-xs font-bold uppercase tracking-[0.16em] text-accent">Intelligent alerting</span>
+          <span className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-accent">Intelligent alerting</span>
           <h2 className="mt-3 font-display text-[clamp(1.6rem,3vw,2.2rem)] font-bold text-fog">A tiered chain, not a single ignored email.</h2>
           <p className="mt-3 text-muted">
             Assign a device group's escalation chain once — Argus notifies the device owner immediately, then works down the
@@ -21,25 +20,29 @@ export function Alerting() {
           </p>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch lg:flex-col">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-start">
+          <ol className="grid gap-3">
             {TIERS.map((t, i) => (
-              <ScrollReveal key={t.label} delay={i * 0.1} className="flex flex-1 items-center gap-4">
-                <div className="flex-1 rounded-xl border border-border bg-surface/50 p-5 backdrop-blur-xl transition-colors hover:border-accent/30">
-                  <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accent">{t.label}</div>
-                  <div className="mt-1.5 font-display text-2xl font-bold text-fog">{t.delay}</div>
-                  <div className="mt-1.5 text-[13px] text-muted">{t.desc}</div>
-                </div>
-                {i < TIERS.length - 1 && <ArrowRight size={20} className="hidden shrink-0 text-dim lg:block" aria-hidden="true" />}
+              <ScrollReveal key={t.label} delay={i * 0.1}>
+                <li className="grid grid-cols-[auto_1fr] items-center gap-4 rounded-lg border border-border bg-surface p-5">
+                  <div className="font-mono text-2xl font-bold text-accent">{String(i + 1).padStart(2, "0")}</div>
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-display text-sm font-bold text-fog">{t.label}</span>
+                      <span className="font-mono text-xs text-dim">{t.delay}</span>
+                    </div>
+                    <p className="mt-1 text-[13px] text-muted">{t.desc}</p>
+                  </div>
+                </li>
               </ScrollReveal>
             ))}
-          </div>
+          </ol>
 
-          <ScrollReveal
-            delay={0.15}
-            className="relative mx-auto aspect-[480/380] w-full max-w-md rounded-2xl border border-border bg-surface/50 p-4 backdrop-blur-xl"
-          >
-            <NetworkGraphic compact className="h-full w-full" />
+          <ScrollReveal delay={0.15} className="mx-auto w-full max-w-md">
+            <TelemetryPanel variant="compact" />
+            <p className="mt-3 text-center font-mono text-[11px] text-dim">
+              db-primary unreachable → Tier 1 notified at 0m → Tier 2 at 10m if still open
+            </p>
           </ScrollReveal>
         </div>
       </div>
