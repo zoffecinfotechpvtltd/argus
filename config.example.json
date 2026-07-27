@@ -1,0 +1,16 @@
+{
+  "mode": "exe",
+  "dbDriver": "sqlite",
+  "port": 7070,
+  "dataDir": "./data",
+  "logLevel": "info",
+  "instanceName": "Argus",
+  "polling": {
+    "defaultIntervalSec": 60,
+    "concurrency": 50
+  },
+  "retention": {
+    "rawDays": 30,
+    "rollupDays": 365
+  }
+}

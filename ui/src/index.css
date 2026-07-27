@@ -1,0 +1,180 @@
+/* Self-hosted (not a Google Fonts CDN @import) — the CSP's style-src is 'self' 'unsafe-inline'
+   only, no external hosts (see api/server.ts's CSP comment). Per steps/03-typography-setup.md:
+   Geist for UI/body/headings, Geist Mono for data/identifiers — both variable fonts, one file
+   covers the full weight range each. */
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/geist-variable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("/fonts/geist-mono-variable.woff2") format("woff2");
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — per steps/01-design-tokens.css and 02-design-tokens.json (the authoritative
+ * source; this file transcribes those hex values into space-separated RGB triples so Tailwind's
+ * `rgb(var(--x) / <alpha-value>)` pattern can still apply opacity modifiers like `bg-accent/10`).
+ * Light is the default, real theme — not a dimmed inversion of dark. Dark is a second real theme
+ * (true graphite, no purple tint) applied via `[data-theme="dark"]` on `<html>`, toggled by the
+ * user — see ui/src/hooks/useTheme.ts.
+ */
+:root {
+  /* ---- Surfaces ---- */
+  --color-bg-canvas: 250 250 250; /* #FAFAFA */
+  --color-bg-surface: 255 255 255; /* #FFFFFF */
+  --color-bg-elevated: 255 255 255; /* #FFFFFF */
+  --color-bg-subtle: 244 244 245; /* #F4F4F5 */
+  --color-border: 228 228 231; /* #E4E4E7 */
+  --color-border-strong: 212 212 216; /* #D4D4D8 */
+
+  /* ---- Text ---- */
+  --color-text-primary: 24 24 27; /* #18181B */
+  --color-text-secondary: 82 82 91; /* #52525B */
+  --color-text-muted: 161 161 170; /* #A1A1AA */
+  --color-text-inverse: 250 250 250; /* #FAFAFA */
+
+  /* ---- Brand accent — ONE color, used sparingly (primary actions, active nav, links, primary
+     chart series only — never for status/decoration, see steps/00-README ground rules) ---- */
+  --color-accent: 79 70 229; /* #4F46E5 — indigo-600 */
+  --color-accent-hover: 67 56 202; /* #4338CA — indigo-700 */
+  --color-accent-active: 55 48 163; /* #3730A3 — indigo-800 */
+  --color-accent-subtle: 238 242 255; /* #EEF2FF — indigo-50 */
+  --color-accent-text-on: 255 255 255;
+
+  /* ---- Semantic status — never repurposed as brand decoration ---- */
+  --color-success: 22 163 74; /* #16A34A */
+  --color-success-subtle: 240 253 244; /* #F0FDF4 */
+  --color-warning: 217 119 6; /* #D97706 */
+  --color-warning-subtle: 255 251 235; /* #FFFBEB */
+  --color-critical: 220 38 38; /* #DC2626 */
+  --color-critical-subtle: 254 242 242; /* #FEF2F2 */
+  --color-info: 37 99 235; /* #2563EB */
+  --color-info-subtle: 239 246 255; /* #EFF6FF */
+
+  /* ---- Chart qualitative palette ---- */
+  --chart-1: 79 70 229; /* #4F46E5 indigo — primary series */
+  --chart-2: 14 165 233; /* #0EA5E9 sky */
+  --chart-3: 16 185 129; /* #10B981 emerald */
+  --chart-4: 245 158 11; /* #F59E0B amber */
+  --chart-5: 236 72 153; /* #EC4899 rose */
+  --chart-grid: 237 237 240; /* #EDEDF0 */
+
+  --space-xs: 0.125rem; /* 2px */
+  --space-sm: 0.25rem; /* 4px */
+  --space-md: 0.5rem; /* 8px */
+  --space-lg: 0.75rem; /* 12px */
+  --space-xl: 1rem; /* 16px */
+  --space-2xl: 1.5rem; /* 24px */
+  --space-3xl: 2rem; /* 32px */
+
+  /* Type scale — steps/03-typography-setup.md. text-2xs/-sm/-base/-lg/-xl/-2xl/-3xl map to that
+     doc's xs/sm/base/md/lg/xl/2xl/3xl (2xs here == xs there; the extra rung already in this app's
+     scale slots in as -base between sm and md so existing text-base usages don't need renaming). */
+  --text-2xs: 0.75rem; /* 12px / 16px line */
+  --text-sm: 0.8125rem; /* 13px / 18px line */
+  --text-base: 0.875rem; /* 14px / 20px line — default body/UI text */
+  --text-md: 1rem; /* 16px / 24px line — card titles, form labels */
+  --text-lg: 1.25rem; /* 20px / 28px line — section headers */
+  --text-xl: 1.5rem; /* 24px / 32px line — page titles */
+  --text-2xl: 2rem; /* 32px / 40px line — dashboard hero numbers */
+  --text-3xl: 2.5rem; /* 40px / 48px line — marketing only, not used in-app */
+
+  --tracking-tight: 0em;
+  --tracking-tighter: -0.01em;
+  --tracking-tightest: -0.015em;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* ---- Motion — cubic-bezier(0.2,0,0,1), two durations. No spring/bounce anywhere. ---- */
+  --ease-out-expo: cubic-bezier(0.2, 0, 0, 1);
+  --duration-micro: 120ms;
+  --duration-enter: 200ms;
+
+  /* ---- Radius — kept modest, this is an infra tool not a consumer app ---- */
+  --radius-sm: 0.25rem; /* 4px */
+  --radius-md: 0.5rem; /* 8px */
+  --radius-lg: 0.75rem; /* 12px */
+  --radius-full: 999px;
+
+  /* ---- Shadow — elevation only, never decorative/colored/glow ---- */
+  --shadow-card: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --shadow-elevated: 0 12px 32px rgba(24, 24, 27, 0.12);
+  --shadow-sm: 0 1px 2px rgba(24, 24, 27, 0.06);
+  --shadow-md: 0 4px 12px rgba(24, 24, 27, 0.08);
+  --shadow-lg: 0 12px 32px rgba(24, 24, 27, 0.12);
+
+  /* ---- Focus ring — always visible ---- */
+  --focus-ring: 0 0 0 2px rgb(var(--color-bg-surface)), 0 0 0 4px rgb(var(--color-accent));
+}
+
+/* Dark mode: true graphite, not a purple-tinted or inverted-light theme. Toggled via data-theme
+   attribute on <html> (see ui/src/hooks/useTheme.ts), not prefers-color-scheme — an operator
+   picks this deliberately for a NOC room, it isn't inferred from the OS. */
+[data-theme="dark"] {
+  --color-bg-canvas: 14 16 19; /* #0E1013 */
+  --color-bg-surface: 22 24 28; /* #16181C */
+  --color-bg-elevated: 28 31 36; /* #1C1F24 */
+  --color-bg-subtle: 28 31 36; /* #1C1F24 */
+  --color-border: 42 45 51; /* #2A2D33 */
+  --color-border-strong: 56 59 66; /* #383B42 */
+
+  --color-text-primary: 244 244 245; /* #F4F4F5 */
+  --color-text-secondary: 161 161 170; /* #A1A1AA */
+  --color-text-muted: 113 113 122; /* #71717A */
+  --color-text-inverse: 24 24 27; /* #18181B */
+
+  --color-accent: 99 102 241; /* #6366F1 — indigo-500, brighter for dark bg */
+  --color-accent-hover: 129 140 248; /* #818CF8 */
+  --color-accent-active: 165 180 252; /* #A5B4FC */
+  --color-accent-subtle: 30 27 75; /* #1E1B4B */
+  --color-accent-text-on: 255 255 255;
+
+  --color-success-subtle: 5 46 27; /* #052E1B */
+  --color-warning-subtle: 43 27 3; /* #2B1B03 */
+  --color-critical-subtle: 44 11 11; /* #2C0B0B */
+  --color-info-subtle: 11 26 51; /* #0B1A33 */
+
+  --chart-grid: 34 37 43; /* #22252B */
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: rgb(var(--color-bg-canvas));
+  color: rgb(var(--color-text-primary));
+}
+
+/* Respected app-wide, not just where individually remembered to add it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

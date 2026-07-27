@@ -1,0 +1,45 @@
+{
+  "root": true,
+  "env": { "node": true, "es2022": true },
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "boundaries"],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+  "settings": {
+    "boundaries/elements": [
+      { "type": "domain", "pattern": "src/domain/*" },
+      { "type": "application", "pattern": "src/application/*" },
+      { "type": "ports", "pattern": "src/ports/*" },
+      { "type": "adapters", "pattern": "src/adapters/*" },
+      { "type": "api", "pattern": "src/api/*" },
+      { "type": "bootstrap", "pattern": "src/bootstrap/*" },
+      { "type": "generated", "pattern": "src/generated/*" }
+    ]
+  },
+  "rules": {
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error", { "args": "none" }],
+    "no-undef": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "boundaries/element-types": [
+      "error",
+      {
+        "default": "allow",
+        "rules": [
+          { "from": "domain", "disallow": ["adapters", "api", "bootstrap"], "message": "domain/ must not import from adapters, api, or bootstrap — only ports/ interfaces and other domain/ code." },
+          { "from": "application", "disallow": ["adapters", "api", "bootstrap"], "message": "application/ must not import from adapters, api, or bootstrap — depend on ports/ interfaces only." }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/domain/**/*.ts", "src/application/**/*.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          { "patterns": [{ "group": ["@adapters/*", "@api/*", "@bootstrap/*"], "message": "domain/ and application/ may only depend on ports/ interfaces (hexagonal architecture rule)." }] }
+        ]
+      }
+    }
+  ]
+}

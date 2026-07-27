@@ -1,0 +1,126 @@
+/*
+  Argus NMS — Design Tokens
+  Replaces the graphite/lime and Monolith-purple token sets.
+  Light mode is default. Dark mode via [data-theme="dark"] on <html> or <body>.
+*/
+
+:root {
+  /* ---- Color: surfaces (light, default) ---- */
+  --color-bg-canvas: #FAFAFA;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-subtle: #F4F4F5;
+  --color-border: #E4E4E7;
+  --color-border-strong: #D4D4D8;
+
+  /* ---- Color: text ---- */
+  --color-text-primary: #18181B;
+  --color-text-secondary: #52525B;
+  --color-text-muted: #A1A1AA;
+  --color-text-inverse: #FAFAFA;
+
+  /* ---- Color: brand accent (ONE color, used sparingly) ---- */
+  --color-accent: #4F46E5;         /* indigo-600 */
+  --color-accent-hover: #4338CA;   /* indigo-700 */
+  --color-accent-active: #3730A3;  /* indigo-800 */
+  --color-accent-subtle: #EEF2FF;  /* indigo-50, for selected-row/hover backgrounds */
+  --color-accent-text-on: #FFFFFF;
+
+  /* ---- Color: semantic status (never used for brand/decoration) ---- */
+  --color-success: #16A34A;
+  --color-success-subtle: #F0FDF4;
+  --color-warning: #D97706;
+  --color-warning-subtle: #FFFBEB;
+  --color-critical: #DC2626;
+  --color-critical-subtle: #FEF2F2;
+  --color-info: #2563EB;
+  --color-info-subtle: #EFF6FF;
+
+  /* ---- Color: chart qualitative palette (distinct from accent overuse) ---- */
+  --chart-1: #4F46E5; /* indigo — primary series */
+  --chart-2: #0EA5E9; /* sky */
+  --chart-3: #10B981; /* emerald */
+  --chart-4: #F59E0B; /* amber */
+  --chart-5: #EC4899; /* rose */
+  --chart-grid: #EDEDF0;
+
+  /* ---- Typography ---- */
+  --font-ui: "Geist", "Inter", system-ui, sans-serif;      /* body + headings */
+  --font-mono: "Geist Mono", "JetBrains Mono", monospace;  /* data, ids, code */
+
+  --text-xs: 12px;   --leading-xs: 16px;
+  --text-sm: 13px;   --leading-sm: 18px;
+  --text-base: 14px; --leading-base: 20px;
+  --text-md: 16px;   --leading-md: 24px;
+  --text-lg: 20px;   --leading-lg: 28px;
+  --text-xl: 24px;   --leading-xl: 32px;
+  --text-2xl: 32px;  --leading-2xl: 40px;
+  --text-3xl: 40px;  --leading-3xl: 48px;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* ---- Radius (kept modest — this is an infra tool, not a consumer app) ---- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 999px;
+
+  /* ---- Shadow (elevation only — never decorative, never colored/glow) ---- */
+  --shadow-sm: 0 1px 2px rgba(24,24,27,0.06);
+  --shadow-md: 0 4px 12px rgba(24,24,27,0.08);
+  --shadow-lg: 0 12px 32px rgba(24,24,27,0.12);
+
+  /* ---- Focus ring (accessibility — always visible) ---- */
+  --focus-ring: 0 0 0 2px var(--color-bg-surface), 0 0 0 4px var(--color-accent);
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+}
+
+/* ---- Dark mode: true graphite, NOT purple-tinted black ---- */
+[data-theme="dark"] {
+  --color-bg-canvas: #0E1013;
+  --color-bg-surface: #16181C;
+  --color-bg-elevated: #1C1F24;
+  --color-bg-subtle: #1C1F24;
+  --color-border: #2A2D33;
+  --color-border-strong: #383B42;
+
+  --color-text-primary: #F4F4F5;
+  --color-text-secondary: #A1A1AA;
+  --color-text-muted: #71717A;
+  --color-text-inverse: #18181B;
+
+  --color-accent: #6366F1;         /* indigo-500 — slightly brighter for dark bg */
+  --color-accent-hover: #818CF8;
+  --color-accent-active: #A5B4FC;
+  --color-accent-subtle: #1E1B4B;
+  --color-accent-text-on: #FFFFFF;
+
+  --color-success-subtle: #052E1B;
+  --color-warning-subtle: #2B1B03;
+  --color-critical-subtle: #2C0B0B;
+  --color-info-subtle: #0B1A33;
+
+  --chart-grid: #22252B;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.6);
+
+  --focus-ring: 0 0 0 2px var(--color-bg-surface), 0 0 0 4px var(--color-accent);
+}

@@ -1,0 +1,25 @@
+node_modules/
+data/
+data-saas/
+dist/
+ui/dist/
+src/generated/uiManifest.ts
+src/generated/migrationsManifest.ts
+config.json
+.env
+*.log
+*.tsbuildinfo
+.claude/
+secrets/
+*.bun-build
+.vscode/
+*.license.key
+issued-licenses/
+tools/
+.vercel/
+.superdesign
+.playwright-mcp/
+# This project uses bun.lock exclusively (Bun, no Node.js) — never commit an npm/yarn/pnpm lockfile.
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

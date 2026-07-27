@@ -1,0 +1,58 @@
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { ScrollReveal } from "./ScrollReveal";
+
+const FAQS = [
+  { q: "Does Argus need an account or an internet connection?", a: "No. Setup creates a local admin account on your machine only. Monitoring, discovery, dashboards, and alerting all run without any outbound connection — the only optional network calls are checking for a license or a software update, both of which you control." },
+  { q: "Where does my data go?", a: "Nowhere. Device inventory, metrics history, and alerts are stored in a local SQLite database next to the installation. Nothing is uploaded to a third party." },
+  { q: "Does it keep running if I close the window or log out?", a: "Yes. The installer registers Argus as a Windows service that starts automatically on boot and keeps running in the background — there's no window to accidentally close." },
+  { q: "What's free, and what needs a license?", a: "Trial mode monitors up to 5 devices with no time limit. Paid licenses raise that device cap in named tiers (Starter through Unlimited) and are issued after a direct purchase." },
+  { q: "What exactly does it monitor?", a: "ICMP ping, TCP port checks, HTTP/HTTPS, and SNMP — against routers, switches, servers, access points, and anything else with an IP address, on the poll interval you set per device." },
+];
+
+export function FAQ() {
+  const [open, setOpen] = useState<number | null>(0);
+
+  return (
+    <section id="faq" className="relative bg-canvas py-24">
+      <div className="mx-auto max-w-3xl px-6">
+        <ScrollReveal className="mb-12 text-center">
+          <span className="font-display text-xs font-bold uppercase tracking-[0.16em] text-accent">FAQ</span>
+          <h2 className="mt-3 font-display text-[clamp(1.6rem,3vw,2.2rem)] font-bold text-fog">Before you install.</h2>
+        </ScrollReveal>
+
+        <div className="grid gap-3">
+          {FAQS.map((f, i) => {
+            const expanded = open === i;
+            return (
+              <ScrollReveal key={f.q} delay={i * 0.05}>
+                <div className="overflow-hidden rounded-xl border border-border bg-surface/50 backdrop-blur-xl transition-colors hover:border-fog/20">
+                  <button
+                    onClick={() => setOpen(expanded ? null : i)}
+                    aria-expanded={expanded}
+                    className="flex w-full cursor-pointer items-center justify-between gap-4 p-5 text-left"
+                  >
+                    <h3 className="font-display text-[15px] font-bold text-fog">{f.q}</h3>
+                    <ChevronDown
+                      size={18}
+                      className={`shrink-0 text-dim transition-transform duration-200 ${expanded ? "rotate-180 text-accent" : ""}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                  <div
+                    className="grid transition-[grid-template-rows] duration-300 ease-out"
+                    style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
+                  >
+                    <div className="overflow-hidden">
+                      <p className="px-5 pb-5 text-[14px] leading-relaxed text-muted">{f.a}</p>
+                    </div>
+                  </div>
+                </div>
+              </ScrollReveal>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}

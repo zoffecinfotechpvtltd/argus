@@ -1,0 +1,73 @@
+# Saas-mode local/dev stack. `docker compose up -d` brings up Postgres + Redis + the web app +
+# 3 sharded poller replicas (M1) in saas mode. Scale pollers with `docker compose up -d --scale
+# poller=N`; killing one (`docker compose kill poller-2` or scaling down) redistributes its leased
+# devices to the survivors within ~20s (see src/application/scheduler.ts's lease TTL/renew tuning) —
+# well inside M1's 60s test window.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: argus
+      POSTGRES_PASSWORD: argus_dev_password
+      POSTGRES_DB: argus
+    ports:
+      - "55432:5432"
+    volumes:
+      - argus_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U argus"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    environment:
+      MODE: saas
+      DATABASE_URL: postgresql://argus:argus_dev_password@postgres:5432/argus
+      REDIS_URL: redis://redis:6379
+      PORT: "7070"
+      DATA_DIR: /data
+      INSTANCE_NAME: Argus
+    ports:
+      - "7070:7070"
+    volumes:
+      - argus_app_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  poller:
+    build: .
+    command: ["bun", "run", "src/bootstrap/pollerMain.ts"]
+    environment:
+      MODE: saas
+      DATABASE_URL: postgresql://argus:argus_dev_password@postgres:5432/argus
+      REDIS_URL: redis://redis:6379
+      DATA_DIR: /data
+      INSTANCE_NAME: Argus
+    volumes:
+      - argus_app_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 3
+
+volumes:
+  argus_pg_data:
+  argus_app_data:

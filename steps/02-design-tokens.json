@@ -1,0 +1,65 @@
+{
+  "color": {
+    "light": {
+      "bgCanvas": "#FAFAFA",
+      "bgSurface": "#FFFFFF",
+      "bgElevated": "#FFFFFF",
+      "bgSubtle": "#F4F4F5",
+      "border": "#E4E4E7",
+      "borderStrong": "#D4D4D8",
+      "textPrimary": "#18181B",
+      "textSecondary": "#52525B",
+      "textMuted": "#A1A1AA",
+      "accent": "#4F46E5",
+      "accentHover": "#4338CA",
+      "accentActive": "#3730A3",
+      "accentSubtle": "#EEF2FF",
+      "success": "#16A34A",
+      "warning": "#D97706",
+      "critical": "#DC2626",
+      "info": "#2563EB"
+    },
+    "dark": {
+      "bgCanvas": "#0E1013",
+      "bgSurface": "#16181C",
+      "bgElevated": "#1C1F24",
+      "bgSubtle": "#1C1F24",
+      "border": "#2A2D33",
+      "borderStrong": "#383B42",
+      "textPrimary": "#F4F4F5",
+      "textSecondary": "#A1A1AA",
+      "textMuted": "#71717A",
+      "accent": "#6366F1",
+      "accentHover": "#818CF8",
+      "accentActive": "#A5B4FC",
+      "accentSubtle": "#1E1B4B",
+      "success": "#16A34A",
+      "warning": "#D97706",
+      "critical": "#DC2626",
+      "info": "#2563EB"
+    },
+    "chart": ["#4F46E5", "#0EA5E9", "#10B981", "#F59E0B", "#EC4899"]
+  },
+  "typography": {
+    "fontUi": "Geist, Inter, system-ui, sans-serif",
+    "fontMono": "Geist Mono, JetBrains Mono, monospace",
+    "scale": {
+      "xs": { "size": 12, "lineHeight": 16 },
+      "sm": { "size": 13, "lineHeight": 18 },
+      "base": { "size": 14, "lineHeight": 20 },
+      "md": { "size": 16, "lineHeight": 24 },
+      "lg": { "size": 20, "lineHeight": 28 },
+      "xl": { "size": 24, "lineHeight": 32 },
+      "2xl": { "size": 32, "lineHeight": 40 },
+      "3xl": { "size": 40, "lineHeight": 48 }
+    },
+    "weights": { "regular": 400, "medium": 500, "semibold": 600 }
+  },
+  "spacing": [4, 8, 12, 16, 24, 32, 48, 64],
+  "radius": { "sm": 4, "md": 8, "lg": 12, "full": 999 },
+  "shadow": {
+    "sm": "0 1px 2px rgba(24,24,27,0.06)",
+    "md": "0 4px 12px rgba(24,24,27,0.08)",
+    "lg": "0 12px 32px rgba(24,24,27,0.12)"
+  }
+}
