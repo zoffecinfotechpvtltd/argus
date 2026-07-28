@@ -108,7 +108,7 @@ Two more things happen on-demand, not continuously:
 
 ## 4. Every page — what it does, how to use it
 
-All routes below are under the app once it's running (e.g. `http://localhost:7070/inventory`).
+All routes below are under the app once it's running (e.g. `http://localhost:58070/inventory`).
 
 ### Login (`/login`)
 Email + password. The first account is created via Setup, below; there's no public signup.
@@ -346,7 +346,7 @@ Requires [Bun](https://bun.sh) (no Node.js needed).
 ```bash
 bun install                # backend deps
 cd ui && bun install && cd ..  # frontend deps
-bun run dev                 # dev server: backend on :7070 (watch mode), Vite on its own port
+bun run dev                 # dev server: backend on :58070 (watch mode), Vite on its own port
 ```
 
 ```bash
@@ -647,7 +647,7 @@ register the background service).
    point. Argus installs itself as a background Windows service (starts now, and automatically on
    every future boot — closing anything or logging out never stops monitoring) and offers to open
    the dashboard in your browser.
-4. The dashboard opens at `http://localhost:7070`. Create the admin account (email + password,
+4. The dashboard opens at `http://localhost:58070`. Create the admin account (email + password,
    10+ characters) and accept the terms.
 5. **Discovery** → enter your subnet (e.g. `192.168.1.0/24`) → Start scan → review results → Add
    devices. Monitoring more than one site or subnet (VPN, multiple offices)? See
@@ -670,7 +670,7 @@ register the background service).
 Run through this once after any new build, and once before handing a copy to a real customer.
 
 - [ ] Running the installer shows a real wizard (no console window at any point) and finishes with
-      the dashboard opening at `localhost:7070`
+      the dashboard opening at `localhost:58070`
 - [ ] After install, the Windows service (Services → "Argus Monitoring") is running, and a fresh
       reboot leaves it running without anyone logging in
 - [ ] The "Argus Dashboard" Start Menu / desktop shortcut opens the browser without ever flashing a
@@ -708,7 +708,7 @@ Run through this once after any new build, and once before handing a copy to a r
 
 | Symptom | Fix |
 |---|---|
-| Port 7070 already in use | Argus refuses to start and logs `port_in_use` — stop whatever else is bound to it, or set `PORT`/`config.json`'s `port` to something else. It deliberately never drifts to a different port silently (see `data/logs/argus.log`) |
+| Port 58070 already in use | Argus refuses to start and logs `port_in_use` — stop whatever else is bound to it, or set `PORT`/`config.json`'s `port` to something else. It deliberately never drifts to a different port silently (see `data/logs/argus.log`) |
 | Other machines on the LAN can't be discovered/reached | Run `Argus.exe --fix-firewall` (from an elevated prompt, in the install folder) and apply the printed commands |
 | A remote-site device always shows down, but you can RDP/ping it from elsewhere | The Argus *host* likely can't reach it — see [§5](#5-network-reachability--multi-site--vpn-deployments): check VPN routing, overlapping subnets, and firewall rules between the Argus machine and that site specifically |
 | Dashboard shortcut doesn't load anything | The service may still be starting, or isn't running — check Services → "Argus Monitoring" is "Running"; if the service failed to register, re-run the installer or `Argus.exe --install-service` as Administrator |
@@ -739,7 +739,7 @@ installer already runs `--install-service` for you:
 
 | Variable | Meaning |
 |---|---|
-| `PORT` | default `7070` — fixed, fails fast (doesn't auto-increment) if already in use |
+| `PORT` | default `58070` — fixed, fails fast (doesn't auto-increment) if already in use |
 | `DATA_DIR` | default `./data` |
 | `LOG_LEVEL` | `debug` / `info` (default) / `warn` / `error` |
 | `INSTANCE_NAME` | default `Argus` |

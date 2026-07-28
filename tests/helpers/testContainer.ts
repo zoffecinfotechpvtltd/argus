@@ -62,7 +62,7 @@ export function buildTestContainer(
   const app = {
     config: {
       mode: "exe",
-      port: 7070,
+      port: 58070,
       dataDir: "./data",
       logLevel: "info",
       instanceName: "Test",

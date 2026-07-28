@@ -57,9 +57,9 @@ const app = await buildContainer(config);
 
 const hono = buildServer(app);
 
-// Argus always binds config.port (default 7070) and only that port — no silent drift to the next
+// Argus always binds config.port (default 58070) and only that port — no silent drift to the next
 // free one. A fixed, predictable address is what makes the desktop shortcut, firewall rule, and
-// "http://localhost:7070" muscle memory keep working across restarts. If something else already
+// "http://localhost:58070" muscle memory keep working across restarts. If something else already
 // holds it, that's surfaced as a clear, actionable error instead of quietly spawning a second
 // instance on a different port (which is how this used to accumulate zombie processes).
 const port = config.port;

@@ -7,7 +7,7 @@ describe("ConfigSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.mode).toBe("exe");
-      expect(result.data.port).toBe(7070);
+      expect(result.data.port).toBe(58070);
       expect(result.data.polling.defaultIntervalSec).toBe(60);
       expect(result.data.polling.concurrency).toBe(50);
       expect(result.data.retention.rawDays).toBe(30);

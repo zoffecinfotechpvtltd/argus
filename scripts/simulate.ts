@@ -62,7 +62,7 @@ function buildSimContainer(): AppContainer {
   return {
     config: {
       mode: "exe",
-      port: 7070,
+      port: 58070,
       dataDir: "./data",
       logLevel: "warn",
       instanceName: "Simulate",

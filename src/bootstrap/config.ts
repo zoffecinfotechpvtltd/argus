@@ -9,7 +9,11 @@ const ConfigSchema = z.object({
   // config.json files with no "mode" field, or "mode":"exe", keep working unchanged. "saas" is a
   // separate multi-tenant Postgres deployment path, not part of the shipped product.
   mode: z.enum(["exe", "saas"]).default("exe"),
-  port: z.coerce.number().int().min(1).max(65535).default(7070),
+  // 58070 sits in the dynamic/private port range (49152-65535, IANA-reserved for exactly this
+  // kind of local service) specifically to avoid colliding with other software — 7070 was the
+  // original default but collides with real-world things (Cisco AnyConnect, RealServer, various
+  // dev tools), which surfaced as a customer-visible "port already in use, nothing starts" failure.
+  port: z.coerce.number().int().min(1).max(65535).default(58070),
   dataDir: z.string().default("./data"),
   logLevel: z.enum(["debug", "info", "warn", "error"]).default("info"),
   instanceName: z.string().default("Argus"),

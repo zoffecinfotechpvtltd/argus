@@ -1,7 +1,7 @@
 {
   "mode": "exe",
   "dbDriver": "sqlite",
-  "port": 7070,
+  "port": 58070,
   "dataDir": "./data",
   "logLevel": "info",
   "instanceName": "Argus",
