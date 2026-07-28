@@ -35,6 +35,7 @@ import type { Device, DeviceGroup, DeviceType } from "../api/types";
 import { DEVICE_TYPE_LABELS } from "../api/types";
 import { Card, EmptyState, Input, Select, SkeletonCards } from "../components/ui";
 import { formatBps } from "../lib/format";
+import { AlertActivityCalendar } from "../components/charts/AlertActivityCalendar";
 
 const SLA_TARGET_PCT = 99.9;
 const AXIS_TICK = { fontSize: 10, fill: "#A1A1AA" };
@@ -360,121 +361,9 @@ function AlertsTrendTooltip({ active, payload, label }: { active?: boolean; payl
   );
 }
 
-const HEATMAP_DAYS = 35;
-const HEATMAP_WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-interface HeatmapCell {
-  date: string;
-  critical: number;
-  warning: number;
-  info: number;
-}
-
-function heatmapCellColor(cell: HeatmapCell | undefined): string {
-  if (!cell || cell.critical + cell.warning + cell.info === 0) return CHART_MUTED_FILL;
-  if (cell.critical > 0) return SEVERITY_HEX.critical;
-  if (cell.warning > 0) return SEVERITY_HEX.warning;
-  return SEVERITY_HEX.info;
-}
-
-/** 5-week activity calendar, colored by the worst severity opened that day — real daily counts
- * from the same @api/routes/reports.ts alerts-summary endpoint AlertsTrendCard uses, just bucketed
- * by day-of-week/week instead of plotted as a trend line, so a viewer can spot a bad week or a
- * recurring bad weekday at a glance. */
-function AlertHeatmapCard() {
-  const [cells, setCells] = useState<Map<string, HeatmapCell> | null>(null);
-
-  useEffect(() => {
-    const to = new Date();
-    const from = new Date(to.getTime() - (HEATMAP_DAYS - 1) * 24 * 60 * 60 * 1000);
-    from.setUTCHours(0, 0, 0, 0);
-    api
-      .get<Array<{ day: string; severity: string; count: number }>>(`/reports/alerts-summary?from=${from.toISOString()}&to=${to.toISOString()}`)
-      .then((raw) => {
-        const map = new Map<string, HeatmapCell>();
-        for (let i = 0; i < HEATMAP_DAYS; i++) {
-          const d = new Date(from.getTime() + i * 24 * 60 * 60 * 1000);
-          const key = d.toISOString().slice(0, 10);
-          map.set(key, { date: key, critical: 0, warning: 0, info: 0 });
-        }
-        for (const r of raw) {
-          const cell = map.get(r.day.slice(0, 10));
-          if (cell && (r.severity === "critical" || r.severity === "warning" || r.severity === "info")) cell[r.severity] = r.count;
-        }
-        setCells(map);
-      })
-      .catch(() => setCells(new Map()));
-  }, []);
-
-  const weeks = useMemo(() => {
-    if (!cells) return [];
-    const ordered = [...cells.values()];
-    // Pad to a Monday start so every column is a full week.
-    const firstDow = (new Date(ordered[0]!.date).getUTCDay() + 6) % 7; // 0=Mon
-    const padded: Array<HeatmapCell | null> = [...Array(firstDow).fill(null), ...ordered];
-    const cols: Array<Array<HeatmapCell | null>> = [];
-    for (let i = 0; i < padded.length; i += 7) cols.push(padded.slice(i, i + 7));
-    return cols;
-  }, [cells]);
-
-  return (
-    <Card className="p-3">
-      <div className="mb-3 flex items-center justify-between text-xs text-text-secondary">
-        <span>Alert activity (last {HEATMAP_DAYS} days)</span>
-        <div className="hidden gap-2.5 sm:flex">
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: CHART_MUTED_FILL }} /> None
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: SEVERITY_HEX.info }} /> Info
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: SEVERITY_HEX.warning }} /> Warning
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: SEVERITY_HEX.critical }} /> Critical
-          </span>
-        </div>
-      </div>
-      {cells === null ? (
-        <div className="flex h-[140px] items-center justify-center text-xs text-text-muted">Loading…</div>
-      ) : (
-        <>
-          <div className="flex gap-3">
-            <div className="flex flex-col justify-between py-0.5 text-2xs text-text-muted">
-              {HEATMAP_WEEKDAYS.map((d) => (
-                <span key={d}>{d}</span>
-              ))}
-            </div>
-            <div className="flex flex-1 gap-1 overflow-x-auto">
-              {weeks.map((col, i) => (
-                <div key={i} className="flex flex-1 flex-col gap-1">
-                  {col.map((cell, j) =>
-                    cell ? (
-                      <div
-                        key={cell.date}
-                        title={`${cell.date}: ${cell.critical + cell.warning + cell.info} alert${cell.critical + cell.warning + cell.info === 1 ? "" : "s"}`}
-                        className="aspect-square w-full rounded-sm"
-                        style={{ backgroundColor: heatmapCellColor(cell) }}
-                      />
-                    ) : (
-                      <div key={j} className="aspect-square w-full" />
-                    )
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-          {[...cells.values()].every((c) => c.critical + c.warning + c.info === 0) && (
-            <p className="mt-2.5 text-center text-2xs text-text-muted">
-              No alerts in the last {HEATMAP_DAYS} days — every cell above is a genuinely quiet day, not a loading state.
-            </p>
-          )}
-        </>
-      )}
-    </Card>
-  );
-}
+// AlertHeatmapCard (hand-rolled div grid) replaced by components/charts/AlertActivityCalendar.tsx
+// (ECharts calendar+heatmap — correct week/weekday alignment for free instead of hand-computed
+// Monday-start padding).
 
 const AVG_LATENCY_TARGET_MS = 100;
 
@@ -1195,7 +1084,7 @@ export function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <AlertHeatmapCard />
+          <AlertActivityCalendar />
           <AlertsTrendCard />
         </div>
 

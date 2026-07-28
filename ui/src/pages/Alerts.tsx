@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { BellOff, AlertOctagon, AlertTriangle, Info, MessageSquare } from "lucide-react";
+import { BellOff, AlertOctagon, AlertTriangle, Info, LayoutList, MessageSquare, Table2 } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api } from "../api/client";
 import { useWsMessages } from "../ws/WebSocketProvider";
@@ -10,6 +10,7 @@ import type { DeviceGroup } from "../api/types";
 import { Badge, Button, EmptyState, Select, SkeletonRows, Textarea, useToast } from "../components/ui";
 import { FilterPresetsBar } from "../components/FilterPresetsBar";
 import { useFilterPresets } from "../hooks/useFilterPresets";
+import { AlertsTable } from "../components/AlertsTable";
 
 interface AlertsFilterPreset {
   statusFilter: AlertStatus | "";
@@ -47,6 +48,7 @@ const SEVERITY_SECTIONS: Array<{ key: AlertSeverity; label: string; icon: typeof
 export function Alerts() {
   const [alerts, setAlerts] = useState<Alert[] | null>(null);
   const [statusFilter, setStatusFilter] = useState<AlertStatus | "">("open");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [groupBySeverity, setGroupBySeverity] = useState(true);
   const [severityFilter, setSeverityFilter] = useState<AlertSeverity | "">("");
   const [deviceFilter, setDeviceFilter] = useState("");
@@ -246,7 +248,7 @@ export function Alerts() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        className="mx-auto max-w-5xl space-y-4"
+        className={`mx-auto space-y-4 ${viewMode === "table" ? "max-w-7xl" : "max-w-5xl"}`}
       >
         <div className="flex flex-wrap items-center gap-3">
           <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as AlertStatus | "")}>
@@ -288,20 +290,44 @@ export function Alerts() {
         />
 
         {!loading && alerts.length > 0 && (
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-text-secondary">Group by</span>
-            <button
-              onClick={() => setGroupBySeverity(true)}
-              className={`cursor-pointer rounded-md px-2 py-1 font-medium transition-colors duration-150 ${groupBySeverity ? "bg-accent-subtle text-accent" : "text-text-secondary hover:text-text-primary"}`}
-            >
-              Severity
-            </button>
-            <button
-              onClick={() => setGroupBySeverity(false)}
-              className={`cursor-pointer rounded-md px-2 py-1 font-medium transition-colors duration-150 ${!groupBySeverity ? "bg-accent-subtle text-accent" : "text-text-secondary hover:text-text-primary"}`}
-            >
-              Most recent
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {viewMode === "cards" ? (
+              <div className="flex items-center gap-1 text-xs">
+                <span className="text-text-secondary">Group by</span>
+                <button
+                  onClick={() => setGroupBySeverity(true)}
+                  className={`cursor-pointer rounded-md px-2 py-1 font-medium transition-colors duration-150 ${groupBySeverity ? "bg-accent-subtle text-accent" : "text-text-secondary hover:text-text-primary"}`}
+                >
+                  Severity
+                </button>
+                <button
+                  onClick={() => setGroupBySeverity(false)}
+                  className={`cursor-pointer rounded-md px-2 py-1 font-medium transition-colors duration-150 ${!groupBySeverity ? "bg-accent-subtle text-accent" : "text-text-secondary hover:text-text-primary"}`}
+                >
+                  Most recent
+                </button>
+              </div>
+            ) : (
+              <span className="text-xs text-text-secondary">Click a column header to sort · {flatSorted.length} alerts</span>
+            )}
+            <div className="ml-auto flex items-center gap-1 rounded-md border border-border p-0.5">
+              <button
+                onClick={() => setViewMode("cards")}
+                aria-label="Card view"
+                aria-pressed={viewMode === "cards"}
+                className={`flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors duration-150 ${viewMode === "cards" ? "bg-accent-subtle text-accent" : "text-text-secondary hover:text-text-primary"}`}
+              >
+                <LayoutList size={13} aria-hidden="true" /> Cards
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                aria-label="Table view"
+                aria-pressed={viewMode === "table"}
+                className={`flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors duration-150 ${viewMode === "table" ? "bg-accent-subtle text-accent" : "text-text-secondary hover:text-text-primary"}`}
+              >
+                <Table2 size={13} aria-hidden="true" /> Table
+              </button>
+            </div>
           </div>
         )}
 
@@ -309,6 +335,17 @@ export function Alerts() {
           <SkeletonRows count={4} />
         ) : alerts.length === 0 ? (
           <EmptyState icon={BellOff} title="No alerts match your filters" description="Nothing needs your attention right now." />
+        ) : viewMode === "table" ? (
+          <AlertsTable
+            rows={flatSorted.map((a) => ({
+              alert: a,
+              deviceName: devices[a.deviceId]?.name ?? null,
+              groupName: devices[a.deviceId]?.groupId ? (groups[devices[a.deviceId]!.groupId!] ?? null) : null,
+            }))}
+            busyId={busyId}
+            onAck={handleAck}
+            onResolve={handleResolve}
+          />
         ) : groupBySeverity ? (
           <div className="space-y-6">
             {SEVERITY_SECTIONS.map(({ key, label, icon: Icon }) => {
