@@ -12,17 +12,11 @@ import {
   LineChart,
   Pie,
   PieChart,
-  PolarAngleAxis,
-  PolarGrid,
-  PolarRadiusAxis,
-  Radar,
-  RadarChart,
-  RadialBar,
-  RadialBarChart,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
   Tooltip,
+  Treemap,
   XAxis,
   YAxis,
   ZAxis,
@@ -113,73 +107,68 @@ function DonutTooltip({ active, payload, total }: { active?: boolean; payload?: 
   );
 }
 
-/** Half-donut "gauge" (RadialBarChart from 180°→0°) — the one place a gauge genuinely fits: a
- * single number against a target, not a series to compare. */
-function AvailabilityGauge({ pct }: { pct: number }) {
-  const good = pct >= SLA_TARGET_PCT;
-  const color = good ? DEVICE_STATE_HEX.up : pct >= 99 ? DEVICE_STATE_HEX.degraded : DEVICE_STATE_HEX.down;
-  const data = [{ value: Math.min(100, Math.max(0, pct)) }];
-  return (
-    <Card className="p-3">
-      <div className="mb-1 flex items-center justify-between text-xs text-text-secondary">
-        <span>Availability today</span>
-        <span>Target {SLA_TARGET_PCT}%</span>
-      </div>
-      <div className="relative mx-auto" style={{ width: "100%", maxWidth: 180, height: 92 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <RadialBarChart innerRadius="72%" outerRadius="100%" barSize={11} data={data} startAngle={180} endAngle={0} cx="50%" cy="88%">
-            <PolarAngleAxis type="number" domain={[0, 100]} tick={false} angleAxisId={0} />
-            <RadialBar dataKey="value" cornerRadius={6} fill={color} background={{ fill: CHART_MUTED_FILL }} isAnimationActive={false} />
-          </RadialBarChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-x-0 bottom-0 text-center">
-          <span className="font-mono text-2xl font-semibold tabular-nums" style={{ color }}>
-            {pct}%
-          </span>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-/** Device-type mix as a proportional strip — a resource-allocation question ("what kinds of
- * devices do I have"), not a status, so it draws from the fixed-order categorical palette rather
- * than status colors. Rendered as a segmented bar + legend rather than a pie: device-type counts
- * routinely exceed the ~5-category limit where pies stay readable (dataviz guidance), and a strip
- * reads proportion at a glance without forcing angle comparisons. */
+/** Device-type mix as a treemap — a resource-allocation question ("what kinds of devices do I
+ * have, and which dominates"), not a status, so it draws from the fixed-order categorical palette
+ * rather than status colors. Treemap over a pie/donut: device-type counts routinely exceed the
+ * ~5-category limit where pies stay readable, and area comparison reads relative size faster than
+ * angle comparison does once there are more than a couple of slices. */
 function DeviceMixCard({ deviceMix }: { deviceMix: Array<{ type: string; label: string; count: number; pct: number }> }) {
+  const treemapData = deviceMix.map((d, i) => ({ name: d.label, size: d.count, pct: d.pct, fill: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length]! }));
   return (
     <Card className="p-3">
       <div className="mb-2 text-xs text-text-secondary">Device mix</div>
       {deviceMix.length === 0 ? (
-        <div className="flex h-[92px] items-center justify-center text-xs text-text-muted">No devices yet</div>
+        <div className="flex h-[164px] items-center justify-center text-xs text-text-muted">No devices yet</div>
       ) : (
-        <div>
-          <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-bg-subtle">
-            {deviceMix.map((d, i) => (
-              <div
-                key={d.type}
-                style={{ width: `${Math.max(d.pct, 1)}%`, backgroundColor: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length] }}
-                title={`${d.label}: ${d.count} (${d.pct}%)`}
-              />
-            ))}
-          </div>
-          <div className="mt-3 space-y-1.5">
-            {deviceMix.map((d, i) => (
-              <div key={d.type} className="flex items-center justify-between gap-2 text-xs">
-                <span className="flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
-                  <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length] }} />
-                  <span className="truncate">{d.label}</span>
-                </span>
-                <span className="font-mono tabular-nums text-text-primary">
-                  {d.count} <span className="text-text-muted">({d.pct}%)</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ResponsiveContainer width="100%" height={164}>
+          <Treemap data={treemapData} dataKey="size" isAnimationActive={false} content={<DeviceMixTile />}>
+            <Tooltip content={<DeviceMixTooltip />} />
+          </Treemap>
+        </ResponsiveContainer>
       )}
     </Card>
+  );
+}
+
+interface DeviceMixTileProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  name?: string;
+  pct?: number;
+  fill?: string;
+}
+
+function DeviceMixTile({ x = 0, y = 0, width = 0, height = 0, name, pct, fill }: DeviceMixTileProps) {
+  const showLabel = width > 46 && height > 28;
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="rgb(var(--color-bg-surface))" strokeWidth={2} />
+      {showLabel && (
+        <text x={x + 6} y={y + 16} fontSize={10.5} fontWeight={600} fill="#fff" style={{ pointerEvents: "none" }}>
+          {name}
+        </text>
+      )}
+      {showLabel && height > 42 && (
+        <text x={x + 6} y={y + 30} fontSize={10} fill="rgba(255,255,255,0.85)" style={{ pointerEvents: "none" }}>
+          {pct}%
+        </text>
+      )}
+    </g>
+  );
+}
+
+function DeviceMixTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: { name: string; size: number; pct: number } }> }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0]!.payload;
+  return (
+    <div className="rounded-md border border-border bg-bg-elevated px-3 py-2 text-xs shadow-md">
+      <p className="font-medium text-text-primary">{row.name}</p>
+      <p className="text-text-secondary">
+        {row.size} · {row.pct}%
+      </p>
+    </div>
   );
 }
 
@@ -804,11 +793,11 @@ interface GroupRadarRow {
  * an inverted/normalized latency score (100 = at or under the same 100ms target SlaHeadroomCard
  * uses, degrading from there), and "stability" (the inverse of how much of the group is actively
  * flapping, which a flat up/down count doesn't surface: a group that's 90% up but constantly
- * flapping is a worse sign than one that's 90% up and just quietly down). A radar is the right
- * shape here specifically because the question is "how does group A compare to group B across
- * several axes at once" for a small number of groups — the same reason it goes wrong for anything
- * with many categories or only one series. */
-function GroupHealthRadar({ rows, colorFor }: { rows: GroupRadarRow[]; colorFor: (label: string) => string }) {
+ * flapping is a worse sign than one that's 90% up and just quietly down). Grouped bars, not a
+ * radar: a radar's polygon shape makes exact values hard to read off and area comparisons across
+ * more than 2-3 series misleading, where grouped bars keep every value on the same shared 0-100
+ * axis — a direct, unambiguous comparison per metric. */
+function GroupHealthComparison({ rows, colorFor }: { rows: GroupRadarRow[]; colorFor: (label: string) => string }) {
   const axes = ["Uptime", "Latency", "Stability"] as const;
   const chartData = axes.map((axis) => {
     const row: Record<string, string | number> = { axis };
@@ -822,17 +811,17 @@ function GroupHealthRadar({ rows, colorFor }: { rows: GroupRadarRow[]; colorFor:
         <div className="flex h-[220px] items-center justify-center text-xs text-text-muted">No groups yet</div>
       ) : (
         <ResponsiveContainer width="100%" height={220}>
-          <RadarChart data={chartData} outerRadius="72%">
-            <PolarGrid stroke={CHART_MUTED_FILL} />
-            <PolarAngleAxis dataKey="axis" tick={AXIS_TICK} />
-            <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+          <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke={CHART_MUTED_FILL} vertical={false} />
+            <XAxis dataKey="axis" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+            <YAxis domain={[0, 100]} tick={AXIS_TICK} axisLine={false} tickLine={false} width={28} />
             {rows.map((g) => {
               const color = colorFor(g.label);
-              return <Radar key={g.label} name={g.label} dataKey={g.label} stroke={color} fill={color} fillOpacity={0.15} isAnimationActive={false} />;
+              return <Bar key={g.label} name={g.label} dataKey={g.label} fill={color} radius={[3, 3, 0, 0]} maxBarSize={28} isAnimationActive={false} />;
             })}
             <Legend wrapperStyle={{ fontSize: 10 }} />
-            <Tooltip content={<GroupRadarTooltip />} />
-          </RadarChart>
+            <Tooltip content={<GroupRadarTooltip />} cursor={{ fill: CHART_MUTED_FILL }} />
+          </BarChart>
         </ResponsiveContainer>
       )}
     </Card>
@@ -1158,11 +1147,12 @@ export function Dashboard() {
           </div>
         </div>
 
-        {/* Fleet overview */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Fleet overview — availability itself lives only in the hero tile above and the SLA
+            headroom card below; it doesn't need a third rendering here (see "Removed" note at
+            the bottom of this file). */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <DonutCard title="Fleet health" segments={stateSegments} />
           <DonutCard title="Open alerts by severity" segments={alertSegments} />
-          <AvailabilityGauge pct={summary?.availabilityTodayPct ?? 100} />
           <DeviceMixCard deviceMix={deviceMix} />
         </div>
 
@@ -1200,7 +1190,7 @@ export function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <GroupHealthRadar rows={groupRadarRows} colorFor={groupColorFor} />
+          <GroupHealthComparison rows={groupRadarRows} colorFor={groupColorFor} />
           <LatencyReliabilityScatter points={scatterPoints} />
         </div>
 
@@ -1369,10 +1359,12 @@ function PulseTrace({ color, flatline }: { color: string; flatline: boolean }) {
 }
 
 /** The one focal point of the top strip — a live pulse trace + the biggest number on the page
- * (text-3xl, the display-headline step of the type scale), deliberately distinct from the
- * half-donut AvailabilityGauge further down the page (that one sits among peers in a 4-up row and
- * reads as one of several; this one has to read as "the number that matters most" from across a
- * NOC room). Same real `statHistory` trend data as every other tile — no fabricated comparison. */
+ * (text-3xl, the display-headline step of the type scale). This is the ONLY place availability-vs-
+ * target is the headline number; SlaHeadroomCard further down repeats the percentage but frames it
+ * as remaining error budget, not as its own competing "the number that matters" moment — a card
+ * that used to exist here purely to redraw this same figure as a gauge was removed rather than
+ * kept as a third rendering of one metric. Same real `statHistory` trend data as every other tile —
+ * no fabricated comparison. */
 function HeroAvailabilityTile({ pct, trend }: { pct: number; trend: number[] }) {
   const good = pct >= SLA_TARGET_PCT;
   const color = good ? DEVICE_STATE_HEX.up : pct >= 99 ? DEVICE_STATE_HEX.degraded : DEVICE_STATE_HEX.down;

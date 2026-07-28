@@ -1,9 +1,99 @@
 import { useState, type FormEvent } from "react";
-import { ShieldCheck } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { Check, Copy, Eye, EyeOff, KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../api/client";
-import { Button, Card, CardBody, CardHeader, FieldGroup, Input, useToast } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardHeader, FieldGroup, Input, useToast } from "../components/ui";
 import { useAuth } from "../auth/AuthContext";
+
+function PasswordField({
+  label,
+  hint,
+  value,
+  onChange,
+  autoComplete,
+  minLength,
+}: {
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (v: string) => void;
+  autoComplete: string;
+  minLength?: number;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <FieldGroup label={label} hint={hint}>
+      {(ids) => (
+        <div className="relative">
+          <Input
+            {...ids}
+            type={visible ? "text" : "password"}
+            required
+            minLength={minLength}
+            autoComplete={autoComplete}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? "Hide password" : "Show password"}
+            className="absolute inset-y-0 right-0 flex w-9 cursor-pointer items-center justify-center text-text-muted transition-colors hover:text-text-secondary"
+          >
+            {visible ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
+          </button>
+        </div>
+      )}
+    </FieldGroup>
+  );
+}
+
+/** Manual-entry fallback for enrollment — collapsed by default since the QR code is the primary
+ * path; only someone entering it into a desktop password manager or a phone that can't scan needs
+ * this at all. */
+function ManualEntryReveal({ secret }: { secret: string }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const toast = useToast();
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(secret);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Couldn't copy — select the code manually.");
+    }
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="cursor-pointer text-2xs font-medium text-accent hover:text-accent-hover"
+      >
+        {open ? "Hide manual entry code" : "Can't scan the code? Enter it manually"}
+      </button>
+      {open && (
+        <div className="mt-2 flex items-center justify-between gap-3 rounded-md border border-border bg-bg-subtle px-3 py-2">
+          <code className="select-all font-mono text-xs tracking-wider text-text-primary">{secret}</code>
+          <button
+            type="button"
+            onClick={copy}
+            aria-label="Copy code"
+            className="flex shrink-0 cursor-pointer items-center gap-1 text-2xs font-medium text-text-secondary hover:text-text-primary"
+          >
+            {copied ? <Check size={13} className="text-success" aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function SettingsSecurity() {
   const { user, refresh } = useAuth();
@@ -82,65 +172,88 @@ export function SettingsSecurity() {
     <Layout title="Security" subtitle="Password and two-factor authentication for your account">
       <div className="mx-auto max-w-2xl space-y-6">
         <Card>
-          <CardHeader title="Change password" />
+          <CardHeader title="Change password" description="Use at least 10 characters — a passphrase is easier to remember than random symbols." />
           <CardBody>
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <FieldGroup label="Current password">
-                {(ids) => (
-                  <Input {...ids} type="password" required autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full" />
-                )}
-              </FieldGroup>
-              <FieldGroup label="New password" hint="At least 10 characters.">
-                {(ids) => (
-                  <Input {...ids} type="password" required minLength={10} autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full" />
-                )}
-              </FieldGroup>
-              <Button type="submit" disabled={savingPassword}>{savingPassword ? "Saving…" : "Update password"}</Button>
+              <PasswordField label="Current password" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
+              <PasswordField label="New password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" minLength={10} />
+              <div className="flex items-center gap-2 pt-1">
+                <KeyRound size={14} className="text-text-muted" aria-hidden="true" />
+                <Button type="submit" disabled={savingPassword}>
+                  {savingPassword ? "Saving…" : "Update password"}
+                </Button>
+              </div>
             </form>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader title="Two-factor authentication (2FA)" />
+          <CardHeader
+            title="Two-factor authentication"
+            action={
+              user?.totpEnabled ? (
+                <Badge tone="success">
+                  <ShieldCheck size={11} aria-hidden="true" /> Enabled
+                </Badge>
+              ) : (
+                <Badge tone="neutral">
+                  <ShieldOff size={11} aria-hidden="true" /> Not enabled
+                </Badge>
+              )
+            }
+          />
           <CardBody>
             {user?.totpEnabled ? (
-              <div className="space-y-3">
-                <p className="flex items-center gap-2 text-sm text-text-primary">
-                  <ShieldCheck size={16} className="text-accent" aria-hidden="true" /> 2FA is enabled on your account.
+              <div className="space-y-4">
+                <p className="text-sm text-text-secondary">
+                  Signing in now requires a code from your authenticator app after your password. Disabling this removes that requirement.
                 </p>
                 <Button variant="secondary" onClick={disable2fa} disabled={disabling}>
                   {disabling ? "Disabling…" : "Disable 2FA"}
                 </Button>
               </div>
-            ) : secret ? (
-              <div className="space-y-4">
-                <p className="text-sm text-text-secondary">
-                  Scan this into your authenticator app (Google Authenticator, Authy, 1Password, etc.), or enter the secret manually, then confirm
-                  with a code below.
-                </p>
-                <div className="rounded-md border border-border bg-bg-subtle p-3">
-                  <p className="text-xs text-text-secondary">Secret (manual entry)</p>
-                  <code className="text-sm text-text-primary">{secret}</code>
-                </div>
-                <div className="rounded-md border border-border bg-bg-subtle p-3">
-                  <p className="text-xs text-text-secondary">otpauth:// URI</p>
-                  <code className="break-all text-xs text-text-primary">{uri}</code>
-                </div>
-                <FieldGroup label="Confirmation code">
-                  {(ids) => (
-                    <Input
-                      {...ids}
-                      className="w-40 font-mono tracking-widest"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={verifyCode}
-                      onChange={(e) => setVerifyCode(e.target.value)}
-                    />
-                  )}
-                </FieldGroup>
-                <Button onClick={confirmEnroll} disabled={verifying || verifyCode.length !== 6}>
-                  {verifying ? "Verifying…" : "Verify and enable"}
-                </Button>
+            ) : secret && uri ? (
+              <div className="space-y-5">
+                <ol className="space-y-4">
+                  <li className="flex gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-subtle text-2xs font-semibold text-accent">1</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-text-primary">Scan this with an authenticator app</p>
+                      <p className="mt-0.5 text-2xs text-text-muted">Google Authenticator, Authy, 1Password, or any TOTP-compatible app.</p>
+                      <div className="mt-3 inline-block rounded-lg border border-border bg-white p-3">
+                        <QRCodeSVG value={uri} size={168} bgColor="#FFFFFF" fgColor="#0A0A0A" level="M" />
+                      </div>
+                      <div className="mt-3">
+                        <ManualEntryReveal secret={secret} />
+                      </div>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent-subtle text-2xs font-semibold text-accent">2</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-2 text-sm text-text-primary">Enter the 6-digit code it shows</p>
+                      <div className="flex flex-wrap items-end gap-3">
+                        <FieldGroup label="Verification code">
+                          {(ids) => (
+                            <Input
+                              {...ids}
+                              className="w-32 text-center font-mono text-lg tracking-[0.3em]"
+                              inputMode="numeric"
+                              autoComplete="one-time-code"
+                              maxLength={6}
+                              placeholder="000000"
+                              value={verifyCode}
+                              onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, ""))}
+                            />
+                          )}
+                        </FieldGroup>
+                        <Button onClick={confirmEnroll} disabled={verifying || verifyCode.length !== 6}>
+                          {verifying ? "Verifying…" : "Verify and enable"}
+                        </Button>
+                      </div>
+                    </div>
+                  </li>
+                </ol>
               </div>
             ) : (
               <div className="space-y-3">
