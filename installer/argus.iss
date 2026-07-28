@@ -62,6 +62,27 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut to the Argus dashboard"; GroupDescription: "Additional shortcuts:"
 
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ResultCode: Integer;
+begin
+  // Stops the service (if one is running from a previous install) before [Files] tries to
+  // overwrite Argus.exe / Argus-service.exe — Windows locks a running process's own binary, so
+  // running this installer over an existing service install without this would fail partway
+  // through with a "file in use" error instead of just working. This IS the "how do I update"
+  // answer: run the newer installer over the old one, no uninstall needed, data directory is
+  // never touched by [UninstallDelete] anyway. Exit code ignored on purpose — must be a silent
+  // no-op on a fresh install where the service doesn't exist yet, not a failure.
+  if CurStep = ssInstall then begin
+    Exec(ExpandConstant('{sys}\sc.exe'), 'stop Argus', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    // "sc stop" returns as soon as the stop is requested, not once the process has actually
+    // exited and released its file handles — a fixed pause here is cheaper and more robust than
+    // polling "sc query" for STOPPED, for a process this lightweight.
+    if ResultCode = 0 then Sleep(2000);
+  end;
+end;
+
 [Files]
 Source: "{#MyAppExeSource}"; DestDir: "{app}"; DestName: "Argus.exe"; Flags: ignoreversion
 Source: "{#MyAppLauncherSource}"; DestDir: "{app}"; DestName: "Argus-Launcher.exe"; Flags: ignoreversion
