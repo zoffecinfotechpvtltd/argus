@@ -7,9 +7,9 @@ export const RELEASE = {
   // published, which is exactly what was happening before). Re-uploaded by scripts/release.ts
   // "Publish stable-name aliases" on every release — same fixed filename every time.
   downloadUrl: import.meta.env.VITE_DOWNLOAD_URL || "/downloads/Argus-Setup-win-x64.exe",
-  version: import.meta.env.VITE_VERSION || "0.3.2",
-  sizeMb: import.meta.env.VITE_SIZE_MB || "51.7",
-  builtDate: import.meta.env.VITE_BUILT_DATE || "2026-07-27",
+  version: import.meta.env.VITE_VERSION || "0.3.4",
+  sizeMb: import.meta.env.VITE_SIZE_MB || "56.9",
+  builtDate: import.meta.env.VITE_BUILT_DATE || "2026-07-28",
 };
 
 // Single source of truth for the contact identity shown across Navbar/Contact/Footer — was
