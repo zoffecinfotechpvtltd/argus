@@ -4,7 +4,7 @@ import { SITE } from "../config";
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
 
-export function Hero({ downloadUrl, version, sizeMb }: { downloadUrl: string; version: string; sizeMb: string }) {
+export function Hero({ downloadUrl }: { downloadUrl: string }) {
   return (
     <section id="top" className="relative bg-canvas pb-8 pt-20 sm:pt-28">
       <div className="mx-auto max-w-3xl px-6 text-center">
@@ -65,7 +65,7 @@ export function Hero({ downloadUrl, version, sizeMb }: { downloadUrl: string; ve
           transition={{ duration: 0.6, delay: 0.26 }}
           className="mt-4 text-[13px] text-dim"
         >
-          v{version} · {sizeMb} MB · Windows 10/11, 64-bit
+          Windows 10/11, 64-bit
         </motion.p>
       </div>
 

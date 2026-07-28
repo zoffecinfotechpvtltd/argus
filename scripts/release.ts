@@ -78,10 +78,7 @@ await step("Compile exe", () => {
   // --install-service/--version by hand from an already-open terminal (stdio is inherited either
   // way, so that still works) — it must never allocate a NEW console on its own, whether launched
   // as a WinSW service (Session 0 has none anyway), double-clicked directly, or spawned by
-  // launcher.ts's fallback path. Without this flag Argus.exe is a console-subsystem binary, and
-  // Node/Bun's spawn({ detached: true, windowsHide: true }) combo (launcher.ts's fallback) is
-  // unreliable at suppressing that on Windows — the exact cause of a customer-visible black
-  // terminal window instead of a silent background start.
+  // launcher.ts's fallback path.
   run([
     "bun", "build", "--compile", "--minify", "--windows-hide-console", "--target=bun-windows-x64",
     "src/bootstrap/main.ts", "--outfile", EXE_PATH,
@@ -92,6 +89,21 @@ await step("Compile launcher", () => {
   // Silent, console-less companion binary the installer's shortcuts point at — see
   // src/bootstrap/launcher.ts for why this can't just be a shortcut to Argus.exe itself.
   run(["bun", "build", "--compile", "--minify", "--windows-hide-console", "--target=bun-windows-x64", "src/bootstrap/launcher.ts", "--outfile", LAUNCHER_PATH]);
+});
+
+await step("Force GUI subsystem (belt-and-suspenders console fix)", () => {
+  // --windows-hide-console does NOT actually set IMAGE_SUBSYSTEM_WINDOWS_GUI in the compiled PE
+  // header (verified directly against the raw bytes) — whatever it does instead to suppress the
+  // console is a runtime trick (almost certainly an early FreeConsole() call), and that class of
+  // trick is exactly what breaks when Windows 11's "Windows Terminal" is set as the default
+  // terminal application: Windows Terminal hosts the process's console via ConPTY the instant a
+  // console-subsystem process is created, before the process gets a chance to detach, leaving a
+  // stuck blank tab behind instead of never opening one at all. This is the confirmed root cause
+  // of the black terminal customers were seeing even after the --windows-hide-console flag.
+  // Patching the Subsystem field directly to WINDOWS_GUI (2) means Windows never allocates or
+  // attaches a console for these exes in the first place — nothing for Windows Terminal to ever
+  // hook into, regardless of default-terminal settings. See scripts/patchPeSubsystem.ts.
+  run(["bun", "run", "scripts/patchPeSubsystem.ts", EXE_PATH, LAUNCHER_PATH]);
 });
 
 await step("Stamp icon + version resource", async () => {

@@ -1,7 +1,7 @@
 import { ArgusMark } from "./ArgusMark";
 import { SITE } from "../config";
 
-export function Footer({ downloadUrl, version, builtDate }: { downloadUrl: string; version: string; builtDate: string }) {
+export function Footer({ downloadUrl }: { downloadUrl: string }) {
   const companyLinks = [
     ...(SITE.companyName && SITE.companyUrl ? [{ href: SITE.companyUrl, label: SITE.companyName }] : []),
     { href: `mailto:${SITE.contactEmail}`, label: SITE.contactEmail },
@@ -22,9 +22,6 @@ export function Footer({ downloadUrl, version, builtDate }: { downloadUrl: strin
           </a>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-dim">
             <span>© {SITE.companyName || "Argus"}</span>
-            <span className="font-mono">
-              v{version} · built {builtDate}
-            </span>
           </div>
         </div>
       </div>

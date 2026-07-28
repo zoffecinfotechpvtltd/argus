@@ -24,7 +24,7 @@ export function App() {
   return (
     <div className="min-h-screen bg-canvas font-sans text-fog">
       <Navbar downloadUrl={RELEASE.downloadUrl} />
-      <Hero downloadUrl={RELEASE.downloadUrl} version={RELEASE.version} sizeMb={RELEASE.sizeMb} />
+      <Hero downloadUrl={RELEASE.downloadUrl} />
       <Outcomes />
       <StatBand />
       <Comparison />
@@ -34,7 +34,7 @@ export function App() {
       <Pricing onSelectPlan={selectPlan} />
       <FAQ />
       <Contact plan={plan} onPlanChange={setPlan} />
-      <Footer downloadUrl={RELEASE.downloadUrl} version={RELEASE.version} builtDate={RELEASE.builtDate} />
+      <Footer downloadUrl={RELEASE.downloadUrl} />
     </div>
   );
 }

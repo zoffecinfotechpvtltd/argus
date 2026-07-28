@@ -1,5 +1,6 @@
 // Release info is env-driven so a new Argus version doesn't need a code change here — just update
-// these at deploy time (Vercel project env vars). See ../GUIDE.md §9.6.
+// this at deploy time (Vercel project env vars). See ../GUIDE.md §9.6. Deliberately no version/size
+// display on the site itself — the download link always serves the latest build regardless.
 export const RELEASE = {
   // Same-origin static file under website/public/downloads/ — served directly by Vercel's CDN,
   // so clicking Download always triggers an immediate file download with zero redirects and no
@@ -7,9 +8,6 @@ export const RELEASE = {
   // published, which is exactly what was happening before). Re-uploaded by scripts/release.ts
   // "Publish stable-name aliases" on every release — same fixed filename every time.
   downloadUrl: import.meta.env.VITE_DOWNLOAD_URL || "/downloads/Argus-Setup-win-x64.exe",
-  version: import.meta.env.VITE_VERSION || "0.3.4",
-  sizeMb: import.meta.env.VITE_SIZE_MB || "56.9",
-  builtDate: import.meta.env.VITE_BUILT_DATE || "2026-07-28",
 };
 
 // Single source of truth for the contact identity shown across Navbar/Contact/Footer — was

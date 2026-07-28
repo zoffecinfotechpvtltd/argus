@@ -1,6 +1,6 @@
 {
   "name": "argus",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,8 +13,8 @@
     "generate:migrations-manifest": "bun run scripts/generate-migrations-manifest.ts",
     "generate:embeds": "bun run generate:ui-manifest && bun run generate:migrations-manifest",
     "build": "bun run build:ui && bun run generate:embeds",
-    "compile": "bun build --compile --minify --windows-hide-console --target=bun-windows-x64 src/bootstrap/main.ts --outfile dist/Argus.exe",
-    "compile:launcher": "bun build --compile --minify --windows-hide-console --target=bun-windows-x64 src/bootstrap/launcher.ts --outfile dist/Argus-Launcher.exe",
+    "compile": "bun build --compile --minify --windows-hide-console --target=bun-windows-x64 src/bootstrap/main.ts --outfile dist/Argus.exe && bun run scripts/patchPeSubsystem.ts dist/Argus.exe",
+    "compile:launcher": "bun build --compile --minify --windows-hide-console --target=bun-windows-x64 src/bootstrap/launcher.ts --outfile dist/Argus-Launcher.exe && bun run scripts/patchPeSubsystem.ts dist/Argus-Launcher.exe",
     "release": "bun run scripts/release.ts",
     "license-admin": "bun run scripts/license-admin.ts",
     "test": "bun run generate:embeds && bun test",

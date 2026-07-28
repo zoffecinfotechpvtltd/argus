@@ -572,10 +572,10 @@ bun run dev
 
 1. New Vercel project, root directory `website/`.
 2. Set env vars (Project Settings → Environment Variables) from `website/.env.example`:
-   `VITE_VERSION` / `VITE_SIZE_MB` / `VITE_BUILT_DATE` (update on every release — `bun run release`
-   tells you the right values), `VITE_CONTACT_EMAIL` / `VITE_COMPANY_NAME` / `VITE_COMPANY_URL`
-   (what's shown on the site itself), plus the Azure/license-portal vars below. `VITE_DOWNLOAD_URL`
-   can be left unset — it defaults to the same-origin path described in [§9.1](#91-host-the-download-page).
+   `VITE_CONTACT_EMAIL` / `VITE_COMPANY_NAME` / `VITE_COMPANY_URL` (what's shown on the site
+   itself), plus the Azure/license-portal vars below. `VITE_DOWNLOAD_URL` can be left unset — it
+   defaults to the same-origin path described in [§9.1](#91-host-the-download-page). The site
+   deliberately shows no version/size text, so nothing here needs updating release to release.
 3. `api/contact.ts` and everything under `api/admin/` are picked up automatically as Vercel
    serverless functions — no extra config.
 
@@ -600,8 +600,8 @@ Without all of the above configured, submitting the form returns a clear error t
 to email you directly — it never fails silently or claims success without actually sending.
 
 **Updating for a new release:** `bun run release` in the repo root already copies the new build
-into `website/public/downloads/` under fixed filenames. Commit those files, update this project's
-`VITE_VERSION` / `VITE_SIZE_MB` / `VITE_BUILT_DATE` env vars on Vercel, and redeploy.
+into `website/public/downloads/` under fixed filenames. Commit those files and redeploy — the
+Download button always serves whatever's there, no env vars to update for this.
 
 ### 9.7 Setting up the escalation hierarchy (Tier 1 / 2 / 3 contacts)
 

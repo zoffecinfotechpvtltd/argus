@@ -10,7 +10,7 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypt
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const COOKIE_NAME = "argus_admin_session";
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h — an operator issuing a batch of licenses, not a persistent login
+const SESSION_TTL_MS = 15 * 60 * 1000; // 15min — this session can sign licenses, so it auto-expires fast
 
 function sessionSecret(): string {
   const secret = process.env.ADMIN_SESSION_SECRET;

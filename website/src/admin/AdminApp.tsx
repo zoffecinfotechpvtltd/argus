@@ -24,6 +24,23 @@ export function AdminApp() {
       .catch(() => setSession("signedOut"));
   }, []);
 
+  // The session cookie itself expires server-side after 15 minutes (see lib/adminAuth.ts's
+  // SESSION_TTL_MS) — this just makes that visible in the UI instead of the admin only finding out
+  // the hard way when a form submit 401s. Polling (not a client-only timer) so it's driven by the
+  // server's actual expiry, not this tab's clock, and also catches a session revoked elsewhere.
+  useEffect(() => {
+    if (session !== "signedIn") return;
+    const id = window.setInterval(() => {
+      fetch("/api/admin/session")
+        .then((r) => r.json())
+        .then((d) => {
+          if (!d.authenticated) setSession("signedOut");
+        })
+        .catch(() => {});
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, [session]);
+
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" }).catch(() => {});
     setSession("signedOut");
