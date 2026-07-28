@@ -8,6 +8,11 @@
    deliberately muted purple accent, generous whitespace) rather than the dark neon-on-black
    treatment this site used before. Dark stays available as a toggle with the old palette. */
 :root {
+  /* Tells the browser which native-widget theme to use for things our CSS can't reach — <select>
+     dropdown popups, checkboxes/date-pickers in some browsers, scrollbars. Without this, a native
+     select's popup list renders in the OS default (light) even on a dark page, since it isn't
+     styled by our tokens at all. */
+  color-scheme: light;
   --color-canvas: 251 251 253; /* #FBFBFD */
   --color-surface: 255 255 255;
   --color-elevated: 255 255 255;
@@ -32,6 +37,7 @@
    to a near-black so button text stays readable against the lighter accent this theme needs for
    contrast against black. */
 [data-theme="dark"] {
+  color-scheme: dark;
   --color-canvas: 0 0 0; /* #000000 */
   --color-surface: 28 28 30; /* #1C1C1E */
   --color-elevated: 44 44 46; /* #2C2C2E */

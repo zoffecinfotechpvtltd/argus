@@ -74,7 +74,18 @@ await step("Build UI + embed assets", () => {
 });
 
 await step("Compile exe", () => {
-  run(["bun", "build", "--compile", "--minify", "--target=bun-windows-x64", "src/bootstrap/main.ts", "--outfile", EXE_PATH]);
+  // --windows-hide-console: Argus.exe only ever needs a console when an admin runs
+  // --install-service/--version by hand from an already-open terminal (stdio is inherited either
+  // way, so that still works) — it must never allocate a NEW console on its own, whether launched
+  // as a WinSW service (Session 0 has none anyway), double-clicked directly, or spawned by
+  // launcher.ts's fallback path. Without this flag Argus.exe is a console-subsystem binary, and
+  // Node/Bun's spawn({ detached: true, windowsHide: true }) combo (launcher.ts's fallback) is
+  // unreliable at suppressing that on Windows — the exact cause of a customer-visible black
+  // terminal window instead of a silent background start.
+  run([
+    "bun", "build", "--compile", "--minify", "--windows-hide-console", "--target=bun-windows-x64",
+    "src/bootstrap/main.ts", "--outfile", EXE_PATH,
+  ]);
 });
 
 await step("Compile launcher", () => {
