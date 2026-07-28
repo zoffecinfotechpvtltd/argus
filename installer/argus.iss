@@ -15,6 +15,11 @@
 ;   - Uninstalling stops and removes the service, but deliberately leaves the data directory (the
 ;     customer's device inventory/history/settings) behind in case they reinstall later.
 #define MyAppName "Argus"
+; Must match src/bootstrap/config.ts's ConfigSchema port default — this is only the value baked
+; into the firewall rule created at install time, not something the app itself reads from here. If
+; an operator changes the port later (Settings -> General, or PORT env var / config.json), they
+; need to re-run `Argus.exe --fix-firewall` for a matching rule at the new port.
+#define MyAppPort "58070"
 #ifndef MyAppPublisher
   #define MyAppPublisher "Argus"
 #endif
@@ -72,10 +77,21 @@ Name: "{commondesktop}\Argus Dashboard"; Filename: "{app}\Argus-Launcher.exe"; W
 
 [Run]
 Filename: "{app}\Argus.exe"; Parameters: "--install-service"; WorkingDir: "{app}"; StatusMsg: "Registering Argus as a background service…"; Flags: runhidden waituntilterminated
+; Without this, the dashboard is only reachable from the machine it's installed on: Windows
+; Firewall blocks unsolicited inbound connections by default, and since Argus runs as a
+; non-interactive background service there's never an interactive "Allow this app?" prompt for
+; someone to click through — a colleague on the LAN hitting http://<this-pc>:{#MyAppPort} would
+; just silently time out. Same two commands src/bootstrap/firewall.ts's --fix-firewall prints,
+; just applied automatically instead of requiring a manual copy-paste step. Kept as separate rule
+; entries (not a single combined one) so uninstall can remove them individually by name.
+Filename: "netsh.exe"; Parameters: "advfirewall firewall add rule name=""Argus HTTP"" dir=in action=allow protocol=TCP localport={#MyAppPort}"; StatusMsg: "Allowing Argus through Windows Firewall…"; Flags: runhidden
+Filename: "netsh.exe"; Parameters: "advfirewall firewall add rule name=""Argus ICMP Echo"" protocol=icmpv4:8,any dir=in action=allow"; Flags: runhidden
 Filename: "{app}\Argus-Launcher.exe"; WorkingDir: "{app}"; Description: "Open the Argus dashboard now"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]
 Filename: "{app}\Argus.exe"; Parameters: "--uninstall-service"; WorkingDir: "{app}"; RunOnceId: "ArgusUninstallService"; Flags: runhidden waituntilterminated
+Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Argus HTTP"""; RunOnceId: "ArgusRemoveFirewallHttp"; Flags: runhidden
+Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""Argus ICMP Echo"""; RunOnceId: "ArgusRemoveFirewallIcmp"; Flags: runhidden
 
 [UninstallDelete]
 ; Files Argus writes at runtime next to itself (config, service wrapper's own logs) that Inno

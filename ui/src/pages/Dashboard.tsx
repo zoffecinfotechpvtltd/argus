@@ -441,31 +441,38 @@ function AlertHeatmapCard() {
       {cells === null ? (
         <div className="flex h-[140px] items-center justify-center text-xs text-text-muted">Loading…</div>
       ) : (
-        <div className="flex gap-3">
-          <div className="flex flex-col justify-between py-0.5 text-2xs text-text-muted">
-            {HEATMAP_WEEKDAYS.map((d) => (
-              <span key={d}>{d}</span>
-            ))}
+        <>
+          <div className="flex gap-3">
+            <div className="flex flex-col justify-between py-0.5 text-2xs text-text-muted">
+              {HEATMAP_WEEKDAYS.map((d) => (
+                <span key={d}>{d}</span>
+              ))}
+            </div>
+            <div className="flex flex-1 gap-1 overflow-x-auto">
+              {weeks.map((col, i) => (
+                <div key={i} className="flex flex-1 flex-col gap-1">
+                  {col.map((cell, j) =>
+                    cell ? (
+                      <div
+                        key={cell.date}
+                        title={`${cell.date}: ${cell.critical + cell.warning + cell.info} alert${cell.critical + cell.warning + cell.info === 1 ? "" : "s"}`}
+                        className="aspect-square w-full rounded-sm"
+                        style={{ backgroundColor: heatmapCellColor(cell) }}
+                      />
+                    ) : (
+                      <div key={j} className="aspect-square w-full" />
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex flex-1 gap-1 overflow-x-auto">
-            {weeks.map((col, i) => (
-              <div key={i} className="flex flex-1 flex-col gap-1">
-                {col.map((cell, j) =>
-                  cell ? (
-                    <div
-                      key={cell.date}
-                      title={`${cell.date}: ${cell.critical + cell.warning + cell.info} alert${cell.critical + cell.warning + cell.info === 1 ? "" : "s"}`}
-                      className="aspect-square w-full rounded-sm"
-                      style={{ backgroundColor: heatmapCellColor(cell) }}
-                    />
-                  ) : (
-                    <div key={j} className="aspect-square w-full" />
-                  )
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+          {[...cells.values()].every((c) => c.critical + c.warning + c.info === 0) && (
+            <p className="mt-2.5 text-center text-2xs text-text-muted">
+              No alerts in the last {HEATMAP_DAYS} days — every cell above is a genuinely quiet day, not a loading state.
+            </p>
+          )}
+        </>
       )}
     </Card>
   );
