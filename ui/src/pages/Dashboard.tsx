@@ -5,18 +5,27 @@ import {
   AreaChart,
   Bar,
   BarChart,
+  CartesianGrid,
   Cell,
+  Legend,
   Line,
   LineChart,
   Pie,
   PieChart,
   PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
   RadialBar,
   RadialBarChart,
   ResponsiveContainer,
+  Scatter,
+  ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
+  ZAxis,
 } from "recharts";
 import { ArrowDown, ArrowUp, LayoutGrid, Rows3, SatelliteDish, Siren } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -784,6 +793,120 @@ function GridRow({
   );
 }
 
+interface GroupRadarRow {
+  label: string;
+  Uptime: number;
+  Latency: number;
+  Stability: number;
+}
+
+/** Compares up to 5 largest groups across three real, independently-derived axes — uptime share,
+ * an inverted/normalized latency score (100 = at or under the same 100ms target SlaHeadroomCard
+ * uses, degrading from there), and "stability" (the inverse of how much of the group is actively
+ * flapping, which a flat up/down count doesn't surface: a group that's 90% up but constantly
+ * flapping is a worse sign than one that's 90% up and just quietly down). A radar is the right
+ * shape here specifically because the question is "how does group A compare to group B across
+ * several axes at once" for a small number of groups — the same reason it goes wrong for anything
+ * with many categories or only one series. */
+function GroupHealthRadar({ rows, colorFor }: { rows: GroupRadarRow[]; colorFor: (label: string) => string }) {
+  const axes = ["Uptime", "Latency", "Stability"] as const;
+  const chartData = axes.map((axis) => {
+    const row: Record<string, string | number> = { axis };
+    for (const g of rows) row[g.label] = g[axis];
+    return row;
+  });
+  return (
+    <Card className="p-3">
+      <div className="mb-2 text-xs text-text-secondary">Group health comparison</div>
+      {rows.length === 0 ? (
+        <div className="flex h-[220px] items-center justify-center text-xs text-text-muted">No groups yet</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <RadarChart data={chartData} outerRadius="72%">
+            <PolarGrid stroke={CHART_MUTED_FILL} />
+            <PolarAngleAxis dataKey="axis" tick={AXIS_TICK} />
+            <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+            {rows.map((g) => {
+              const color = colorFor(g.label);
+              return <Radar key={g.label} name={g.label} dataKey={g.label} stroke={color} fill={color} fillOpacity={0.15} isAnimationActive={false} />;
+            })}
+            <Legend wrapperStyle={{ fontSize: 10 }} />
+            <Tooltip content={<GroupRadarTooltip />} />
+          </RadarChart>
+        </ResponsiveContainer>
+      )}
+    </Card>
+  );
+}
+
+function GroupRadarTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ dataKey: string; value: number; color: string }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-md border border-border bg-bg-elevated px-3 py-2 text-xs shadow-md">
+      <p className="mb-1 font-medium text-text-primary">{label}</p>
+      {payload.map((p) => (
+        <p key={p.dataKey} className="flex items-center gap-1.5 text-text-secondary">
+          <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+          {p.dataKey}: {p.value}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+interface ScatterPoint {
+  id: string;
+  name: string;
+  latencyMs: number;
+  availabilityPct: number;
+  color: string;
+}
+
+/** Every device plotted by response time (x) against measured uptime (y) — the two numbers
+ * everyone already sees separately (latency leaders list, SLA report) but never together. A
+ * scatter is the right chart specifically because the question is "which devices are outliers on
+ * BOTH axes at once," which neither a bar nor a line can show across this many independent points
+ * — the bottom-right quadrant (slow AND unreliable) is exactly what a bar-chart ranking by either
+ * metric alone would hide. */
+function LatencyReliabilityScatter({ points }: { points: ScatterPoint[] }) {
+  return (
+    <Card className="p-3">
+      <div className="mb-2 text-xs text-text-secondary">Latency vs. reliability</div>
+      {points.length === 0 ? (
+        <div className="flex h-[220px] items-center justify-center text-xs text-text-muted">No devices with both latency and uptime data yet</div>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <ScatterChart margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+            <CartesianGrid stroke={CHART_MUTED_FILL} />
+            <XAxis type="number" dataKey="latencyMs" name="Latency" unit="ms" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+            <YAxis type="number" dataKey="availabilityPct" name="Availability" unit="%" domain={["dataMin - 1", 100]} tick={AXIS_TICK} axisLine={false} tickLine={false} width={42} />
+            <ZAxis range={[40, 40]} />
+            <Tooltip content={<ScatterTooltip />} cursor={{ strokeDasharray: "3 3" }} />
+            <Scatter data={points} isAnimationActive={false}>
+              {points.map((p) => (
+                <Cell key={p.id} fill={p.color} />
+              ))}
+            </Scatter>
+          </ScatterChart>
+        </ResponsiveContainer>
+      )}
+    </Card>
+  );
+}
+
+function ScatterTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: ScatterPoint }> }) {
+  if (!active || !payload?.length) return null;
+  const p = payload[0]!.payload;
+  return (
+    <div className="rounded-md border border-border bg-bg-elevated px-3 py-2 text-xs shadow-md">
+      <p className="font-medium text-text-primary">{p.name}</p>
+      <p className="text-text-secondary">
+        {p.latencyMs}ms · {p.availabilityPct}% up (7d)
+      </p>
+    </div>
+  );
+}
+
 export function Dashboard() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [statHistory, setStatHistory] = useState<
@@ -791,6 +914,7 @@ export function Dashboard() {
   >([]);
   const [devices, setDevices] = useState<DeviceRow[] | null>(null);
   const [groups, setGroups] = useState<DeviceGroup[]>([]);
+  const [slaByDevice, setSlaByDevice] = useState<Map<string, number>>(new Map());
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("");
@@ -840,6 +964,15 @@ export function Dashboard() {
   useEffect(() => {
     loadSummary().catch(() => {});
     api.get<DeviceGroup[]>("/groups").then(setGroups).catch(() => {});
+    // 7-day window so a device that had one bad hour doesn't look identical to one that's been
+    // solid all week — same report endpoint the SLA/Reports page uses, just fleet-wide (no
+    // groupId) and joined against devices client-side for the latency-vs-reliability scatter.
+    const to = new Date();
+    const from = new Date(to.getTime() - 7 * 24 * 60 * 60 * 1000);
+    api
+      .get<Array<{ deviceId: string; availabilityPct: number }>>(`/reports/sla?from=${from.toISOString()}&to=${to.toISOString()}`)
+      .then((rows) => setSlaByDevice(new Map(rows.map((r) => [r.deviceId, r.availabilityPct]))))
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -934,6 +1067,58 @@ export function Dashboard() {
     return Math.round(withLatency.reduce((sum, d) => sum + d.lastLatencyMs, 0) / withLatency.length);
   }, [devices]);
 
+  const MAX_RADAR_GROUPS = 5;
+  const groupRadarRows: GroupRadarRow[] = useMemo(() => {
+    const map = new Map<string, { label: string; total: number; up: number; flapping: number; latencySum: number; latencyCount: number }>();
+    for (const d of devices ?? []) {
+      const gid = d.groupId ?? "__ungrouped";
+      if (!map.has(gid)) {
+        map.set(gid, { label: gid === "__ungrouped" ? "Ungrouped" : groups.find((g) => g.id === gid)?.name ?? "Unknown group", total: 0, up: 0, flapping: 0, latencySum: 0, latencyCount: 0 });
+      }
+      const row = map.get(gid)!;
+      row.total++;
+      if (d.state === "up") row.up++;
+      if (d.state === "flapping") row.flapping++;
+      if (d.lastLatencyMs != null) {
+        row.latencySum += d.lastLatencyMs;
+        row.latencyCount++;
+      }
+    }
+    return [...map.values()]
+      .filter((r) => r.total > 0)
+      .sort((a, b) => b.total - a.total)
+      .slice(0, MAX_RADAR_GROUPS)
+      .map((r) => {
+        const avgLatency = r.latencyCount ? r.latencySum / r.latencyCount : 0;
+        const latencyRatio = Math.min(1, avgLatency / AVG_LATENCY_TARGET_MS);
+        return {
+          label: r.label,
+          Uptime: Math.round((r.up / r.total) * 100),
+          Latency: Math.round(100 - latencyRatio * 100),
+          Stability: Math.round(100 - (r.flapping / r.total) * 100),
+        };
+      });
+  }, [devices, groups]);
+
+  const groupColorFor = useMemo(() => {
+    const order = groupRadarRows.map((g) => g.label);
+    return (label: string) => CATEGORICAL_PALETTE[order.indexOf(label) % CATEGORICAL_PALETTE.length]!;
+  }, [groupRadarRows]);
+
+  const scatterPoints: ScatterPoint[] = useMemo(
+    () =>
+      (devices ?? [])
+        .filter((d): d is DeviceRow & { lastLatencyMs: number } => d.lastLatencyMs != null && slaByDevice.has(d.id))
+        .map((d) => ({
+          id: d.id,
+          name: d.name,
+          latencyMs: d.lastLatencyMs,
+          availabilityPct: Math.round((slaByDevice.get(d.id) ?? 100) * 10) / 10,
+          color: statusColor(d.state),
+        })),
+    [devices, slaByDevice]
+  );
+
   const columns = Math.max(1, Math.floor((size.width + ROW_GAP) / (CARD_MIN_WIDTH + ROW_GAP)));
   const rowCount = Math.ceil(filteredDevices.length / columns);
   const loading = devices === null;
@@ -1012,6 +1197,11 @@ export function Dashboard() {
             )}
           </Card>
           <GroupStateBarCard rows={groupStateRows} />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <GroupHealthRadar rows={groupRadarRows} colorFor={groupColorFor} />
+          <LatencyReliabilityScatter points={scatterPoints} />
         </div>
 
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

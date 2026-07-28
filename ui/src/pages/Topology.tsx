@@ -68,6 +68,7 @@ export function Topology() {
   const [fullscreen, setFullscreen] = useState(false);
   const [showBandwidth, setShowBandwidth] = useState(false);
   const [bandwidthByDevice, setBandwidthByDevice] = useState<Record<string, number>>({});
+  const [reducedMotion, setReducedMotion] = useState(false);
   const navigate = useNavigate();
   const { ref: containerRef, size } = useContainerSize<HTMLDivElement>();
 
@@ -186,6 +187,18 @@ export function Topology() {
     }
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  // The bandwidth overlay's flow particles are real motion (SVG SMIL <animateMotion>, not a CSS
+  // animation/transition), so the app-wide prefers-reduced-motion rule in index.css — which only
+  // targets animation-duration/transition-duration — doesn't reach them. Checked explicitly here
+  // instead so this is the one place that has to remember it.
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   // Bandwidth overlay is opt-in and only fetched once toggled on — reuses the same
@@ -357,19 +370,38 @@ export function Topology() {
                   const dimmed = s.kind === "device" && s.device?.state === "down";
                   const bps = showBandwidth && s.kind === "device" ? (bandwidthByDevice[s.id] ?? 0) : 0;
                   const intensity = bps > 0 ? Math.min(1, bps / maxBandwidth) : 0;
+                  // Direction matches how bandwidth is actually measured: from the device (source)
+                  // toward the core, i.e. traffic leaving that device's link, not an arbitrary
+                  // decoration — a link with no measured bandwidth gets no particle at all rather
+                  // than motion implying data that isn't there.
+                  const particleCount = intensity > 0.66 ? 3 : intensity > 0.33 ? 2 : 1;
+                  const durationSec = 1.8 - intensity * 1.3; // faster line = more traffic
                   return (
-                    <line
-                      key={i}
-                      x1={s.x}
-                      y1={s.y}
-                      x2={t.x}
-                      y2={t.y}
-                      stroke={intensity > 0 ? "rgb(var(--color-accent))" : "rgb(var(--color-border-strong))"}
-                      strokeOpacity={intensity > 0 ? 0.35 + intensity * 0.65 : dimmed ? 0.3 : 0.6}
-                      strokeWidth={(intensity > 0 ? 1.5 + intensity * 3.5 : 1.5) / view.k}
-                    >
-                      {intensity > 0 && <title>{formatBps(bps)}</title>}
-                    </line>
+                    <g key={i}>
+                      <line
+                        x1={s.x}
+                        y1={s.y}
+                        x2={t.x}
+                        y2={t.y}
+                        stroke={intensity > 0 ? "rgb(var(--color-accent))" : "rgb(var(--color-border-strong))"}
+                        strokeOpacity={intensity > 0 ? 0.35 + intensity * 0.65 : dimmed ? 0.3 : 0.6}
+                        strokeWidth={(intensity > 0 ? 1.5 + intensity * 3.5 : 1.5) / view.k}
+                      >
+                        {intensity > 0 && <title>{formatBps(bps)}</title>}
+                      </line>
+                      {intensity > 0 &&
+                        !reducedMotion &&
+                        Array.from({ length: particleCount }, (_, p) => (
+                          <circle key={p} r={2.4 / view.k} fill="rgb(var(--color-accent))">
+                            <animateMotion
+                              path={`M${s.x},${s.y} L${t.x},${t.y}`}
+                              dur={`${durationSec}s`}
+                              begin={`${(p * durationSec) / particleCount}s`}
+                              repeatCount="indefinite"
+                            />
+                          </circle>
+                        ))}
+                    </g>
                   );
                 })}
                 {nodes.map((n) => {
