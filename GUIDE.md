@@ -318,11 +318,20 @@ app, not just reasoned about:
   the feed URL and the download URL must be `https://`. See [§8](#8-cutting-a-release).
 - **Webhook notification targets** are blocked from pointing at loopback, link-local (including the
   cloud metadata endpoint `169.254.169.254`), and private/internal network ranges — a low-privilege
-  user configuring their own alert webhook can't turn it into an internal network scanner. This
-  guard applies only to webhook destinations, never to monitored device IPs — private/internal
-  addresses are exactly what an NMS is for.
-- **Session cookies** are `httpOnly` always, and `Secure` whenever the app is reachable over the
-  network (not on `exe` mode's `localhost`-only default).
+  user configuring their own alert webhook (`PUT /notification-prefs` only requires `viewer`) can't
+  turn it into an internal network scanner. This guard applies only to webhook destinations, never
+  to monitored device IPs — private/internal addresses are exactly what an NMS is for. Covers both
+  IPv4 and IPv6 (loopback `::1`, link-local `fe80::/10`, unique-local `fc00::/7`, and IPv4-mapped
+  `::ffff:a.b.c.d` addresses unwrapped to their embedded IPv4) — an earlier version only checked
+  IPv4 literals, so a hostname resolving to just an IPv6 address skipped validation entirely.
+- **Session cookies** are `httpOnly` and `SameSite=Lax` always. They are **not** marked `Secure`:
+  Argus has no built-in TLS termination and is designed to be reachable over plain `http://` on a
+  LAN (that's the whole point of the auto-added firewall rule — a colleague hitting
+  `http://<this-pc>:58070` from another machine on the same network); a `Secure` cookie would
+  simply never be sent back over that connection, breaking login entirely. **If you expose Argus
+  beyond a trusted LAN** (e.g. port-forwarded to the public internet), the session cookie travels
+  in cleartext on that path — put a TLS-terminating reverse proxy (nginx, Caddy, IIS ARR) in front
+  of it first. Don't port-forward 58070 directly to the internet.
 - Every database query across both the SQLite and Postgres adapters is parameterized — no SQL
   injection surface anywhere in the codebase.
 - Backup restore only ever extracts two fixed, hardcoded entry names from the uploaded archive

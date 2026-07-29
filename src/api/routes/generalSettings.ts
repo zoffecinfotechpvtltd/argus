@@ -41,7 +41,8 @@ async function assertSafeUpdateUrl(target: string): Promise<void> {
     throw new Error(`Could not resolve hostname: ${parsed.hostname}`);
   }
   for (const addr of addresses) {
-    if (addr.family !== 4) continue;
+    // Checked regardless of family — see ssrfGuard.ts; a hostname with only a AAAA record used to
+    // skip validation entirely here since the loop never found an IPv4 address to check.
     if (isBlockedAddress(addr.address)) throw new Error(`Blocked by SSRF guard: ${parsed.hostname} resolves to a link-local/loopback address`);
     if (isPrivateAddress(addr.address)) throw new Error(`Blocked by SSRF guard: ${parsed.hostname} resolves to a private network address`);
   }

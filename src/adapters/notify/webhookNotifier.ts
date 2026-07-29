@@ -41,7 +41,9 @@ async function validateWebhookUrl(target: string): Promise<string | null> {
   try {
     const addresses = await lookup(parsed.hostname, { all: true });
     for (const addr of addresses) {
-      if (addr.family !== 4) continue;
+      // Checked regardless of family — ssrfGuard understands both IPv4 and IPv6 literals now.
+      // Skipping IPv6 here used to mean a hostname with only a AAAA record (no A record) sailed
+      // through unchecked, since the loop found nothing to validate at all.
       if (isBlockedAddress(addr.address)) return `Blocked by SSRF guard: ${parsed.hostname} resolves to a link-local/loopback address`;
       if (isPrivateAddress(addr.address)) return `Blocked by SSRF guard: ${parsed.hostname} resolves to a private network address`;
     }
