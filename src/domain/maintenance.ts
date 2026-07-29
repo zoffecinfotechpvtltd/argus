@@ -35,15 +35,3 @@ export function isWindowActiveAt(window: MaintenanceWindow, atIso: string): bool
 export function isDeviceInMaintenance(windows: MaintenanceWindow[], deviceId: string, groupId: string | null, atIso: string): boolean {
   return windows.some((w) => (w.deviceId === deviceId || (w.groupId !== null && w.groupId === groupId)) && isWindowActiveAt(w, atIso));
 }
-
-export type MaintenanceWindowStatus = "active" | "upcoming" | "expired";
-
-/** UI-facing status label for a window row — "expired" only makes sense for a non-recurring window
- * (a recurring one is never truly over), so a recurring window is always "active" or "upcoming". */
-export function maintenanceWindowStatus(window: MaintenanceWindow, atIso: string): MaintenanceWindowStatus {
-  if (isWindowActiveAt(window, atIso)) return "active";
-  const at = new Date(atIso).getTime();
-  const start = new Date(window.startsAt).getTime();
-  if (at < start) return "upcoming";
-  return window.recurrence ? "upcoming" : "expired";
-}
