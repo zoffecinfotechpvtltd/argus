@@ -215,6 +215,10 @@ for one-time setup (license/release signing keypairs, Inno Setup, WinSW).
 
 ## Everything else
 
+**→ [DEPLOYMENT.md](./DEPLOYMENT.md)** — the from-scratch runbook: generating fresh signing keys,
+deploying the website, turning on auto-update, making your first sale, in order, start to finish.
+Use this if you're setting the whole thing up on a brand-new machine/account.
+
 **→ [GUIDE.md](./GUIDE.md)** is the full handbook: architecture, every page and what it does,
 security posture, the multi-site/VPN deployment question, hosting the download site, issuing
 licenses, a pre-sale verification checklist, troubleshooting, and the complete CLI/env-var/file
