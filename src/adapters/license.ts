@@ -16,6 +16,13 @@ export class FileLicenseService implements LicenseService {
   }
 
   async getState(): Promise<LicenseState> {
+    // Re-verify against the live clock on every read rather than trusting the cached value from
+    // construction/last applyLicenseFile() — Argus runs for weeks/months as a background service
+    // with no restart, so a status computed once at startup would silently keep reporting "valid"
+    // long after real-world expiry (and the grace period) had actually passed, since nothing else
+    // in the process was reloading it. This was caught by a test that renewed a license past its
+    // grace period without restarting the service and found the cached state still said "valid".
+    this.reload();
     return this.state;
   }
 

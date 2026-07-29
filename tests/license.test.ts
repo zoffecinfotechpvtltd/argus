@@ -1,10 +1,15 @@
 import { describe, expect, it } from "bun:test";
 import { generateKeyPairSync, sign as cryptoSign } from "node:crypto";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { buildTestContainer } from "./helpers/testContainer";
 import { createDevice } from "@application/devices/deviceUseCases";
 import { importDiscoveredDevices } from "@application/discovery/importDiscoveredDevices";
 import { LicenseLimitError } from "@application/license";
 import { DEFAULT_TENANT_ID } from "@domain/entities";
+import { FakeClock } from "@adapters/clock";
+import { FileLicenseService } from "@adapters/license";
 import {
   effectiveDeviceLimit,
   encodeLicenseFile,
@@ -78,6 +83,92 @@ describe("verifyLicenseFile", () => {
     const raw = issue(samplePayload({ expiresAt: "2027-01-01T00:00:00.000Z" }));
     const state = verifyLicenseFile(raw, PUBLIC_KEY_PEM, "2027-02-01T00:00:00.000Z");
     expect(state.status).toBe("expired");
+  });
+});
+
+describe("FileLicenseService renewal (the actual apply-a-new-license-over-an-old-one path)", () => {
+  // Regression coverage for the exact question "does renewing a license actually work": applying
+  // a fresh license file must always take effect immediately, regardless of whether the previous
+  // one was valid, in its grace period, or fully expired — a customer renewing late shouldn't be
+  // blocked by their own expired state.
+  async function withService(clock: FakeClock, fn: (svc: FileLicenseService) => Promise<void>) {
+    const dir = mkdtempSync(join(tmpdir(), "argus-license-test-"));
+    try {
+      await fn(new FileLicenseService(dir, PUBLIC_KEY_PEM, clock));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it("starts unlicensed with no license.key on disk", async () => {
+    await withService(new FakeClock(new Date("2026-06-01T00:00:00.000Z")), async (svc) => {
+      expect((await svc.getState()).status).toBe("unlicensed");
+    });
+  });
+
+  it("applies a fresh license and reflects it immediately", async () => {
+    await withService(new FakeClock(new Date("2026-06-01T00:00:00.000Z")), async (svc) => {
+      const raw = issue(samplePayload({ licenseId: "lic_a", customer: "Acme Corp", expiresAt: "2027-01-01T00:00:00.000Z" }));
+      const state = await svc.applyLicenseFile(raw);
+      expect(state.status).toBe("valid");
+      if (state.status === "valid") expect(state.payload.licenseId).toBe("lic_a");
+    });
+  });
+
+  it("renews over a still-valid license: new file fully replaces the old one", async () => {
+    await withService(new FakeClock(new Date("2026-06-01T00:00:00.000Z")), async (svc) => {
+      await svc.applyLicenseFile(issue(samplePayload({ licenseId: "lic_a", deviceLimit: 100, expiresAt: "2027-01-01T00:00:00.000Z" })));
+      const renewed = await svc.applyLicenseFile(
+        issue(samplePayload({ licenseId: "lic_b", deviceLimit: 250, expiresAt: "2028-01-01T00:00:00.000Z" }))
+      );
+      expect(renewed.status).toBe("valid");
+      if (renewed.status !== "valid") return;
+      expect(renewed.payload.licenseId).toBe("lic_b");
+      expect(renewed.payload.deviceLimit).toBe(250);
+    });
+  });
+
+  it("renews an EXPIRED license — the case that actually matters for a lapsed customer", async () => {
+    const clock = new FakeClock(new Date("2026-06-01T00:00:00.000Z"));
+    await withService(clock, async (svc) => {
+      await svc.applyLicenseFile(issue(samplePayload({ licenseId: "lic_old", expiresAt: "2026-07-01T00:00:00.000Z" })));
+      clock.set(new Date("2026-09-01T00:00:00.000Z")); // well past both expiry and the grace window
+      expect((await svc.getState()).status).toBe("expired");
+
+      const renewed = await svc.applyLicenseFile(issue(samplePayload({ licenseId: "lic_new", expiresAt: "2027-09-01T00:00:00.000Z" })));
+      expect(renewed.status).toBe("valid");
+      if (renewed.status === "valid") expect(renewed.payload.licenseId).toBe("lic_new");
+      expect((await svc.getState()).status).toBe("valid");
+    });
+  });
+
+  it("rejects a renewal file that fails verification, and leaves the previous license in force", async () => {
+    await withService(new FakeClock(new Date("2026-06-01T00:00:00.000Z")), async (svc) => {
+      await svc.applyLicenseFile(issue(samplePayload({ licenseId: "lic_a", expiresAt: "2027-01-01T00:00:00.000Z" })));
+      const badRaw = cryptoSign(null, Buffer.from(JSON.stringify(samplePayload({ licenseId: "lic_fake" }))), OTHER_KEYPAIR.privateKey);
+      const fakeFile = encodeLicenseFile(samplePayload({ licenseId: "lic_fake" }), badRaw);
+      await expect(svc.applyLicenseFile(fakeFile)).rejects.toThrow();
+
+      const state = await svc.getState();
+      expect(state.status).toBe("valid");
+      if (state.status === "valid") expect(state.payload.licenseId).toBe("lic_a");
+    });
+  });
+
+  it("persists across a reload() (simulated restart), reading the last-applied license back from disk", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "argus-license-test-"));
+    try {
+      const clock = new FakeClock(new Date("2026-06-01T00:00:00.000Z"));
+      const svc1 = new FileLicenseService(dir, PUBLIC_KEY_PEM, clock);
+      await svc1.applyLicenseFile(issue(samplePayload({ licenseId: "lic_persisted", expiresAt: "2027-01-01T00:00:00.000Z" })));
+
+      const svc2 = new FileLicenseService(dir, PUBLIC_KEY_PEM, clock);
+      const state = await svc2.getState();
+      expect(state.status).toBe("valid");
+      if (state.status === "valid") expect(state.payload.licenseId).toBe("lic_persisted");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

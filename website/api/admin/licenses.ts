@@ -4,7 +4,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { requireSession } from "../../lib/adminAuth.js";
 import { escapeHtml, sendMail } from "../../lib/mail.js";
-import { isKvConfigured, lpushCapped, lrange } from "../../lib/kv.js";
+import { isKvConfigured, lpushCapped, lrange, lrem } from "../../lib/kv.js";
 import { rateLimit } from "../../lib/rateLimit.js";
 import {
   type LicensePlan,
@@ -73,8 +73,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
+  if (req.method === "DELETE") {
+    // Removes an entry from this portal's issuance history log only — it is NOT an online
+    // revocation check. Argus licenses are self-contained signed files verified offline
+    // (src/domain/license.ts): the on-prem product never calls home, so nothing server-side can
+    // stop an already-issued license file from continuing to work wherever it was applied. This
+    // is bookkeeping ("we don't consider this customer active anymore, stop showing it here"),
+    // not a kill switch — see GUIDE.md for the tradeoffs of the offline-licensing design.
+    if (!isKvConfigured()) return res.status(400).json({ error: "NOT_CONFIGURED", message: "No KV store configured — nothing to delete." });
+    const licenseId = (req.query.licenseId as string | undefined) || (req.body as { licenseId?: string } | undefined)?.licenseId;
+    if (!licenseId) return res.status(400).json({ error: "MISSING_LICENSE_ID", message: "licenseId is required." });
+
+    try {
+      const raw = await lrange(HISTORY_KEY, 0, HISTORY_MAX - 1);
+      const matches = raw.filter((entry) => {
+        try {
+          return (JSON.parse(entry) as IssuedRecord).licenseId === licenseId;
+        } catch {
+          return false;
+        }
+      });
+      if (matches.length === 0) return res.status(404).json({ error: "NOT_FOUND", message: "No history entry with that license ID." });
+      for (const entry of matches) await lrem(HISTORY_KEY, entry);
+      return res.status(200).json({ ok: true, removed: matches.length });
+    } catch (err) {
+      console.error("failed to delete license history entry", err);
+      return res.status(500).json({ error: "DELETE_FAILED", message: "Could not delete history entry." });
+    }
+  }
+
   if (req.method !== "POST") {
-    res.setHeader("Allow", "GET, POST");
+    res.setHeader("Allow", "GET, POST, DELETE");
     return res.status(405).json({ error: "Method not allowed" });
   }
 

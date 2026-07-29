@@ -33,6 +33,15 @@ export async function lrange(key: string, start: number, stop: number): Promise<
   return Array.isArray(result) ? (result as string[]) : [];
 }
 
+/** Removes every element exactly equal to `member` from the list — the value must be the exact
+ * raw string previously read back from lrange (Redis LREM does string equality, not JSON
+ * equality), which is why callers re-fetch the list and pass the raw entry back rather than
+ * re-serializing a parsed object. Returns the number of elements removed. */
+export async function lrem(key: string, member: string): Promise<number> {
+  const result = await command("LREM", key, 0, member);
+  return typeof result === "number" ? result : 0;
+}
+
 /** Fixed-window rate limit: returns the request count for `key` within the current window,
  * incrementing it and setting the window's expiry on first use. */
 export async function incrWithExpiry(key: string, windowSeconds: number): Promise<number> {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { History, Mail, MailX } from "lucide-react";
+import { History, Mail, MailX, Trash2 } from "lucide-react";
 import { PLAN_DEVICE_RANGES, type LicensePlan } from "./planData";
 
 interface IssuedRecord {
@@ -17,6 +17,7 @@ export function LicenseHistory({ refreshKey }: { refreshKey: number }) {
   const [configured, setConfigured] = useState(true);
   const [records, setRecords] = useState<IssuedRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -29,6 +30,31 @@ export function LicenseHistory({ refreshKey }: { refreshKey: number }) {
       .catch(() => setConfigured(false))
       .finally(() => setLoading(false));
   }, [refreshKey]);
+
+  async function handleDelete(record: IssuedRecord) {
+    const isPerpetual = new Date(record.expiresAt).getFullYear() > new Date().getFullYear() + 40;
+    const expiryNote = isPerpetual ? "" : ` (expired/expires ${new Date(record.expiresAt).toLocaleDateString()})`;
+    const confirmed = window.confirm(
+      `Remove ${record.customer}'s license${expiryNote} from this history list?\n\n` +
+        "This only removes it from your records here — Argus licenses are verified offline, so it does NOT " +
+        "disable a license file already delivered to the customer."
+    );
+    if (!confirmed) return;
+
+    setDeletingId(record.licenseId);
+    try {
+      const res = await fetch(`/api/admin/licenses?licenseId=${encodeURIComponent(record.licenseId)}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || `Delete failed (${res.status})`);
+      }
+      setRecords((prev) => prev.filter((r) => r.licenseId !== record.licenseId));
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Delete failed.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <section className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
@@ -57,24 +83,43 @@ export function LicenseHistory({ refreshKey }: { refreshKey: number }) {
                 <th className="py-2 pr-4">Issued</th>
                 <th className="py-2 pr-4">Expires</th>
                 <th className="py-2 pr-4">Emailed</th>
+                <th className="py-2 pr-0" />
               </tr>
             </thead>
             <tbody>
-              {records.map((r) => (
-                <tr key={r.licenseId} className="border-b border-border/60">
-                  <td className="py-2 pr-4">
-                    {r.customer}
-                    <div className="text-xs text-dim">{r.contactEmail}</div>
-                  </td>
-                  <td className="py-2 pr-4">{PLAN_DEVICE_RANGES[r.plan]?.label ?? r.plan}</td>
-                  <td className="py-2 pr-4 tabular-nums">{r.deviceLimit}</td>
-                  <td className="py-2 pr-4">{new Date(r.issuedAt).toLocaleDateString()}</td>
-                  <td className="py-2 pr-4">{new Date(r.expiresAt).getFullYear() > new Date().getFullYear() + 40 ? "Perpetual" : new Date(r.expiresAt).toLocaleDateString()}</td>
-                  <td className="py-2 pr-4">
-                    {r.emailed ? <Mail size={15} className="text-accent" /> : <MailX size={15} className="text-dim" />}
-                  </td>
-                </tr>
-              ))}
+              {records.map((r) => {
+                const isPerpetual = new Date(r.expiresAt).getFullYear() > new Date().getFullYear() + 40;
+                const isExpired = !isPerpetual && new Date(r.expiresAt).getTime() < Date.now();
+                return (
+                  <tr key={r.licenseId} className={`border-b border-border/60 ${isExpired ? "opacity-60" : ""}`}>
+                    <td className="py-2 pr-4">
+                      {r.customer}
+                      <div className="text-xs text-dim">{r.contactEmail}</div>
+                    </td>
+                    <td className="py-2 pr-4">{PLAN_DEVICE_RANGES[r.plan]?.label ?? r.plan}</td>
+                    <td className="py-2 pr-4 tabular-nums">{r.deviceLimit}</td>
+                    <td className="py-2 pr-4">{new Date(r.issuedAt).toLocaleDateString()}</td>
+                    <td className="py-2 pr-4">
+                      {isPerpetual ? "Perpetual" : new Date(r.expiresAt).toLocaleDateString()}
+                      {isExpired && <span className="ml-2 rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-500">Expired</span>}
+                    </td>
+                    <td className="py-2 pr-4">
+                      {r.emailed ? <Mail size={15} className="text-accent" /> : <MailX size={15} className="text-dim" />}
+                    </td>
+                    <td className="py-2 pr-0 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(r)}
+                        disabled={deletingId === r.licenseId}
+                        title="Remove from this history list (does not revoke the delivered license file)"
+                        className="rounded-md p-1.5 text-dim transition-colors hover:bg-red-500/10 hover:text-red-500 disabled:opacity-40"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
