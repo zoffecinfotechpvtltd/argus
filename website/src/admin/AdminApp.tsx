@@ -47,12 +47,22 @@ export function AdminApp() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas font-sans text-fog">
+    <div className="relative min-h-screen overflow-hidden bg-canvas font-sans text-fog">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[420px] opacity-40 [mask-image:linear-gradient(180deg,black,transparent)]"
+        style={{ backgroundImage: "radial-gradient(rgb(var(--color-text-primary) / 0.14) 1px, transparent 1px)", backgroundSize: "28px 28px" }}
+        aria-hidden="true"
+      />
+      <div className="pointer-events-none absolute -top-32 left-1/2 -z-10 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-accent/10 blur-[110px]" aria-hidden="true" />
+
       <header className="border-b border-border">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
             <ArgusMark className="h-7 w-7" />
-            <span className="font-display text-base font-semibold tracking-tight">Argus — License Portal</span>
+            <div>
+              <span className="block font-display text-base font-semibold tracking-tight">License Portal</span>
+              <span className="block text-[11px] text-dim">Internal — never linked from the public site</span>
+            </div>
           </div>
           {session === "signedIn" && (
             <button onClick={handleLogout} className="text-sm text-muted transition-colors hover:text-fog">
@@ -62,13 +72,13 @@ export function AdminApp() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-10">
+      <main className="mx-auto max-w-5xl px-6 py-10">
         {backendError && (
           <div className="mx-auto mb-6 max-w-sm rounded-lg border border-status-critical/30 bg-status-critical/5 p-3 text-xs text-status-critical">
             Backend error: {backendError}
           </div>
         )}
-        {session === "checking" && <div className="text-sm text-muted">Checking session…</div>}
+        {session === "checking" && <div className="py-20 text-center text-sm text-muted">Checking session…</div>}
 
         {session === "signedOut" && <LoginForm onSignedIn={() => setSession("signedIn")} />}
 

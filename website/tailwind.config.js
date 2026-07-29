@@ -1,8 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  // Light is this site's flagship system (editorial, Apple-inspired) — dark is a derived
-  // secondary, toggled via [data-theme] same as the product app, see src/hooks/useTheme.ts.
-  // Defaults to light on first visit (see public/theme-init.js).
+  // Dark (a NOC command-center system) is this site's flagship — light is a derived secondary,
+  // toggled via [data-theme] same as the product app, see src/hooks/useTheme.ts. Defaults to dark
+  // on first visit (see public/theme-init.js). This darkMode config is otherwise unused — every
+  // color here is a CSS custom property that already flips with [data-theme], not Tailwind's
+  // `dark:` variant, which this codebase doesn't use anywhere.
   darkMode: ["selector", '[data-theme="dark"]'],
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {

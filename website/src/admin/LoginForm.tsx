@@ -30,9 +30,9 @@ export function LoginForm({ onSignedIn }: { onSignedIn: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="mx-auto mt-16 max-w-sm rounded-2xl border border-border bg-surface p-8">
+    <form onSubmit={submit} className="mx-auto mt-16 max-w-sm rounded-2xl border border-border bg-surface p-8 shadow-soft-lg">
       <div className="mb-6 flex items-center gap-2 text-muted">
-        <Lock size={18} />
+        <Lock size={16} className="text-accent" aria-hidden="true" />
         <span className="text-sm">Root admin only</span>
       </div>
       <label className="mb-1.5 block text-sm text-muted">Password</label>

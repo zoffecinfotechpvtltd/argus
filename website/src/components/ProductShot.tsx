@@ -12,6 +12,8 @@ const DEVICES = [
   { name: "edge-fw-02", ip: "10.0.1.2", latency: "4.8ms", status: "up" as const },
   { name: "db-primary", ip: "10.0.4.10", latency: "—", status: "down" as const },
   { name: "app-server-02", ip: "10.0.4.21", latency: "18ms", status: "up" as const },
+  { name: "switch-floor3", ip: "10.0.2.14", latency: "0.6ms", status: "up" as const },
+  { name: "ap-lobby-02", ip: "10.0.3.40", latency: "3.1ms", status: "up" as const },
 ];
 
 const DOT = { up: "bg-emerald-500", down: "bg-red-500" };
@@ -53,9 +55,10 @@ export function ProductShot({ className = "" }: { className?: string }) {
         </div>
 
         <div className="p-4 sm:p-5">
-          <div className="mb-3 grid grid-cols-3 gap-2.5">
+          <div className="mb-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <Stat label="Devices" value="128" />
             <Stat label="Uptime" value="99.98%" />
+            <Stat label="Avg latency" value="6ms" />
             <Stat label="Open alerts" value="1" accent />
           </div>
 

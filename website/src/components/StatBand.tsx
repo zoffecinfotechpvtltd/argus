@@ -9,7 +9,7 @@ const STATS = [
 export function StatBand() {
   return (
     <section className="bg-accent-subtle py-16">
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto max-w-6xl px-6">
         <div className="grid grid-cols-1 gap-10 text-center sm:grid-cols-3">
           {STATS.map((s, i) => (
             <ScrollReveal key={s.label} delay={i * 0.08}>

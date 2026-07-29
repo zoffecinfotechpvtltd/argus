@@ -10,7 +10,7 @@ const QUICK_SPECS = [
 export function Features() {
   return (
     <section id="features" className="relative bg-canvas py-24 sm:py-32">
-      <div className="mx-auto max-w-5xl px-6">
+      <div className="mx-auto max-w-6xl px-6">
         <ScrollReveal className="mx-auto mb-20 max-w-xl text-center">
           <span className="text-[13px] font-medium text-accent">What you get</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">

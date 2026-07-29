@@ -51,46 +51,64 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
 
   return (
     <section id="contact" className="bg-canvas py-24 sm:py-32">
-      <div className="mx-auto max-w-lg px-6">
-        <ScrollReveal className="mb-12 text-center">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-16 px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12">
+        <ScrollReveal>
           <span className="text-[13px] font-medium text-accent">Talk to sales</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
             Tell us about your network.
           </h2>
-          <p className="mt-3 text-muted">
-            Or email us directly at{" "}
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">
+            No self-serve checkout — tell us your device count and what you're running, and we'll quote the right
+            tier. Prefer email? Reach us directly at{" "}
             <a href={`mailto:${SITE.contactEmail}`} className="text-accent underline underline-offset-2">
               {SITE.contactEmail}
             </a>
             .
           </p>
+
+          <ol className="mt-10 grid max-w-md gap-6">
+            {[
+              { title: "You tell us the basics", body: "Device count, what you're monitoring, which tier looks right." },
+              { title: "We quote it", body: "Usually within one business day — a flat price by device count, no seats." },
+              { title: "You get a license key", body: "Paste it into Settings → License and the device cap lifts immediately." },
+            ].map((step, i) => (
+              <li key={step.title} className="flex gap-4">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-subtle font-mono text-[11px] font-semibold text-accent">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="text-[14px] font-semibold text-fog">{step.title}</p>
+                  <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">{step.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
         </ScrollReveal>
 
         <ScrollReveal delay={0.1}>
-          <form onSubmit={handleSubmit} className="grid gap-5">
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <Field label="Name">
-                <input required value={name} onChange={(e) => setName(e.target.value)} className="input" autoComplete="name" />
-              </Field>
-              <Field label="Work email">
-                <input
-                  required
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input"
-                  autoComplete="email"
-                />
-              </Field>
-            </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <Field label="Company">
-                <input value={company} onChange={(e) => setCompany(e.target.value)} className="input" autoComplete="organization" />
-              </Field>
-              <Field label="Approx. device count">
-                <input value={devices} onChange={(e) => setDevices(e.target.value)} className="input" placeholder="e.g. 150" inputMode="numeric" />
-              </Field>
-            </div>
+          <form
+            onSubmit={handleSubmit}
+            className="grid gap-5 rounded-2xl border border-border bg-surface p-6 shadow-soft sm:p-8"
+          >
+            <Field label="Name">
+              <input required value={name} onChange={(e) => setName(e.target.value)} className="input" autoComplete="name" />
+            </Field>
+            <Field label="Work email">
+              <input
+                required
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input"
+                autoComplete="email"
+              />
+            </Field>
+            <Field label="Company">
+              <input value={company} onChange={(e) => setCompany(e.target.value)} className="input" autoComplete="organization" />
+            </Field>
+            <Field label="Approx. device count">
+              <input value={devices} onChange={(e) => setDevices(e.target.value)} className="input" placeholder="e.g. 150" inputMode="numeric" />
+            </Field>
             <Field label="Plan you're interested in">
               <select value={plan} onChange={(e) => onPlanChange(e.target.value)} className="input">
                 <option value="">Select a plan…</option>
@@ -106,7 +124,7 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="w-full resize-none rounded-lg border border-border bg-transparent px-3.5 py-2.5 text-sm text-fog placeholder:text-dim transition-colors focus:border-fog focus:outline-none"
-                rows={4}
+                rows={3}
                 placeholder="Anything else we should know?"
               />
             </Field>

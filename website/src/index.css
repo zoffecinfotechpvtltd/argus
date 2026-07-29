@@ -4,19 +4,44 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Light is the flagship now — a restrained, editorial system (single Inter family, one
-   deliberately muted purple accent, generous whitespace) rather than the dark neon-on-black
-   treatment this site used before. Dark stays available as a toggle with the old palette. */
+/* Dark is the flagship now: a NOC command-center system — a near-black substrate, hairline
+   borders doing the work shadows used to, one accent color (the brand mark's purple) used
+   sparingly, and low type weights over a tight scale. Justified by the subject, not decoration:
+   Argus's whole job is a screen someone glances at in a dim room to see if anything's on fire.
+   Light stays available as a toggle (the old editorial system) for anyone who prefers it. */
 :root {
   /* Tells the browser which native-widget theme to use for things our CSS can't reach — <select>
      dropdown popups, checkboxes/date-pickers in some browsers, scrollbars. Without this, a native
-     select's popup list renders in the OS default (light) even on a dark page, since it isn't
-     styled by our tokens at all. */
+     select's popup list renders in the OS default even when it doesn't match the page, since it
+     isn't styled by our tokens at all. */
+  color-scheme: dark;
+  --color-canvas: 8 8 10; /* #08080A */
+  --color-surface: 18 18 21; /* #121215 */
+  --color-elevated: 27 27 31; /* #1B1B1F */
+  --color-border: 42 42 48; /* #2A2A30 */
+  --color-text-primary: 245 245 247; /* #F5F5F7 */
+  --color-text-secondary: 152 152 160; /* #9898A0 */
+  --color-text-muted: 104 104 112; /* #686870 */
+  --color-accent: 167 139 250; /* #A78BFA */
+  --color-accent-hover: 196 181 253; /* #C4B5FD */
+  --color-accent-active: 124 58 237; /* #7C3AED */
+  --color-accent-subtle: 41 32 66; /* #292042 */
+  --color-accent-secondary: 129 140 248; /* #818CF8 */
+  --color-accent-text-on: 15 15 17; /* #0F0F11 */
+  --color-success: 52 211 153; /* #34D399 */
+  --color-warning: 251 191 36; /* #FBBF24 */
+  --color-critical: 248 113 113; /* #F87171 */
+  --color-info: 96 165 250; /* #60A5FA */
+}
+
+/* Light is a true secondary system here — same restrained spirit, inverted: warm-white canvas,
+   the darker/original accent shade for AA contrast on white. */
+[data-theme="light"] {
   color-scheme: light;
   --color-canvas: 251 251 253; /* #FBFBFD */
   --color-surface: 255 255 255;
   --color-elevated: 255 255 255;
-  --color-border: 210 210 215; /* #D2D2D7 */
+  --color-border: 224 224 229; /* #E0E0E5 */
   --color-text-primary: 29 29 31; /* #1D1D1F */
   --color-text-secondary: 110 110 115; /* #6E6E73 */
   --color-text-muted: 134 134 139; /* #86868B */
@@ -30,31 +55,6 @@
   --color-warning: 217 119 6; /* #D97706, darker for AA on white */
   --color-critical: 220 38 38; /* #DC2626, darker for AA on white */
   --color-info: 37 99 235; /* #2563EB */
-}
-
-/* Dark is a true secondary system here — same restrained editorial spirit as light (near-black
-   canvas, one accent, minimal chrome), not the old neon-on-black treatment. accent-text-on flips
-   to a near-black so button text stays readable against the lighter accent this theme needs for
-   contrast against black. */
-[data-theme="dark"] {
-  color-scheme: dark;
-  --color-canvas: 0 0 0; /* #000000 */
-  --color-surface: 28 28 30; /* #1C1C1E */
-  --color-elevated: 44 44 46; /* #2C2C2E */
-  --color-border: 56 56 58; /* #38383A */
-  --color-text-primary: 245 245 247; /* #F5F5F7 */
-  --color-text-secondary: 152 152 157; /* #98989D */
-  --color-text-muted: 110 110 115; /* #6E6E73 */
-  --color-accent: 167 139 250; /* #A78BFA */
-  --color-accent-hover: 196 181 253; /* #C4B5FD */
-  --color-accent-active: 124 58 237; /* #7C3AED */
-  --color-accent-subtle: 45 33 74; /* #2D214A */
-  --color-accent-secondary: 129 140 248; /* #818CF8 */
-  --color-accent-text-on: 17 17 19; /* #111113 */
-  --color-success: 52 211 153; /* #34D399 */
-  --color-warning: 251 191 36; /* #FBBF24 */
-  --color-critical: 248 113 113; /* #F87171 */
-  --color-info: 96 165 250; /* #60A5FA */
 }
 
 html, body, #root { height: 100%; }

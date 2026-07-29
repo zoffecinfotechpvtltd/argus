@@ -11,6 +11,7 @@ import { Pricing } from "./components/Pricing";
 import { FAQ } from "./components/FAQ";
 import { Contact } from "./components/Contact";
 import { Footer } from "./components/Footer";
+import { PulseDivider } from "./components/PulseDivider";
 import { RELEASE } from "./config";
 
 export function App() {
@@ -28,9 +29,11 @@ export function App() {
       <Outcomes />
       <StatBand />
       <Comparison />
+      <PulseDivider />
       <Features />
       <HowItWorks />
       <Alerting />
+      <PulseDivider />
       <Pricing onSelectPlan={selectPlan} />
       <FAQ />
       <Contact plan={plan} onPlanChange={setPlan} />

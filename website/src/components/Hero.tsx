@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
 import { ProductShot } from "./ProductShot";
+import { Atmosphere } from "./Atmosphere";
 import { SITE } from "../config";
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
 
 export function Hero({ downloadUrl }: { downloadUrl: string }) {
   return (
-    <section id="top" className="relative bg-canvas pb-8 pt-20 sm:pt-28">
-      <div className="mx-auto max-w-3xl px-6 text-center">
+    <section id="top" className="relative overflow-hidden bg-canvas pb-8 pt-20 sm:pt-28">
+      <Atmosphere />
+      <div className="relative mx-auto max-w-3xl px-6 text-center">
         <motion.span
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -73,8 +75,13 @@ export function Hero({ downloadUrl }: { downloadUrl: string }) {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.3, ease: easeOut }}
-        className="mx-auto mt-14 max-w-4xl px-6"
+        className="relative mx-auto mt-14 max-w-5xl px-6"
       >
+        {/* The one lit thing in the room: a soft accent glow behind the screenshot, standing in
+            for the shadow a light-flagship page would use — shadows don't read on a near-black
+            canvas, but a glow does, and it's a more honest metaphor for a monitoring dashboard
+            anyway. */}
+        <div className="absolute inset-x-12 -top-6 bottom-0 -z-10 rounded-[40px] bg-accent/20 blur-[90px]" aria-hidden="true" />
         <ProductShot />
       </motion.div>
     </section>
