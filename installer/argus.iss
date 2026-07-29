@@ -65,9 +65,59 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a desktop shortcut to the Argus dashboard"; GroupDescription: "Additional shortcuts:"
 
 [Code]
+var
+  DataDirPage: TInputDirWizardPage;
+
+// Only asked on a genuinely fresh install — src/bootstrap/config.ts reads dataDir from config.json
+// (falling back to "./data" next to the exe if that file doesn't exist), so an existing config.json
+// means either an upgrade over a working install or a reinstall after uninstall-without-full-wipe;
+// either way, silently changing where Argus looks for its device inventory/history mid-upgrade
+// would be far more surprising than just leaving it alone.
+function HasExistingConfig(): Boolean;
+begin
+  Result := FileExists(ExpandConstant('{app}\config.json'));
+end;
+
+procedure InitializeWizard();
+begin
+  DataDirPage := CreateInputDirPage(
+    wpSelectDir,
+    'Choose Data Location',
+    'Where should Argus store its device inventory, monitoring history, and settings?',
+    'This can be on a different drive if you want monitoring data kept separate from the install ' +
+      '(e.g. a larger data disk). You can''t easily move it later without manually copying the folder, ' +
+      'so pick somewhere with enough free space for long-term history.',
+    False, ''
+  );
+  DataDirPage.Add('');
+  DataDirPage.Values[0] := ExpandConstant('{app}\data');
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  // Upgrade/reinstall over a working install: config.json already pins a dataDir (possibly a
+  // custom one from a previous run of this same page), so don't ask again.
+  if PageID = DataDirPage.ID then
+    Result := HasExistingConfig()
+  else
+    Result := False;
+end;
+
+// JSON has no native path type, and Windows paths contain backslashes ("\"), which JSON reads as
+// the start of an escape sequence — "C:\data" is invalid JSON, "C:\\data" is valid-but-ugly. This
+// codebase's own convention (see src/bootstrap/config.ts callers and GUIDE.md) is to just use
+// forward slashes throughout; Node/Bun accept them fine on Windows, and it keeps config.json
+// human-editable without tripping over escaping.
+function ToJsonPath(Path: String): String;
+begin
+  StringChangeEx(Path, '\', '/', True);
+  Result := Path;
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
+  ChosenDataDir: String;
 begin
   // Stops the service (if one is running from a previous install) before [Files] tries to
   // overwrite Argus.exe / Argus-service.exe — Windows locks a running process's own binary, so
@@ -82,6 +132,19 @@ begin
     // exited and released its file handles — a fixed pause here is cheaper and more robust than
     // polling "sc query" for STOPPED, for a process this lightweight.
     if ResultCode = 0 then Sleep(2000);
+  end;
+
+  // Runs after [Files] but before [Run] (which is what actually invokes --install-service), so the
+  // service picks up the chosen path from the moment it first starts rather than defaulting to
+  // {app}\data and needing a manual edit + restart afterward.
+  if (CurStep = ssPostInstall) and (not HasExistingConfig()) then begin
+    ChosenDataDir := DataDirPage.Values[0];
+    ForceDirectories(ChosenDataDir);
+    SaveStringToFile(
+      ExpandConstant('{app}\config.json'),
+      '{' + #13#10 + '  "dataDir": "' + ToJsonPath(ChosenDataDir) + '"' + #13#10 + '}' + #13#10,
+      False
+    );
   end;
 end;
 

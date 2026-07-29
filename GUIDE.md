@@ -751,7 +751,7 @@ installer already runs `--install-service` for you:
 | Variable | Meaning |
 |---|---|
 | `PORT` | default `58070` — fixed, fails fast (doesn't auto-increment) if already in use |
-| `DATA_DIR` | default `./data` |
+| `DATA_DIR` | default `./data`. The installer wizard prompts for this on a fresh install ("Choose Data Location", right after picking the install folder) and writes the chosen path into `config.json` — pick a different drive here if you want monitoring history kept off the OS disk. Only asked once: reinstalling over an existing install (i.e. `config.json` already exists) skips the prompt and keeps whatever's already configured. |
 | `LOG_LEVEL` | `debug` / `info` (default) / `warn` / `error` |
 | `INSTANCE_NAME` | default `Argus` |
 | `UPDATE_CHECK_URL` | must be `https://`; empty disables auto-update |
