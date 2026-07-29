@@ -16,9 +16,9 @@ export function Footer({ downloadUrl }: { downloadUrl: string }) {
         </div>
 
         <div className="mt-14 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-7">
-          <a href="#top" className="flex items-center gap-2">
-            <ArgusMark size={18} />
-            <span className="font-display text-fluid-sm font-semibold tracking-tight text-muted">Argus</span>
+          <a href="#top" className="flex items-center gap-2.5">
+            <ArgusMark size={30} />
+            <span className="font-display text-fluid-lg font-semibold tracking-tight text-fog">Argus</span>
           </a>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-fluid-sm text-dim">
             <span>© {SITE.companyName || "Argus"}</span>

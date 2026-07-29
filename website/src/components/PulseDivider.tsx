@@ -14,7 +14,6 @@
 export function PulseDivider({ className = "" }: { className?: string }) {
   return (
     <div className={`relative flex h-16 w-full items-center justify-center ${className}`} aria-hidden="true">
-      <div className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-border" />
       <svg viewBox="0 0 400 24" preserveAspectRatio="xMidYMid meet" className="relative h-8 w-[280px] text-accent sm:w-[400px]">
         <path
           d="M0,12 L150,12 L168,3 L186,21 L204,3 L222,21 L240,12 L400,12"
