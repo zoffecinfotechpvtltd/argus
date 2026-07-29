@@ -27,16 +27,6 @@ export const PLAN_DEVICE_RANGES: Record<LicensePlan, { label: string; min: numbe
   pro: { label: "Pro", min: 51, max: 1000 },
 };
 
-/** Which plan a given device count would normally be sold under — a suggestion for the license
- * issuer UI/CLI, not something enforced (a customer can be issued any plan at any device count). */
-export function suggestPlanForDeviceCount(devices: number): LicensePlan {
-  for (const plan of LICENSE_PLANS) {
-    const range = PLAN_DEVICE_RANGES[plan];
-    if (devices >= range.min && (range.max === null || devices <= range.max)) return plan;
-  }
-  return "unlimited";
-}
-
 export interface LicensePayload {
   licenseId: string;
   customer: string;
