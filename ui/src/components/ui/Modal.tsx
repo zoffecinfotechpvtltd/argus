@@ -11,6 +11,10 @@ export interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   labelledBy?: string;
+  /** Overrides the dialog's accessible name with a plain string via aria-label instead of
+   * aria-labelledby — for the rare case where `title` itself isn't suitable screen-reader text
+   * (e.g. it contains interactive controls like a "Skip" button, not just a heading). */
+  ariaLabel?: string;
   /** Panel width. Defaults to "md" (the original fixed `max-w-md`) so every existing call site is
    * unaffected — "lg"/"xl" are opt-in for content that needs more room (e.g. a calendar-style grid). */
   size?: "md" | "lg" | "xl";
@@ -32,7 +36,7 @@ const SIZE_CLASS: Record<NonNullable<ModalProps["size"]>, string> = {
  * whatever triggered it on close. MASTER.md's `.modal`/`.modal-overlay` spec, made actually usable
  * with a keyboard or screen reader — every hand-rolled "fixed inset-0 backdrop + centered box" in
  * this app had none of that. */
-export function Modal({ open, onClose, title, children, footer, labelledBy, size = "md", variant = "center" }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, labelledBy, ariaLabel, size = "md", variant = "center" }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useRef(labelledBy ?? `modal-title-${Math.random().toString(36).slice(2)}`).current;
   const triggerRef = useRef<Element | null>(null);
@@ -94,7 +98,8 @@ export function Modal({ open, onClose, title, children, footer, labelledBy, size
           ref={panelRef}
           role="dialog"
           aria-modal="true"
-          aria-labelledby={titleId}
+          aria-labelledby={ariaLabel ? undefined : titleId}
+          aria-label={ariaLabel}
           tabIndex={-1}
           className={`absolute inset-y-0 right-0 flex w-full ${SIZE_CLASS[size]} flex-col rounded-l-lg border-l border-border bg-bg-elevated shadow-lg outline-none transition-transform duration-200 ease-out ${
             entered ? "translate-x-0" : "translate-x-full"
@@ -120,7 +125,8 @@ export function Modal({ open, onClose, title, children, footer, labelledBy, size
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={titleId}
+        aria-labelledby={ariaLabel ? undefined : titleId}
+        aria-label={ariaLabel}
         tabIndex={-1}
         className={`relative w-full ${SIZE_CLASS[size]} rounded-lg border border-border bg-bg-elevated p-6 shadow-lg outline-none`}
       >

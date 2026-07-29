@@ -47,6 +47,7 @@ async function makeUser(app: AppContainer, role: "admin" | "operator" | "viewer"
     totpEnabled: false,
     failedLoginCount: 0,
     lockedUntil: null,
+    onboardingCompletedAt: null,
     createdAt: now,
     updatedAt: now,
   });

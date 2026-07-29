@@ -162,7 +162,17 @@ export function authRoutes(app: AppContainer) {
       tenantId: user.tenantId,
       forcePasswordReset: user.forcePasswordReset,
       totpEnabled: user.totpEnabled,
+      onboardingCompletedAt: user.onboardingCompletedAt,
     });
+  });
+
+  // Marks the first-login walkthrough as done (finished or explicitly skipped) so it never shows
+  // again for this account. No role requirement beyond being signed in — same as the TOTP
+  // self-enrollment routes below, this is a per-user preference, not an admin-gated setting.
+  router.post("/auth/onboarding-complete", requireAuth(app), async (c) => {
+    const user = c.get("user");
+    await app.repos.user.update(user.tenantId, user.id, { onboardingCompletedAt: app.clock.nowIso() });
+    return c.json({ ok: true });
   });
 
   // --- TOTP 2FA self-enrollment (any signed-in user manages their own — not admin-gated) ---

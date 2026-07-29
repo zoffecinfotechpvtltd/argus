@@ -17,6 +17,7 @@ function rowToUser(r: any): User {
     failedLoginCount: r.failed_login_count ?? 0,
     lockedUntil: r.locked_until,
     scopedGroupIds: r.scoped_group_ids ? JSON.parse(r.scoped_group_ids) : null,
+    onboardingCompletedAt: r.onboarding_completed_at ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -28,8 +29,8 @@ export class SqliteUserRepo implements UserRepo {
   async create(u: User): Promise<User> {
     this.db
       .query<any, any>(
-        `INSERT INTO users (id, tenant_id, email, password_hash, role, force_password_reset, disabled, email_verified_at, totp_secret, totp_enabled, failed_login_count, locked_until, scoped_group_ids, created_at, updated_at)
-         VALUES ($id,$tenant_id,$email,$password_hash,$role,$force_password_reset,$disabled,$email_verified_at,$totp_secret,$totp_enabled,$failed_login_count,$locked_until,$scoped_group_ids,$created_at,$updated_at)`
+        `INSERT INTO users (id, tenant_id, email, password_hash, role, force_password_reset, disabled, email_verified_at, totp_secret, totp_enabled, failed_login_count, locked_until, scoped_group_ids, onboarding_completed_at, created_at, updated_at)
+         VALUES ($id,$tenant_id,$email,$password_hash,$role,$force_password_reset,$disabled,$email_verified_at,$totp_secret,$totp_enabled,$failed_login_count,$locked_until,$scoped_group_ids,$onboarding_completed_at,$created_at,$updated_at)`
       )
       .run({
         $id: u.id,
@@ -45,6 +46,7 @@ export class SqliteUserRepo implements UserRepo {
         $failed_login_count: u.failedLoginCount ?? 0,
         $locked_until: u.lockedUntil ?? null,
         $scoped_group_ids: u.scopedGroupIds ? JSON.stringify(u.scopedGroupIds) : null,
+        $onboarding_completed_at: u.onboardingCompletedAt ?? null,
         $created_at: u.createdAt,
         $updated_at: u.updatedAt,
       });
@@ -59,7 +61,8 @@ export class SqliteUserRepo implements UserRepo {
       .query<any, any>(
         `UPDATE users SET email=$email, password_hash=$password_hash, role=$role, force_password_reset=$force_password_reset,
          disabled=$disabled, email_verified_at=$email_verified_at, totp_secret=$totp_secret, totp_enabled=$totp_enabled,
-         failed_login_count=$failed_login_count, locked_until=$locked_until, scoped_group_ids=$scoped_group_ids, updated_at=$updated_at WHERE id=$id AND tenant_id=$tenant_id`
+         failed_login_count=$failed_login_count, locked_until=$locked_until, scoped_group_ids=$scoped_group_ids,
+         onboarding_completed_at=$onboarding_completed_at, updated_at=$updated_at WHERE id=$id AND tenant_id=$tenant_id`
       )
       .run({
         $id: id,
@@ -75,6 +78,7 @@ export class SqliteUserRepo implements UserRepo {
         $failed_login_count: merged.failedLoginCount ?? 0,
         $locked_until: merged.lockedUntil ?? null,
         $scoped_group_ids: merged.scopedGroupIds ? JSON.stringify(merged.scopedGroupIds) : null,
+        $onboarding_completed_at: merged.onboardingCompletedAt ?? null,
         $updated_at: new Date().toISOString(),
       });
     return this.findById(tenantId, id);

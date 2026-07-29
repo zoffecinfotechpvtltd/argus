@@ -17,6 +17,7 @@ function rowToUser(r: any): User {
     failedLoginCount: r.failed_login_count,
     lockedUntil: r.locked_until,
     scopedGroupIds: r.scoped_group_ids ?? null,
+    onboardingCompletedAt: r.onboarding_completed_at ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -27,8 +28,8 @@ export class PgUserRepo implements UserRepo {
 
   async create(u: User): Promise<User> {
     await this.db.query(
-      `INSERT INTO users (id, tenant_id, email, password_hash, role, force_password_reset, disabled, email_verified_at, totp_secret, totp_enabled, failed_login_count, locked_until, scoped_group_ids, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+      `INSERT INTO users (id, tenant_id, email, password_hash, role, force_password_reset, disabled, email_verified_at, totp_secret, totp_enabled, failed_login_count, locked_until, scoped_group_ids, onboarding_completed_at, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
       [
         u.id,
         u.tenantId,
@@ -43,6 +44,7 @@ export class PgUserRepo implements UserRepo {
         u.failedLoginCount,
         u.lockedUntil,
         u.scopedGroupIds ? JSON.stringify(u.scopedGroupIds) : null,
+        u.onboardingCompletedAt,
         u.createdAt,
         u.updatedAt,
       ]
@@ -56,8 +58,9 @@ export class PgUserRepo implements UserRepo {
     const merged = { ...existing, ...patch };
     await this.db.query(
       `UPDATE users SET email=$1, password_hash=$2, role=$3, force_password_reset=$4, disabled=$5, email_verified_at=$6,
-       totp_secret=$7, totp_enabled=$8, failed_login_count=$9, locked_until=$10, scoped_group_ids=$11, updated_at=$12
-       WHERE id=$13 AND tenant_id=$14`,
+       totp_secret=$7, totp_enabled=$8, failed_login_count=$9, locked_until=$10, scoped_group_ids=$11,
+       onboarding_completed_at=$12, updated_at=$13
+       WHERE id=$14 AND tenant_id=$15`,
       [
         merged.email.toLowerCase(),
         merged.passwordHash,
@@ -70,6 +73,7 @@ export class PgUserRepo implements UserRepo {
         merged.failedLoginCount,
         merged.lockedUntil,
         merged.scopedGroupIds ? JSON.stringify(merged.scopedGroupIds) : null,
+        merged.onboardingCompletedAt,
         new Date().toISOString(),
         id,
         tenantId,

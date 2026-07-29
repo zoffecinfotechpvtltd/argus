@@ -25,6 +25,7 @@ import { StatusPage } from "./pages/StatusPage";
 import { SettingsSso } from "./pages/SettingsSso";
 import { SettingsStatusPage } from "./pages/SettingsStatusPage";
 import { ToastProvider, ConfirmProvider } from "./components/ui";
+import { OnboardingTour } from "./components/onboarding/OnboardingTour";
 
 function Gate({ children }: { children: React.ReactNode }) {
   const { user, loading, setupRequired } = useAuth();
@@ -244,6 +245,7 @@ export function App() {
                   }
                 />
               </Routes>
+              <OnboardingTour />
             </WebSocketProvider>
           </AuthProvider>
         </ConfirmProvider>

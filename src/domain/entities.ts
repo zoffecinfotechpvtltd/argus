@@ -23,6 +23,10 @@ export interface User {
    * (src/api/middleware/auth.ts), currently wired into the single-device routes in
    * src/api/routes/devices.ts only — see the comment there before extending it further. */
   scopedGroupIds?: string[] | null;
+  /** ISO timestamp once the first-login walkthrough has been completed or dismissed — null for
+   * every existing account until then. Never reset automatically, so the tour only ever shows
+   * once per account (see ui/src/components/onboarding/OnboardingTour.tsx). */
+  onboardingCompletedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }

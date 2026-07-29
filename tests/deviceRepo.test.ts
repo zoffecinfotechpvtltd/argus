@@ -123,6 +123,7 @@ describe("SqliteUserRepo", () => {
       totpEnabled: false,
       failedLoginCount: 0,
       lockedUntil: null,
+      onboardingCompletedAt: null,
       createdAt: now,
       updatedAt: now,
     };

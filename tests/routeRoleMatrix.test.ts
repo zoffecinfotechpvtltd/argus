@@ -93,6 +93,7 @@ describe("Route -> role matrix", () => {
       totpEnabled: false,
       failedLoginCount: 0,
       lockedUntil: null,
+      onboardingCompletedAt: null,
       createdAt: app.clock.nowIso(),
       updatedAt: app.clock.nowIso(),
     });
@@ -127,6 +128,7 @@ describe("Route -> role matrix", () => {
         totpEnabled: false,
         failedLoginCount: 0,
         lockedUntil: null,
+        onboardingCompletedAt: null,
         createdAt: now,
         updatedAt: now,
       });

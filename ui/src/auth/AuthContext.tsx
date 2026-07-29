@@ -8,6 +8,7 @@ export interface CurrentUser {
   tenantId: string;
   forcePasswordReset?: boolean;
   totpEnabled?: boolean;
+  onboardingCompletedAt?: string | null;
 }
 
 interface AuthState {

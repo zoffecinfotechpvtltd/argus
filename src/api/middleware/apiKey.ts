@@ -39,6 +39,7 @@ function syntheticViewerUser(tenantId: string, apiKeyId: string, apiKeyName: str
     totpEnabled: false,
     failedLoginCount: 0,
     lockedUntil: null,
+    onboardingCompletedAt: null,
     createdAt: "",
     updatedAt: "",
   };
