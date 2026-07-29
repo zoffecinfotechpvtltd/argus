@@ -18,6 +18,27 @@ export const PLAN_DEVICE_RANGES: Record<LicensePlan, { label: string; min: numbe
   unlimited: { label: "Unlimited", min: 2001, max: null },
 };
 
+export const LICENSE_HISTORY_KEY = "argus:issued-licenses";
+export const LICENSE_HISTORY_MAX = 200;
+
+/** One entry in the admin portal's issuance history log (a KV list, see lib/kv.ts) — shared
+ * between api/admin/licenses.ts (writes/deletes entries) and api/cron/expiry-reminders.ts (reads
+ * them to decide who needs a renewal-reminder email). */
+export interface IssuedRecord {
+  licenseId: string;
+  customer: string;
+  contactEmail: string;
+  plan: LicensePlan;
+  deviceLimit: number;
+  issuedAt: string;
+  expiresAt: string;
+  emailed: boolean;
+  /** Set once the 1-week-before-expiry reminder has gone out, so the daily cron doesn't re-send
+   * it every day for the rest of that week. Absent on records issued before this field existed or
+   * that haven't been reminded yet. */
+  expiryReminderSentAt?: string;
+}
+
 export interface LicensePayload {
   licenseId: string;
   customer: string;

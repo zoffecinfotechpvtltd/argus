@@ -42,6 +42,13 @@ export async function lrem(key: string, member: string): Promise<number> {
   return typeof result === "number" ? result : 0;
 }
 
+/** Overwrites the element at `index` in place (0 = the list's head, i.e. the most recently
+ * lpushCapped'd item) — used to flip a flag on an existing record (e.g. "reminder sent") without
+ * disturbing its position in the list the way a remove-then-push would. */
+export async function lset(key: string, index: number, value: string): Promise<void> {
+  await command("LSET", key, index, value);
+}
+
 /** Fixed-window rate limit: returns the request count for `key` within the current window,
  * incrementing it and setting the window's expiry on first use. */
 export async function incrWithExpiry(key: string, windowSeconds: number): Promise<number> {

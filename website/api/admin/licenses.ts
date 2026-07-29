@@ -7,27 +7,16 @@ import { escapeHtml, sendMail } from "../../lib/mail.js";
 import { isKvConfigured, lpushCapped, lrange, lrem } from "../../lib/kv.js";
 import { rateLimit } from "../../lib/rateLimit.js";
 import {
+  type IssuedRecord,
   type LicensePlan,
+  LICENSE_HISTORY_KEY as HISTORY_KEY,
+  LICENSE_HISTORY_MAX as HISTORY_MAX,
   PLAN_DEVICE_RANGES,
   isLicensePlan,
   issueLicense,
   perpetualExpiry,
   validateDevicesForPlan,
 } from "../../lib/license.js";
-
-const HISTORY_KEY = "argus:issued-licenses";
-const HISTORY_MAX = 200;
-
-interface IssuedRecord {
-  licenseId: string;
-  customer: string;
-  contactEmail: string;
-  plan: LicensePlan;
-  deviceLimit: number;
-  issuedAt: string;
-  expiresAt: string;
-  emailed: boolean;
-}
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

@@ -549,10 +549,21 @@ One-time setup, in the `website/` Vercel project's env vars (Project Settings �
 | `ADMIN_SESSION_SECRET` | Any long random string (e.g. `openssl rand -hex 32`) — signs the login session cookie. |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | Optional. A Vercel KV (or any Upstash Redis) store's REST credentials. Without these, issuing + emailing still works, you just don't get a "previously issued" history list or login rate-limiting. |
 | `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `MAIL_SENDER_UPN` | Same Microsoft Graph credentials the contact form uses (see [§9.6](#96-website-deploy-details-vercel-contact-form-email)) — the portal reuses that mailbox to send license emails. |
+| `CRON_SECRET` | Any long random string (e.g. `openssl rand -hex 32`) — authorizes the daily expiry-reminder cron below. Vercel sends it automatically as a Bearer token when triggering the scheduled run; set the same value in the project's env vars. |
 
 Once configured: go to `https://<your-site>/admin`, sign in, fill in customer/plan/devices/expiry,
 and submit. The license is issued, emailed (with the `.license.key` file attached and pasted inline
-in the email body), and — if KV is configured — recorded so you can see it again later.
+in the email body), and — if KV is configured — recorded so you can see it again later. A trash-can
+button on each history row removes it from this list — since licenses are verified entirely offline
+(no phone-home from the installed product), this is bookkeeping only and can't revoke a license file
+already delivered to a customer.
+
+**Automatic expiry reminders:** `api/cron/expiry-reminders.ts` runs daily (`vercel.json`'s `crons`,
+06:00 UTC) and emails any customer in the KV history whose license expires within 7 days, once each
+(tracked via a `expiryReminderSentAt` flag on the record so it doesn't repeat daily). Needs
+`CRON_SECRET` set (see table above) and the same KV + Azure/mail vars the portal already uses — if
+KV isn't configured there's no history to scan, so it's a no-op. Vercel Cron on the Hobby plan only
+fires jobs once a day, which this schedule already respects.
 
 ### 9.6 Website deploy details (Vercel, contact-form email)
 
