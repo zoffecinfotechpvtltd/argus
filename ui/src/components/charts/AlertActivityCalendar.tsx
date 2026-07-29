@@ -91,6 +91,11 @@ export function AlertActivityCalendar() {
         top: 24,
         bottom: 8,
       },
+      // ECharts throws "Heatmap must use with visualMap" if no visualMap component is registered
+      // for the series, even though every cell's color is already set explicitly via itemStyle
+      // below (which takes precedence over whatever this would otherwise compute) — this hidden,
+      // otherwise-inert visualMap exists only to satisfy that requirement.
+      visualMap: { show: false, min: 0, max: 1, seriesIndex: 0 },
       series: [
         {
           type: "heatmap",

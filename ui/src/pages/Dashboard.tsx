@@ -36,6 +36,9 @@ import { DEVICE_TYPE_LABELS } from "../api/types";
 import { Card, EmptyState, Input, Select, SkeletonCards } from "../components/ui";
 import { formatBps } from "../lib/format";
 import { AlertActivityCalendar } from "../components/charts/AlertActivityCalendar";
+import { SlaGauge } from "../components/charts/SlaGauge";
+import { NotificationDeliverySankey } from "../components/charts/NotificationDeliverySankey";
+import { AckTimeHistogram } from "../components/charts/AckTimeHistogram";
 
 const SLA_TARGET_PCT = 99.9;
 const AXIS_TICK = { fontSize: 10, fill: "#A1A1AA" };
@@ -372,48 +375,45 @@ const AVG_LATENCY_TARGET_MS = 100;
  * average latency is derived client-side from the same device list the rest of this page uses, so
  * neither row introduces a fabricated metric the backend doesn't actually track. */
 function SlaHeadroomCard({ availabilityPct, avgLatencyMs }: { availabilityPct: number; avgLatencyMs: number | null }) {
-  const rows = [
-    {
-      label: "Network availability",
-      actual: `${availabilityPct}%`,
-      target: `${SLA_TARGET_PCT}%`,
-      pct: Math.min(100, (availabilityPct / SLA_TARGET_PCT) * 100),
-      good: availabilityPct >= SLA_TARGET_PCT,
-    },
-    ...(avgLatencyMs != null
-      ? [
-          {
-            label: "Avg ICMP response",
-            actual: `${avgLatencyMs} ms`,
-            target: `< ${AVG_LATENCY_TARGET_MS} ms`,
-            pct: Math.min(100, (avgLatencyMs / AVG_LATENCY_TARGET_MS) * 100),
-            good: avgLatencyMs < AVG_LATENCY_TARGET_MS,
-          },
-        ]
-      : []),
-  ];
+  const latencyRow =
+    avgLatencyMs != null
+      ? {
+          label: "Avg ICMP response",
+          actual: `${avgLatencyMs} ms`,
+          target: `< ${AVG_LATENCY_TARGET_MS} ms`,
+          pct: Math.min(100, (avgLatencyMs / AVG_LATENCY_TARGET_MS) * 100),
+          good: avgLatencyMs < AVG_LATENCY_TARGET_MS,
+        }
+      : null;
 
   return (
     <Card className="p-3">
-      <div className="mb-3 text-xs text-text-secondary">SLA headroom</div>
-      <div className="space-y-3">
-        {rows.map((r) => (
-          <div key={r.label}>
-            <div className="mb-1 flex items-center justify-between text-xs">
-              <span className="text-text-secondary">{r.label}</span>
-              <span className="font-mono tabular-nums text-text-primary">
-                {r.actual} <span className="text-text-muted">/ target {r.target}</span>
-              </span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-subtle">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{ width: `${r.pct}%`, backgroundColor: r.good ? DEVICE_STATE_HEX.up : DEVICE_STATE_HEX.down }}
-              />
-            </div>
-          </div>
-        ))}
+      <div className="mb-1 text-xs text-text-secondary">SLA headroom</div>
+      <div className="flex items-center gap-4">
+        <SlaGauge pct={availabilityPct} targetPct={SLA_TARGET_PCT} />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-text-secondary">Network availability</p>
+          <p className="mt-0.5 font-mono text-2xs tabular-nums text-text-muted">
+            target {SLA_TARGET_PCT}% &middot; {availabilityPct >= SLA_TARGET_PCT ? "meeting" : "below"} target
+          </p>
+        </div>
       </div>
+      {latencyRow && (
+        <div className="mt-4">
+          <div className="mb-1 flex items-center justify-between text-xs">
+            <span className="text-text-secondary">{latencyRow.label}</span>
+            <span className="font-mono tabular-nums text-text-primary">
+              {latencyRow.actual} <span className="text-text-muted">/ target {latencyRow.target}</span>
+            </span>
+          </div>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-subtle">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{ width: `${latencyRow.pct}%`, backgroundColor: latencyRow.good ? DEVICE_STATE_HEX.up : DEVICE_STATE_HEX.down }}
+            />
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
@@ -1091,6 +1091,11 @@ export function Dashboard() {
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           <SlaHeadroomCard availabilityPct={summary?.availabilityTodayPct ?? 100} avgLatencyMs={avgLatencyMs} />
           <BandwidthSummaryCard />
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <AckTimeHistogram />
+          <NotificationDeliverySankey />
         </div>
 
         <CriticalAlertsTable />
