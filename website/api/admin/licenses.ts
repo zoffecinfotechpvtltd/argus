@@ -2,7 +2,7 @@
 // your own machine — this is the same signing logic, just reachable over the internet behind a
 // root-admin login so you can issue + email a license from anywhere, not only your dev box).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { requireSession } from "../../lib/adminAuth.js";
+import { requireAllowedIp, requireSession } from "../../lib/adminAuth.js";
 import { escapeHtml, sendMail } from "../../lib/mail.js";
 import { isKvConfigured, lpushCapped, lrange, lrem } from "../../lib/kv.js";
 import { rateLimit } from "../../lib/rateLimit.js";
@@ -43,6 +43,7 @@ function licenseEmailHtml(opts: { customer: string; plan: LicensePlan; deviceLim
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (!requireAllowedIp(req, res)) return;
   if (!requireSession(req, res)) return;
 
   // Behind a login, but still rate-limited: a stolen/leaked session cookie shouldn't be able to

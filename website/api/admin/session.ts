@@ -1,9 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { hasValidSession } from "../../lib/adminAuth.js";
+import { hasValidSession, requireAllowedIp } from "../../lib/adminAuth.js";
 import { rateLimit } from "../../lib/rateLimit.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    if (!requireAllowedIp(req, res)) return;
     const allowed = await rateLimit(req, res, { keyPrefix: "admin-session-check", max: 60, windowSeconds: 60 });
     if (!allowed) return;
     return res.status(200).json({ authenticated: hasValidSession(req) });

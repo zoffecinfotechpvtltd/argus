@@ -8,6 +8,8 @@
 //     HMAC), not a server-side session store — nothing to provision to verify a request.
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { getClientIp } from "./rateLimit.js";
+import { isAllowedIp, parseAllowlist } from "./ipAllowlist.js";
 
 const COOKIE_NAME = "argus_admin_session";
 const SESSION_TTL_MS = 15 * 60 * 1000; // 15min — this session can sign licenses, so it auto-expires fast
@@ -86,4 +88,35 @@ export function requireSession(req: VercelRequest, res: VercelResponse): boolean
   if (hasValidSession(req)) return true;
   res.status(401).json({ error: "UNAUTHORIZED", message: "Not signed in." });
   return false;
+}
+
+/**
+ * Network-level gate in front of the whole /admin portal, independent of the password: a
+ * public URL protected by a password alone still lets anyone on the internet *attempt* logins
+ * forever (rate-limited, but forever). This rejects the request before any of that even runs,
+ * based on the caller's real IP (see getClientIp — trusts Vercel's own edge header, not a
+ * client-suppliable one).
+ *
+ * Fails CLOSED: ADMIN_ALLOWED_IPS must be set, or every request is rejected — the alternative
+ * (falling back to "allow everyone" when unconfigured, like the KV-optional features elsewhere in
+ * this portal) would silently defeat the whole point the first time someone forgets to set it.
+ * Every /admin API route calls this first, before rate limiting or password checks.
+ */
+export function requireAllowedIp(req: VercelRequest, res: VercelResponse): boolean {
+  const allowlist = parseAllowlist(process.env.ADMIN_ALLOWED_IPS);
+  if (allowlist.length === 0) {
+    res.status(503).json({
+      error: "NOT_CONFIGURED",
+      message: "ADMIN_ALLOWED_IPS isn't set on this deployment — the license portal refuses all traffic until it is.",
+    });
+    return false;
+  }
+  const ip = getClientIp(req);
+  if (!isAllowedIp(ip, allowlist)) {
+    // Deliberately generic — doesn't confirm whether the portal even exists at this path to an
+    // unrecognized caller, and never echoes back the allowlist or the caller's own IP.
+    res.status(403).json({ error: "FORBIDDEN" });
+    return false;
+  }
+  return true;
 }

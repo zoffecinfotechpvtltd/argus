@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { issueSessionCookie, verifyAdminPassword } from "../../lib/adminAuth.js";
+import { issueSessionCookie, requireAllowedIp, verifyAdminPassword } from "../../lib/adminAuth.js";
 import { rateLimit } from "../../lib/rateLimit.js";
 
 const MAX_ATTEMPTS_PER_WINDOW = 10;
@@ -7,6 +7,8 @@ const WINDOW_SECONDS = 15 * 60;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    if (!requireAllowedIp(req, res)) return;
+
     if (req.method !== "POST") {
       res.setHeader("Allow", "POST");
       return res.status(405).json({ error: "Method not allowed" });
