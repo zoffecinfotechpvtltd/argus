@@ -11,11 +11,11 @@ export function Alerting() {
     <section id="alerting" className="relative bg-canvas py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-6">
         <ScrollReveal className="mx-auto mb-16 max-w-xl text-center">
-          <span className="text-sm font-medium text-accent">Intelligent alerting</span>
+          <span className="text-fluid-sm font-medium text-accent">Intelligent alerting</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
             A tiered chain, not a single ignored email.
           </h2>
-          <p className="mt-4 text-base text-muted">
+          <p className="mt-4 text-fluid-base text-muted">
             Assign a device group's escalation chain once — Argus notifies the owner immediately, then works down the
             tiers on your schedule, stopping the moment someone acknowledges.
           </p>
@@ -29,9 +29,9 @@ export function Alerting() {
                 <div>
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span className="font-display text-base font-bold text-fog">{t.label}</span>
-                    <span className="font-mono text-sm text-dim">{t.delay}</span>
+                    <span className="font-mono text-fluid-sm text-dim">{t.delay}</span>
                   </div>
-                  <p className="mt-1.5 text-base leading-relaxed text-muted">{t.desc}</p>
+                  <p className="mt-1.5 text-fluid-base leading-relaxed text-muted">{t.desc}</p>
                 </div>
               </div>
             </ScrollReveal>

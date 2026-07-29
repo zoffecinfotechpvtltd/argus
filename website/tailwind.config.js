@@ -37,6 +37,17 @@ export default {
         sans: ["Inter", "ui-sans-serif", "sans-serif"],
         mono: ["Fira Code", "ui-monospace", "monospace"],
       },
+      // Fluid type scale: grows smoothly with viewport width (clamp(min, preferred, max)) instead
+      // of sitting at one fixed px value regardless of screen size — a 1440px laptop and a 2560px+
+      // monitor both get proportionally-sized text rather than the exact same pixel count reading
+      // small on the bigger one. Use these (text-fluid-*) for body copy, labels, nav, and footer
+      // text sitewide; headings already use their own per-component clamp() in the h1/h2 classes.
+      fontSize: {
+        "fluid-xs": ["clamp(0.75rem, 0.7rem + 0.2vw, 0.875rem)", { lineHeight: "1.5" }],
+        "fluid-sm": ["clamp(0.875rem, 0.8rem + 0.3vw, 1rem)", { lineHeight: "1.55" }],
+        "fluid-base": ["clamp(1rem, 0.92rem + 0.4vw, 1.1875rem)", { lineHeight: "1.6" }],
+        "fluid-lg": ["clamp(1.125rem, 1rem + 0.6vw, 1.375rem)", { lineHeight: "1.5" }],
+      },
       boxShadow: {
         soft: "0 1px 2px rgba(0,0,0,0.04), 0 24px 48px -24px rgba(0,0,0,0.12)",
         "soft-lg": "0 1px 2px rgba(0,0,0,0.04), 0 40px 80px -32px rgba(0,0,0,0.18)",

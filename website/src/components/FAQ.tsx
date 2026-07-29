@@ -17,7 +17,7 @@ export function FAQ() {
     <section id="faq" className="relative bg-canvas py-24 sm:py-32">
       <div className="mx-auto max-w-2xl px-6">
         <ScrollReveal className="mb-14 text-center">
-          <span className="text-sm font-medium text-accent">FAQ</span>
+          <span className="text-fluid-sm font-medium text-accent">FAQ</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">Before you install.</h2>
         </ScrollReveal>
 

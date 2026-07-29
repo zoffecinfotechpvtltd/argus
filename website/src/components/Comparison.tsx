@@ -17,7 +17,7 @@ export function Comparison() {
     <section className="relative bg-surface py-24 sm:py-32">
       <div className="mx-auto max-w-5xl px-6">
         <ScrollReveal className="mx-auto mb-16 max-w-xl text-center">
-          <span className="text-sm font-medium text-accent">The difference</span>
+          <span className="text-fluid-sm font-medium text-accent">The difference</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
             Same outage. Two timelines.
           </h2>
@@ -29,8 +29,8 @@ export function Comparison() {
             <ol className="grid gap-5">
               {WITHOUT.map((r) => (
                 <li key={r.time} className="grid grid-cols-[48px_1fr] gap-3">
-                  <span className="font-mono text-sm text-dim">{r.time}</span>
-                  <span className="text-base leading-relaxed text-muted">{r.text}</span>
+                  <span className="font-mono text-fluid-sm text-dim">{r.time}</span>
+                  <span className="text-fluid-base leading-relaxed text-muted">{r.text}</span>
                 </li>
               ))}
             </ol>
@@ -42,7 +42,7 @@ export function Comparison() {
               {WITH.map((r) => (
                 <li key={r.time} className="grid grid-cols-[48px_1fr] gap-3">
                   <span className="font-mono text-sm text-accent">{r.time}</span>
-                  <span className="text-base leading-relaxed text-fog">{r.text}</span>
+                  <span className="text-fluid-base leading-relaxed text-fog">{r.text}</span>
                 </li>
               ))}
             </ol>

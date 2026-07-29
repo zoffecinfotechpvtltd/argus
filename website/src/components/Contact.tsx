@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Mail, CheckCircle2, AlertCircle } from "lucide-react";
 import { ScrollReveal } from "./ScrollReveal";
+import { CustomSelect } from "./CustomSelect";
 import { SITE } from "../config";
 
 const PLANS = ["Starter", "Professional", "Business", "Enterprise", "Unlimited", "Not sure yet"];
@@ -51,13 +52,13 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
 
   return (
     <section id="contact" className="bg-canvas py-24 sm:py-32">
-      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-16 px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-16 px-6 lg:grid-cols-[minmax(0,1fr)_460px] lg:gap-12">
         <ScrollReveal>
-          <span className="text-sm font-medium text-accent">Talk to sales</span>
+          <span className="text-fluid-sm font-medium text-accent">Talk to sales</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
             Tell us about your network.
           </h2>
-          <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
+          <p className="mt-4 max-w-md text-fluid-base leading-relaxed text-muted">
             No self-serve checkout — tell us your device count and what you're running, and we'll quote the right
             tier. Prefer email? Reach us directly at{" "}
             <a href={`mailto:${SITE.contactEmail}`} className="text-accent underline underline-offset-2">
@@ -73,64 +74,62 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
               { title: "You get a license key", body: "Paste it into Settings → License and the device cap lifts immediately." },
             ].map((step, i) => (
               <li key={step.title} className="flex gap-4">
-                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-subtle font-mono text-[13px] font-semibold text-accent">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-subtle font-mono text-fluid-sm font-semibold text-accent">
                   {i + 1}
                 </span>
                 <div>
-                  <p className="text-[15px] font-semibold text-fog">{step.title}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-muted">{step.body}</p>
+                  <p className="text-fluid-base font-semibold text-fog">{step.title}</p>
+                  <p className="mt-1 text-fluid-sm leading-relaxed text-muted">{step.body}</p>
                 </div>
               </li>
             ))}
           </ol>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.1}>
+        <ScrollReveal delay={0.1} className="relative">
+          <div className="absolute -inset-x-6 -inset-y-8 -z-10 rounded-[40px] bg-accent/10 blur-[70px]" aria-hidden="true" />
           <form
             onSubmit={handleSubmit}
             className="grid gap-5 rounded-2xl border border-border bg-surface p-6 shadow-soft sm:p-8"
           >
-            <Field label="Name">
-              <input required value={name} onChange={(e) => setName(e.target.value)} className="input" autoComplete="name" />
-            </Field>
-            <Field label="Work email">
-              <input
-                required
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input"
-                autoComplete="email"
-              />
-            </Field>
-            <Field label="Company">
-              <input value={company} onChange={(e) => setCompany(e.target.value)} className="input" autoComplete="organization" />
-            </Field>
-            <Field label="Approx. device count">
-              <input value={devices} onChange={(e) => setDevices(e.target.value)} className="input" placeholder="e.g. 150" inputMode="numeric" />
-            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Name">
+                <input required value={name} onChange={(e) => setName(e.target.value)} className="input" autoComplete="name" />
+              </Field>
+              <Field label="Work email">
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input"
+                  autoComplete="email"
+                />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Company">
+                <input value={company} onChange={(e) => setCompany(e.target.value)} className="input" autoComplete="organization" />
+              </Field>
+              <Field label="Approx. devices">
+                <input value={devices} onChange={(e) => setDevices(e.target.value)} className="input" placeholder="e.g. 150" inputMode="numeric" />
+              </Field>
+            </div>
             <Field label="Plan you're interested in">
-              <select value={plan} onChange={(e) => onPlanChange(e.target.value)} className="input">
-                <option value="">Select a plan…</option>
-                {PLANS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect value={plan} onChange={onPlanChange} options={PLANS} placeholder="Select a plan…" />
             </Field>
             <Field label="Message">
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full resize-none rounded-lg border border-border bg-transparent px-3.5 py-3 text-base text-fog placeholder:text-dim transition-colors focus:border-fog focus:outline-none"
-                rows={3}
+                className="w-full resize-none rounded-lg border border-border bg-transparent px-3.5 py-3 text-fluid-base text-fog placeholder:text-dim transition-colors focus:border-fog focus:outline-none"
+                rows={2}
                 placeholder="Anything else we should know?"
               />
             </Field>
 
             {status === "error" && (
-              <p role="alert" className="flex items-center gap-2 text-sm text-status-critical">
+              <p role="alert" className="flex items-center gap-2 text-fluid-sm text-status-critical">
                 <AlertCircle size={15} aria-hidden="true" /> {errorMsg}
               </p>
             )}
@@ -138,7 +137,7 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
             <button
               type="submit"
               disabled={status === "submitting"}
-              className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-sm font-semibold text-accent-text-on transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-2 flex cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-5 py-3 text-fluid-sm font-semibold text-accent-text-on transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Mail size={15} aria-hidden="true" />
               {status === "submitting" ? "Sending…" : "Send message"}
@@ -153,7 +152,7 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-medium text-muted">{label}</span>
+      <span className="mb-2 block text-fluid-sm font-medium text-muted">{label}</span>
       {children}
     </label>
   );

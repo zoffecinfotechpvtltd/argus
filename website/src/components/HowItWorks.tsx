@@ -11,7 +11,7 @@ export function HowItWorks() {
     <section className="relative bg-surface py-24 sm:py-32">
       <div className="mx-auto max-w-6xl px-6">
         <ScrollReveal className="mx-auto mb-20 max-w-xl text-center">
-          <span className="text-sm font-medium text-accent">How it works</span>
+          <span className="text-fluid-sm font-medium text-accent">How it works</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
             Watching your network in three steps.
           </h2>
@@ -28,7 +28,7 @@ export function HowItWorks() {
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <h3 className="relative font-display text-lg font-bold tracking-tight text-fog">{s.title}</h3>
-                <p className="relative mt-2.5 text-base leading-relaxed text-muted">{s.body}</p>
+                <p className="relative mt-2.5 text-fluid-base leading-relaxed text-muted">{s.body}</p>
               </div>
             </ScrollReveal>
           ))}

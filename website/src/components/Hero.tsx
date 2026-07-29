@@ -14,7 +14,7 @@ export function Hero({ downloadUrl }: { downloadUrl: string }) {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: easeOut }}
-          className="text-sm font-medium text-accent"
+          className="text-fluid-sm font-medium text-accent"
         >
           {SITE.companyName ? `${SITE.companyName} · ` : ""}Network monitoring
         </motion.span>
@@ -65,7 +65,7 @@ export function Hero({ downloadUrl }: { downloadUrl: string }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.26 }}
-          className="mt-4 text-sm text-dim"
+          className="mt-4 text-fluid-sm text-dim"
         >
           Windows 10/11, 64-bit
         </motion.p>

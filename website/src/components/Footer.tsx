@@ -18,9 +18,9 @@ export function Footer({ downloadUrl }: { downloadUrl: string }) {
         <div className="mt-14 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-7">
           <a href="#top" className="flex items-center gap-2">
             <ArgusMark size={18} />
-            <span className="font-display text-sm font-semibold tracking-tight text-muted">Argus</span>
+            <span className="font-display text-fluid-sm font-semibold tracking-tight text-muted">Argus</span>
           </a>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dim">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-fluid-sm text-dim">
             <span>© {SITE.companyName || "Argus"}</span>
           </div>
         </div>
@@ -32,10 +32,10 @@ export function Footer({ downloadUrl }: { downloadUrl: string }) {
 function FooterCol({ title, links }: { title: string; links: { href: string; label: string; download?: boolean }[] }) {
   return (
     <div>
-      <h4 className="mb-4 text-sm font-semibold text-fog">{title}</h4>
+      <h4 className="mb-4 text-fluid-sm font-semibold text-fog">{title}</h4>
       <div className="grid gap-2.5">
         {links.map((l) => (
-          <a key={l.label} href={l.href} download={l.download} className="text-sm text-muted transition-colors hover:text-fog">
+          <a key={l.label} href={l.href} download={l.download} className="text-fluid-sm text-muted transition-colors hover:text-fog">
             {l.label}
           </a>
         ))}

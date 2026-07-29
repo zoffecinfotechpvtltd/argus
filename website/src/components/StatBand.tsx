@@ -14,7 +14,7 @@ export function StatBand() {
           {STATS.map((s, i) => (
             <ScrollReveal key={s.label} delay={i * 0.08}>
               <div className="font-display text-[clamp(2.2rem,5vw,3.2rem)] font-bold tracking-tight text-accent">{s.value}</div>
-              <div className="mt-1 text-base text-muted">{s.label}</div>
+              <div className="mt-1 text-fluid-base text-muted">{s.label}</div>
             </ScrollReveal>
           ))}
         </div>

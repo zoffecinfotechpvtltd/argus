@@ -23,12 +23,12 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <a href="#top" className="flex items-center gap-2">
           <ArgusMark size={20} />
-          <span className="font-display text-base font-semibold tracking-tight text-fog">Argus</span>
+          <span className="font-display text-fluid-base font-semibold tracking-tight text-fog">Argus</span>
         </a>
 
         <div className="hidden items-center gap-8 md:flex">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="text-sm font-medium text-muted transition-colors hover:text-fog">
+            <a key={l.href} href={l.href} className="text-fluid-sm font-medium text-muted transition-colors hover:text-fog">
               {l.label}
             </a>
           ))}
@@ -45,14 +45,14 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
           </button>
           <a
             href={`mailto:${SITE.contactEmail}`}
-            className="hidden cursor-pointer text-sm font-medium text-muted transition-colors hover:text-fog sm:block"
+            className="hidden cursor-pointer text-fluid-sm font-medium text-muted transition-colors hover:text-fog sm:block"
           >
             Contact sales
           </a>
           <a
             href={downloadUrl}
             download
-            className="hidden cursor-pointer items-center rounded-full bg-fog px-5 py-2 text-sm font-medium text-canvas transition-opacity hover:opacity-80 sm:inline-flex"
+            className="hidden cursor-pointer items-center rounded-full bg-fog px-5 py-2 text-fluid-sm font-medium text-canvas transition-opacity hover:opacity-80 sm:inline-flex"
           >
             Download
           </a>
@@ -71,14 +71,14 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
         <div className="border-t border-border px-6 py-4 md:hidden">
           <div className="flex flex-col gap-4">
             {LINKS.map((l) => (
-              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-sm font-medium text-muted">
+              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="text-fluid-sm font-medium text-muted">
                 {l.label}
               </a>
             ))}
-            <a href={`mailto:${SITE.contactEmail}`} className="text-sm font-medium text-muted">
+            <a href={`mailto:${SITE.contactEmail}`} className="text-fluid-sm font-medium text-muted">
               Contact sales
             </a>
-            <a href={downloadUrl} download className="rounded-full bg-fog px-4 py-2.5 text-center text-sm font-medium text-canvas">
+            <a href={downloadUrl} download className="rounded-full bg-fog px-4 py-2.5 text-center text-fluid-sm font-medium text-canvas">
               Download for Windows
             </a>
           </div>
