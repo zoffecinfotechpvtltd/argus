@@ -32,12 +32,12 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <a href="#top" className="flex items-center gap-2">
           <ArgusMark size={20} />
-          <span className="font-display text-[15px] font-semibold tracking-tight text-fog">Argus</span>
+          <span className="font-display text-base font-semibold tracking-tight text-fog">Argus</span>
         </a>
 
         <div className="hidden items-center gap-8 md:flex">
           {LINKS.map((l) => (
-            <a key={l.href} href={l.href} className="text-[13px] font-medium text-muted transition-colors hover:text-fog">
+            <a key={l.href} href={l.href} className="text-sm font-medium text-muted transition-colors hover:text-fog">
               {l.label}
             </a>
           ))}
@@ -50,18 +50,18 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
             title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             className="cursor-pointer rounded-full p-1.5 text-muted transition-colors hover:text-fog"
           >
-            {theme === "dark" ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
+            {theme === "dark" ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
           </button>
           <a
             href={`mailto:${SITE.contactEmail}`}
-            className="hidden cursor-pointer text-[13px] font-medium text-muted transition-colors hover:text-fog sm:block"
+            className="hidden cursor-pointer text-sm font-medium text-muted transition-colors hover:text-fog sm:block"
           >
             Contact sales
           </a>
           <a
             href={downloadUrl}
             download
-            className="hidden cursor-pointer items-center rounded-full bg-fog px-4 py-1.5 text-[13px] font-medium text-canvas transition-opacity hover:opacity-80 sm:inline-flex"
+            className="hidden cursor-pointer items-center rounded-full bg-fog px-5 py-2 text-sm font-medium text-canvas transition-opacity hover:opacity-80 sm:inline-flex"
           >
             Download
           </a>

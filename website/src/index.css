@@ -63,7 +63,7 @@ body { font-feature-settings: "ss01" 1; }
 
 @layer components {
   .input {
-    @apply w-full border-0 border-b border-border bg-transparent px-0 py-2.5 text-sm text-fog placeholder:text-dim;
+    @apply w-full border-0 border-b border-border bg-transparent px-0 py-3 text-base text-fog placeholder:text-dim;
     @apply transition-colors focus:border-fog focus:outline-none;
   }
 }

@@ -17,7 +17,7 @@ export function FAQ() {
     <section id="faq" className="relative bg-canvas py-24 sm:py-32">
       <div className="mx-auto max-w-2xl px-6">
         <ScrollReveal className="mb-14 text-center">
-          <span className="text-[13px] font-medium text-accent">FAQ</span>
+          <span className="text-sm font-medium text-accent">FAQ</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">Before you install.</h2>
         </ScrollReveal>
 
@@ -32,7 +32,7 @@ export function FAQ() {
                     aria-expanded={expanded}
                     className="flex w-full cursor-pointer items-center justify-between gap-4 py-5 text-left"
                   >
-                    <h3 className="text-[15px] font-medium text-fog">{f.q}</h3>
+                    <h3 className="text-base font-medium text-fog">{f.q}</h3>
                     <Plus
                       size={16}
                       className={`shrink-0 text-dim transition-transform duration-200 ${expanded ? "rotate-45 text-accent" : ""}`}
@@ -44,7 +44,7 @@ export function FAQ() {
                     style={{ gridTemplateRows: expanded ? "1fr" : "0fr" }}
                   >
                     <div className="overflow-hidden">
-                      <p className="pb-5 text-[14px] leading-relaxed text-muted">{f.a}</p>
+                      <p className="pb-5 text-[15px] leading-relaxed text-muted">{f.a}</p>
                     </div>
                   </div>
                 </div>

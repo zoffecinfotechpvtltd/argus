@@ -14,7 +14,7 @@ export function Hero({ downloadUrl }: { downloadUrl: string }) {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: easeOut }}
-          className="text-[13px] font-medium text-accent"
+          className="text-sm font-medium text-accent"
         >
           {SITE.companyName ? `${SITE.companyName} · ` : ""}Network monitoring
         </motion.span>
@@ -49,13 +49,13 @@ export function Hero({ downloadUrl }: { downloadUrl: string }) {
           <a
             href={downloadUrl}
             download
-            className="inline-flex cursor-pointer items-center rounded-full bg-accent px-6 py-3 text-[15px] font-semibold text-accent-text-on transition-colors hover:bg-accent-hover"
+            className="inline-flex cursor-pointer items-center rounded-full bg-accent px-6 py-3 text-base font-semibold text-accent-text-on transition-colors hover:bg-accent-hover"
           >
             Download for Windows
           </a>
           <a
             href="#pricing"
-            className="inline-flex cursor-pointer items-center rounded-full border border-border px-6 py-3 text-[15px] font-semibold text-fog transition-colors hover:border-dim"
+            className="inline-flex cursor-pointer items-center rounded-full border border-border px-6 py-3 text-base font-semibold text-fog transition-colors hover:border-dim"
           >
             See pricing
           </a>
@@ -65,7 +65,7 @@ export function Hero({ downloadUrl }: { downloadUrl: string }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.26 }}
-          className="mt-4 text-[13px] text-dim"
+          className="mt-4 text-sm text-dim"
         >
           Windows 10/11, 64-bit
         </motion.p>

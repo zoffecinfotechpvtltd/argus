@@ -53,11 +53,11 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
     <section id="contact" className="bg-canvas py-24 sm:py-32">
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-16 px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-12">
         <ScrollReveal>
-          <span className="text-[13px] font-medium text-accent">Talk to sales</span>
+          <span className="text-sm font-medium text-accent">Talk to sales</span>
           <h2 className="mt-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-bold tracking-tight text-fog">
             Tell us about your network.
           </h2>
-          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-muted">
+          <p className="mt-4 max-w-md text-base leading-relaxed text-muted">
             No self-serve checkout — tell us your device count and what you're running, and we'll quote the right
             tier. Prefer email? Reach us directly at{" "}
             <a href={`mailto:${SITE.contactEmail}`} className="text-accent underline underline-offset-2">
@@ -66,19 +66,19 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
             .
           </p>
 
-          <ol className="mt-10 grid max-w-md gap-6">
+          <ol className="mt-10 grid max-w-md gap-7">
             {[
               { title: "You tell us the basics", body: "Device count, what you're monitoring, which tier looks right." },
               { title: "We quote it", body: "Usually within one business day — a flat price by device count, no seats." },
               { title: "You get a license key", body: "Paste it into Settings → License and the device cap lifts immediately." },
             ].map((step, i) => (
               <li key={step.title} className="flex gap-4">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-subtle font-mono text-[11px] font-semibold text-accent">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-subtle font-mono text-[13px] font-semibold text-accent">
                   {i + 1}
                 </span>
                 <div>
-                  <p className="text-[14px] font-semibold text-fog">{step.title}</p>
-                  <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">{step.body}</p>
+                  <p className="text-[15px] font-semibold text-fog">{step.title}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-muted">{step.body}</p>
                 </div>
               </li>
             ))}
@@ -123,7 +123,7 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                className="w-full resize-none rounded-lg border border-border bg-transparent px-3.5 py-2.5 text-sm text-fog placeholder:text-dim transition-colors focus:border-fog focus:outline-none"
+                className="w-full resize-none rounded-lg border border-border bg-transparent px-3.5 py-3 text-base text-fog placeholder:text-dim transition-colors focus:border-fog focus:outline-none"
                 rows={3}
                 placeholder="Anything else we should know?"
               />
@@ -153,7 +153,7 @@ export function Contact({ plan, onPlanChange }: { plan: string; onPlanChange: (v
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-xs font-medium text-muted">{label}</span>
+      <span className="mb-2 block text-sm font-medium text-muted">{label}</span>
       {children}
     </label>
   );
