@@ -1,9 +1,9 @@
 /**
- * The ARGUS brand mark — cropped directly from the approved "Monolith Signal" brand sheet
- * (assets/argus-mark-final.png, sourced from the brand identity concept in assets/) rather than
- * redrawn, so the shape, gradient, and proportions match the approved artwork exactly. It's a
- * self-contained badge whose own contrast doesn't depend on page theme, so it renders identically
- * in light and dark mode — unlike text/icon colors elsewhere, it never uses `currentColor`.
+ * The ARGUS brand mark — generated from the approved master art (assets/argus-source.png) via
+ * scripts/generate-icon.py rather than redrawn, so the shape, gradient, and proportions match the
+ * approved artwork exactly. It's a self-contained badge whose own contrast doesn't depend on page
+ * theme, so it renders identically in light and dark mode — unlike text/icon colors elsewhere, it
+ * never uses `currentColor`.
  */
 export function ArgusMark({ size = 28, sweep = false, className = "" }: { size?: number; sweep?: boolean; className?: string }) {
   return (

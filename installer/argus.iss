@@ -14,7 +14,7 @@
 ;     a console window.
 ;   - Uninstalling stops and removes the service, but deliberately leaves the data directory (the
 ;     customer's device inventory/history/settings) behind in case they reinstall later.
-#define MyAppName "Argus"
+#define MyAppName "Argus - Network Monitoring System"
 ; Must match src/bootstrap/config.ts's ConfigSchema port default — this is only the value baked
 ; into the firewall rule created at install time, not something the app itself reads from here. If
 ; an operator changes the port later (Settings -> General, or PORT env var / config.json), they
@@ -38,7 +38,9 @@
 AppId={{A47B1E2C-6D8F-4A3B-9C2E-1F5D7E8A9B3C}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
-AppVerName={#MyAppName} {#MyAppVersion}
+; No AppVerName: Inno's Add/Remove Programs entry uses AppVerName (name+version) when set, falling
+; back to AppName otherwise — the version is still tracked (AppVersion, visible in the "Version"
+; column of Programs and Features) but deliberately left out of the display name itself.
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 DefaultDirName={autopf}\Argus
@@ -92,9 +94,9 @@ Source: "{#MyAppLauncherSource}"; DestDir: "{app}"; DestName: "Argus-Launcher.ex
 Source: "..\tools\Argus-service.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 
 [Icons]
-Name: "{group}\Argus Dashboard"; Filename: "{app}\Argus-Launcher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Argus.exe"
+Name: "{group}\Argus"; Filename: "{app}\Argus-Launcher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Argus.exe"
 Name: "{group}\Uninstall Argus"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\Argus Dashboard"; Filename: "{app}\Argus-Launcher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Argus.exe"; Tasks: desktopicon
+Name: "{commondesktop}\Argus"; Filename: "{app}\Argus-Launcher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\Argus.exe"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\Argus.exe"; Parameters: "--install-service"; WorkingDir: "{app}"; StatusMsg: "Registering Argus as a background service…"; Flags: runhidden waituntilterminated
