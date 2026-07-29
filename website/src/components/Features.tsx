@@ -97,12 +97,16 @@ function DiscoveryVisual() {
     { x: 252, y: 108, label: "10.0.1.3" },
   ];
   return (
-    <div className="flex aspect-[4/3] flex-col justify-between rounded-2xl border border-gray-200 bg-white p-6 shadow-soft">
+    <div className="flex min-h-[300px] flex-col justify-between overflow-hidden rounded-2xl border border-gray-200 bg-white p-6 shadow-soft">
       <div className="flex items-center justify-between">
         <span className="font-mono text-[13px] text-gray-500">Scanning 192.168.1.0/24</span>
         <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600">6 found</span>
       </div>
-      <svg viewBox="0 0 280 180" className="mx-auto h-[75%] w-full overflow-visible">
+      {/* No overflow-visible here on purpose — the outer rings (r up to 96, centered at cx=30)
+          extend past the viewBox's left edge, and letting that render outside the SVG bled a
+          stray arc past the card's own rounded border on wide screens. Default SVG clipping
+          (the browser's own behavior once overflow-visible is removed) keeps it contained. */}
+      <svg viewBox="0 0 280 180" preserveAspectRatio="xMidYMid meet" className="mx-auto h-auto w-full max-w-[320px]">
         {[24, 48, 72, 96].map((r) => (
           <circle key={r} cx="30" cy="90" r={r} fill="none" stroke="#EEF0F3" strokeWidth="1.5" />
         ))}
@@ -128,7 +132,7 @@ function EscalationVisual() {
     { label: "Tier 2", time: "10 min", active: true },
   ];
   return (
-    <div className="flex aspect-[4/3] flex-col justify-center gap-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-soft">
+    <div className="flex min-h-[300px] flex-col items-center justify-center gap-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-soft">
       <div className="flex items-center justify-center gap-4">
         {steps.map((s, i) => (
           <div key={s.label} className="flex items-center gap-4">
@@ -158,7 +162,7 @@ function LocalDataVisual() {
     { name: "alerts.db", size: "6.4 MB" },
   ];
   return (
-    <div className="flex aspect-[4/3] flex-col items-center justify-center gap-5 rounded-2xl border border-gray-200 bg-white p-8 shadow-soft">
+    <div className="flex min-h-[300px] flex-col items-center justify-center gap-5 rounded-2xl border border-gray-200 bg-white p-8 shadow-soft">
       <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
           <rect x="4" y="10" width="16" height="10" rx="2" />

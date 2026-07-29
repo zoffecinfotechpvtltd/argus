@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Menu, X, Sun, Moon } from "lucide-react";
 import { ArgusMark } from "./ArgusMark";
 import { SITE } from "../config";
@@ -13,22 +13,13 @@ const LINKS = [
 
 export function Navbar({ downloadUrl }: { downloadUrl: string }) {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const { theme, toggle: toggleTheme } = useTheme();
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
-    <nav
-      className={`sticky top-0 z-50 border-b transition-colors duration-300 ${
-        scrolled ? "border-border bg-canvas/80 backdrop-blur-xl" : "border-transparent bg-transparent"
-      }`}
-    >
+    // Always solid + blurred, never transparent — a transparent-at-top nav read as a rendering
+    // glitch here (Hero's own headline scrolls up directly behind/through it with nothing to
+    // separate them) rather than the deliberate hero-blend effect it was on the old light design.
+    <nav className="sticky top-0 z-50 border-b border-border bg-canvas/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <a href="#top" className="flex items-center gap-2">
           <ArgusMark size={20} />
