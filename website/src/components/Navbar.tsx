@@ -21,9 +21,9 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
     // separate them) rather than the deliberate hero-blend effect it was on the old light design.
     <nav className="sticky top-0 z-50 border-b border-border bg-canvas/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-        <a href="#top" className="flex items-center gap-2">
-          <ArgusMark size={20} />
-          <span className="font-display text-fluid-base font-semibold tracking-tight text-fog">Argus</span>
+        <a href="#top" className="flex items-center gap-2.5">
+          <ArgusMark size={34} />
+          <span className="font-display text-fluid-lg font-semibold tracking-tight text-fog">Argus</span>
         </a>
 
         <div className="hidden items-center gap-8 md:flex">

@@ -232,10 +232,16 @@ def main() -> None:
     wizard_image.save(WIZARD_IMAGE_OUT)
     print(f"[generate-icon] wrote {WIZARD_IMAGE_OUT}")
 
+    # favicon.png and apple-touch-icon.png are the same kind of "app icon" context as icon.ico
+    # (a browser tab, a phone home screen) — flattened onto white to match, for the same reason:
+    # a transparent icon in either of those slots renders against whatever background happens to
+    # be there (dark tab bar, dark home screen wallpaper) instead of the intended white badge look.
+    # argus-mark.png stays transparent — it's rendered inline in the page's own Navbar/Footer
+    # (ArgusMark.tsx), directly over that section's background, not in a slot expecting a badge.
     for target_dir in WEB_TARGETS:
-        favicon = render_size(master, simplified_master, 48)
+        favicon = flatten_on_white(render_size(master, simplified_master, 48))
         favicon.save(target_dir / "favicon.png")
-        apple_touch = render_size(master, simplified_master, 180)
+        apple_touch = flatten_on_white(render_size(master, simplified_master, 180))
         apple_touch.save(target_dir / "apple-touch-icon.png")
         mark.save(target_dir / "argus-mark.png")
         print(f"[generate-icon] wrote favicon.png, apple-touch-icon.png, argus-mark.png to {target_dir}")
