@@ -2,6 +2,7 @@
 // your own machine — this is the same signing logic, just reachable over the internet behind a
 // root-admin login so you can issue + email a license from anywhere, not only your dev box).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { createElement as h } from "react";
 import { render } from "@react-email/render";
 import { requireAllowedIp, requireSession } from "../../lib/adminAuth.js";
 import { sendMail } from "../../lib/mail.js";
@@ -36,14 +37,14 @@ async function licenseEmailHtml(opts: {
     ? "Perpetual (no renewal needed)"
     : new Date(opts.expiresAt).toLocaleDateString();
   return render(
-    <LicenseEmail
-      customer={opts.customer}
-      planLabel={planLabel}
-      deviceLimit={opts.deviceLimit}
-      expiryText={expiryText}
-      licenseFileName={`${opts.customer}.license.key`}
-      licenseFile={opts.licenseFile}
-    />
+    h(LicenseEmail, {
+      customer: opts.customer,
+      planLabel,
+      deviceLimit: opts.deviceLimit,
+      expiryText,
+      licenseFileName: `${opts.customer}.license.key`,
+      licenseFile: opts.licenseFile,
+    })
   );
 }
 
