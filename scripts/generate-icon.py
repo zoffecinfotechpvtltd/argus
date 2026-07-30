@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "assets" / "argus-source.png"
 OUT = ROOT / "assets" / "icon.ico"
 MARK_OUT = ROOT / "assets" / "argus-mark.png"
+WIZARD_IMAGE_OUT = ROOT / "assets" / "wizard-small.png"
 
 # Every place the mark needs to physically live as a standalone PNG (web app icons, browser tab
 # favicons). Kept in sync from this one script instead of hand-copied so they can never drift.
@@ -221,6 +222,15 @@ def main() -> None:
     mark = render_size(master, simplified_master, 512)
     mark.save(MARK_OUT)
     print(f"[generate-icon] wrote {MARK_OUT}")
+
+    # installer/argus.iss's WizardSmallImageFile (the corner graphic Inno Setup shows on every
+    # wizard page besides Welcome/Finish) — without this it falls back to Inno's own generic stock
+    # image, which isn't Argus branding at all. Rendered well above SIMPLIFY_BELOW_PX (the wizard
+    # corner slot is far bigger than a 16-24px taskbar icon) so the pulse-line detail stays crisp,
+    # unlike the simplified small icon sizes where it has to be sacrificed for legibility.
+    wizard_image = flatten_on_white(render_size(master, simplified_master, 192))
+    wizard_image.save(WIZARD_IMAGE_OUT)
+    print(f"[generate-icon] wrote {WIZARD_IMAGE_OUT}")
 
     for target_dir in WEB_TARGETS:
         favicon = render_size(master, simplified_master, 48)
