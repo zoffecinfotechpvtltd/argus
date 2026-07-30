@@ -21,7 +21,7 @@
 ; need to re-run `Argus.exe --fix-firewall` for a matching rule at the new port.
 #define MyAppPort "58070"
 #ifndef MyAppPublisher
-  #define MyAppPublisher "Argus"
+  #define MyAppPublisher "ZTPL"
 #endif
 #define MyAppURL "https://github.com/shaikhsameer18/Argus"
 #ifndef MyAppVersion

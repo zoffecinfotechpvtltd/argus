@@ -109,11 +109,11 @@ await step("Force GUI subsystem (belt-and-suspenders console fix)", () => {
 await step("Stamp icon + version resource", async () => {
   const iconPath = join(ROOT, "assets", "icon.ico");
   if (!existsSync(iconPath)) throw new Error(`Missing ${iconPath} — run \`python3 scripts/generate-icon.py\` once.`);
-  // Whoever is selling this stamps their own company name via COMPANY_NAME — defaults to "Argus"
-  // itself rather than a hardcoded placeholder business that may not be who's actually shipping it.
-  const companyName = process.env.COMPANY_NAME || "Argus";
+  // Whoever is selling this stamps their own company name via COMPANY_NAME — defaults to ZTPL,
+  // the actual publisher of this build, rather than a placeholder that isn't who's shipping it.
+  const companyName = process.env.COMPANY_NAME || "ZTPL";
   for (const [exePath, description] of [
-    [EXE_PATH, "Argus network monitoring"],
+    [EXE_PATH, "ZTPL builds Argus"],
     [LAUNCHER_PATH, "Argus dashboard launcher"],
   ] as const) {
     await rcedit(exePath, {
