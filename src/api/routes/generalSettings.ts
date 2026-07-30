@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { requireAuth, requireRole, tenantOf } from "@api/middleware/auth";
@@ -12,6 +12,7 @@ import { UPDATE_FEED_PUBLIC_KEY_PEM } from "@domain/updateFeedPublicKey";
 import { isBlockedAddress, isPrivateAddress } from "@domain/ssrfGuard";
 import { VERSION as CURRENT_VERSION } from "@bootstrap/version";
 import { isServiceInstalled, spawnSelfUpdateHelper } from "@bootstrap/selfUpdate";
+import { createBackupZip } from "@application/backup";
 import type { AppContainer } from "@bootstrap/container";
 import type { AppEnv } from "@api/honoTypes";
 
@@ -166,6 +167,22 @@ export function generalSettingsRoutes(app: AppContainer) {
     const actualSha256 = createHash("sha256").update(Buffer.from(bytes)).digest("hex");
     if (actualSha256 !== feed.sha256.toLowerCase()) {
       return c.json({ error: "CHECKSUM_MISMATCH", message: "Downloaded file's checksum doesn't match the signed update feed — refusing to apply it." }, 502);
+    }
+
+    // A safety snapshot tied specifically to this update, independent of whatever the scheduled
+    // backup's own cadence happens to be — the self-update helper only ever swaps the exe file
+    // (never touches dataDir), so this is protection against a genuinely bad build, not against
+    // the update mechanism itself. Best-effort: a failed backup write logs and falls through
+    // rather than blocking a legitimate update, since a transient disk hiccup here shouldn't trap
+    // an install on a known-bad version it was trying to move off of.
+    try {
+      const backupsDir = join(app.config.dataDir, "backups");
+      mkdirSync(backupsDir, { recursive: true });
+      const zip = createBackupZip(app);
+      const safeVersion = feed.version.replace(/[^a-zA-Z0-9.-]/g, "_");
+      writeFileSync(join(backupsDir, `pre-update-${safeVersion}-${Date.now()}.zip`), zip);
+    } catch (err) {
+      app.logger.error("pre_update_backup_failed", { error: (err as Error).message });
     }
 
     // Resolved to an absolute path — config.dataDir is commonly relative ("./data"), and the

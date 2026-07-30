@@ -11,9 +11,10 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createHash } from "node:crypto";
+import { createHash, createPrivateKey, sign as cryptoSign } from "node:crypto";
 import { rcedit } from "rcedit";
 import pkg from "../package.json";
+import { encodeUpdateFeed, type UpdateFeedPayload } from "../src/domain/updateFeed";
 
 const ROOT = join(import.meta.dir, "..");
 const DIST = join(ROOT, "dist");
@@ -317,4 +318,39 @@ await step("Publish stable-name aliases", () => {
       "live Download button serves the new build. Optionally also `gh release create` with dist/*.exe for changelog\n" +
       "history — see README §7 — but the site no longer depends on that release existing.\n"
   );
+});
+
+const PUBLIC_DOWNLOAD_URL = "https://argus.ztplsolutions.com/downloads/Argus-Setup-win-x64.exe";
+const RELEASE_PRIVATE_KEY_PATH = join(ROOT, "secrets", "release-private-key.pem");
+
+await step("Publish update feed", () => {
+  // Auto-signs and publishes the update feed against the fixed stable-name alias URL published
+  // in the step above — that URL never changes release to release, so unlike scripts/sign-release.ts's
+  // manual/general form (which needs the final URL passed by hand, since it supports arbitrary
+  // hosting), this can run unattended every time `bun run release` does. The whole update-shipping
+  // workflow becomes: cut a release, commit, push — every install checking against this project's
+  // own default "Update check URL" (src/bootstrap/config.ts) sees it with no extra manual upload.
+  if (!installerName) {
+    process.stdout.write("No installer was built this run (Inno Setup missing?) — skipping update feed.\n");
+    return;
+  }
+  if (!existsSync(RELEASE_PRIVATE_KEY_PATH)) {
+    process.stdout.write(
+      `No release-signing key at ${RELEASE_PRIVATE_KEY_PATH} — skipping update feed.\n` +
+        "Run `bun run scripts/generate-release-keypair.ts` once to enable this.\n"
+    );
+    return;
+  }
+
+  const aliasPath = join(ROOT, "website", "public", "downloads", "Argus-Setup-win-x64.exe");
+  const sha256 = createHash("sha256").update(readFileSync(aliasPath)).digest("hex");
+  const payload: UpdateFeedPayload = { version: pkg.version, url: PUBLIC_DOWNLOAD_URL, sha256 };
+
+  const privateKey = createPrivateKey(readFileSync(RELEASE_PRIVATE_KEY_PATH, "utf-8"));
+  const canonical = JSON.stringify({ version: payload.version, url: payload.url, sha256: payload.sha256.toLowerCase() });
+  const signature = cryptoSign(null, Buffer.from(canonical, "utf-8"), privateKey);
+
+  const feedPath = join(ROOT, "website", "public", "update-feed.json");
+  writeFileSync(feedPath, encodeUpdateFeed(payload, signature));
+  process.stdout.write(`Update feed: website/public/update-feed.json (version ${pkg.version}, points at ${PUBLIC_DOWNLOAD_URL})\n`);
 });

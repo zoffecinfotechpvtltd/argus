@@ -40,8 +40,10 @@ export function emailHtml(payload: NotifyPayload, baseUrl: string): string {
 
   const ackButton = payload.ackUrl
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:22px;">
-        <tr><td style="background-color:#7c3aed;border-radius:9999px;">
-          <a href="${payload.ackUrl}" style="display:inline-block;padding:11px 26px;font-size:13px;font-weight:600;color:#ffffff;text-decoration:none;">Acknowledge</a>
+        <tr><td bgcolor="#7c3aed" style="background-color:#7c3aed;border-radius:9999px;">
+          <a href="${payload.ackUrl}" style="display:inline-block;padding:11px 26px;font-size:13px;font-weight:600;text-decoration:none;">
+            <span style="color:#ffffff;">Acknowledge</span>
+          </a>
         </td></tr>
       </table>`
     : "";
@@ -50,22 +52,26 @@ export function emailHtml(payload: NotifyPayload, baseUrl: string): string {
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="x-apple-disable-message-reformatting"></head>
 <body style="margin:0;padding:0;background-color:#f4f4f7;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;margin:0;padding:32px 16px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f4f7" style="background-color:#f4f4f7;margin:0;padding:32px 16px;font-family:'Segoe UI',Helvetica,Arial,sans-serif;">
   <tr><td align="center">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e5ea;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="max-width:480px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e5ea;">
       <tr><td style="padding:24px 28px 18px;border-bottom:1px solid #efeff4;">
         <img src="${LOGO_DATA_URI}" width="28" height="28" alt="Argus" style="display:inline-block;vertical-align:middle;border-radius:7px;" />
         <span style="display:inline-block;vertical-align:middle;margin-left:9px;font-size:15px;font-weight:700;color:#18181b;">Argus</span>
       </td></tr>
       <tr><td style="padding:24px 28px 28px;">
-        <span style="display:inline-block;background-color:${color};color:#ffffff;font-size:11px;font-weight:700;padding:4px 11px;border-radius:9999px;text-transform:uppercase;letter-spacing:.04em;">${escapeHtml(alert.severity)}</span>
-        <h1 style="font-size:18px;font-weight:700;color:#18181b;margin:14px 0 14px;line-height:24px;">${escapeHtml(alert.title)}</h1>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:14px;">
+          <tr><td bgcolor="${color}" style="background-color:${color};border-radius:9999px;padding:4px 11px;">
+            <span style="color:#ffffff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">${escapeHtml(alert.severity)}</span>
+          </td></tr>
+        </table>
+        <h1 style="font-size:18px;font-weight:700;color:#18181b;margin:0 0 14px;line-height:24px;">${escapeHtml(alert.title)}</h1>
         ${deviceListHtml}
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
           ${detailRows}${row("Opened", escapeHtml(alert.openedAt))}
         </table>
         <div style="margin-top:18px;">
-          <a href="${deepLink}" style="font-size:13px;font-weight:600;color:#7c3aed;text-decoration:none;">View device →</a>
+          <a href="${deepLink}" style="font-size:13px;font-weight:600;text-decoration:none;"><span style="color:#7c3aed;">View device →</span></a>
         </div>
         ${ackButton}
       </td></tr>

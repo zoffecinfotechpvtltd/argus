@@ -21,10 +21,17 @@ const ConfigSchema = z.object({
   // download and execute (see api/routes/generalSettings.ts) — a plain-http feed is interceptable
   // by anyone on the network path. Validated here too, not just on the settings-PUT route, so
   // setting it via env var or a hand-edited config.json can't bypass the same protection.
+  //
+  // Defaults to ZTPL's own hosted feed rather than empty/disabled: every install (fresh or
+  // upgraded, since this only fills in when the key is genuinely absent from config.json) checks
+  // for updates against this project's own release feed with zero per-customer setup. scripts/
+  // release.ts publishes dist/update-feed.json to this exact path automatically on every release
+  // (see its "Publish update feed" step) — cutting a release and pushing is the whole workflow,
+  // nothing to upload by hand. Set to "" in config.json to opt a specific install out entirely.
   updateCheckUrl: z
     .string()
     .refine((u) => u === "" || u.startsWith("https://"), "updateCheckUrl must be https://")
-    .optional(),
+    .default("https://argus.ztplsolutions.com/update-feed.json"),
   polling: z
     .object({
       defaultIntervalSec: z.coerce.number().int().min(10).default(60),
