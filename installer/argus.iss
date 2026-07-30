@@ -90,7 +90,13 @@ begin
     False, ''
   );
   DataDirPage.Add('');
-  DataDirPage.Values[0] := ExpandConstant('{app}\data');
+  // NOT ExpandConstant('{app}\data') here — {app} isn't resolved until the wizard has actually
+  // shown/passed the "Select Destination Location" page, and InitializeWizard runs before any
+  // page is shown at all. Expanding {app} this early throws a runtime "attempt to expand the
+  // 'app' constant before it was initialized" error. WizardDirValue() returns the same directory
+  // (defaulting to DefaultDirName) without that restriction — it reads the wizard's directory
+  // field directly instead of going through the constant-expansion machinery.
+  DataDirPage.Values[0] := WizardDirValue() + '\data';
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;

@@ -142,6 +142,18 @@ def render_size(master: Image.Image, simplified_master: Image.Image, size: int) 
     return src.resize((size, size), Image.LANCZOS)
 
 
+def flatten_on_white(im: Image.Image) -> Image.Image:
+    """Composites the transparent cutout onto an opaque white square — used only for icon.ico
+    (the exe/taskbar/installer icon). The source art (argus-source.png) was supplied on a white
+    background and should keep it there: unlike the web favicon/apple-touch-icon PNGs, which
+    already sit on a page background and look right transparent, a taskbar/Explorer icon with a
+    transparent background can render inconsistently (or outright black) depending on the shell
+    theme, which read as a bug rather than a design choice."""
+    bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
+    bg.alpha_composite(im)
+    return bg
+
+
 def png_bytes(im: Image.Image) -> bytes:
     from io import BytesIO
 
@@ -179,7 +191,7 @@ def main() -> None:
     frames = []
     for size in SIZES:
         rendered = render_size(master, simplified_master, size)
-        frames.append((size, png_bytes(rendered)))
+        frames.append((size, png_bytes(flatten_on_white(rendered))))
         print(f"[generate-icon]   rendered {size}px ({'simplified' if size < SIMPLIFY_BELOW_PX else 'full detail'})")
 
     ico = build_ico(frames)
