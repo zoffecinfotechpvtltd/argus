@@ -548,14 +548,15 @@ machine. `website/` also ships an `/admin` page — same signing logic (`website
 a self-contained copy of `scripts/lib/issueLicense.ts`), same form, but reachable from anywhere and
 able to **email the license straight to the customer** on submit instead of you doing it by hand.
 It's never linked from the public site nav, but a public URL protected by only a password still
-lets anyone on the internet *attempt* logins forever — see `ADMIN_ALLOWED_IPS` below, which is
-**required**, not optional, and blocks unrecognized IPs before the password check even runs.
+lets anyone on the internet *attempt* logins forever — see `ADMIN_ALLOWED_IPS` below. **Currently
+optional, deferred on purpose** (revisit before this handles real customer volume) — when unset,
+the portal falls back to password + rate-limiting alone, with no network-level gate in front of it.
 
 One-time setup, in the `website/` Vercel project's env vars (Project Settings → Environment Variables):
 
 | Var | What it's for |
 | --- | --- |
-| `ADMIN_ALLOWED_IPS` | **Required.** Comma-separated IPv4 addresses/CIDRs allowed to reach any `/api/admin/*` route at all (e.g. `203.0.113.9, 198.51.100.0/24` — your office/home IP, or a VPN egress range). Checked first, at the network level, independent of the password — see `website/lib/adminAuth.ts`'s `requireAllowedIp`. **Unset means the portal refuses all traffic on purpose** — it fails closed, not open, so forgetting to set this can't silently leave the portal wide open. Note this only gates the API calls (login, session check, issuing, history) — the static login page itself still loads for anyone who finds the URL, they just can't do anything from an unlisted IP. |
+| `ADMIN_ALLOWED_IPS` | **Optional (for now).** Comma-separated IPv4 addresses/CIDRs allowed to reach any `/api/admin/*` route at all (e.g. `203.0.113.9, 198.51.100.0/24` — your office/home IP, or a VPN egress range). Checked first, at the network level, independent of the password — see `website/lib/adminAuth.ts`'s `requireAllowedIp`. **Unset skips this gate entirely** — the portal still requires the password and is still rate-limited, it just no longer blocks unrecognized IPs before that. Set this once real customer volume makes the portal worth hardening further. Note this only gates the API calls (login, session check, issuing, history) — the static login page itself always loads for anyone who finds the URL either way. |
 | `LICENSE_PRIVATE_KEY_PEM` | The **exact contents** of `secrets/license-private-key.pem` — this is what actually signs licenses, so it must be the same keypair the exe verifies against (`src/domain/licensePublicKey.ts`). Treat it with the same care as the file itself: paste it into Vercel's env var UI, never commit it. |
 | `ADMIN_PASSWORD_HASH` | Generate with `bun run scripts/hash-admin-password.ts "a password"` — the plaintext password is never stored, only this hash. |
 | `ADMIN_SESSION_SECRET` | Any long random string (e.g. `openssl rand -hex 32`) — signs the login session cookie. |

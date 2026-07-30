@@ -97,20 +97,16 @@ export function requireSession(req: VercelRequest, res: VercelResponse): boolean
  * based on the caller's real IP (see getClientIp — trusts Vercel's own edge header, not a
  * client-suppliable one).
  *
- * Fails CLOSED: ADMIN_ALLOWED_IPS must be set, or every request is rejected — the alternative
- * (falling back to "allow everyone" when unconfigured, like the KV-optional features elsewhere in
- * this portal) would silently defeat the whole point the first time someone forgets to set it.
+ * ADMIN_ALLOWED_IPS is OPTIONAL for now (deliberately deferred, not an oversight) — when unset,
+ * this gate is skipped entirely and the portal falls back to password + rate-limiting alone as
+ * its only protection. That's a real reduction in defense-in-depth: anyone who finds the URL can
+ * attempt the password forever, just slower. Revisit before this portal handles meaningful
+ * customer volume — set ADMIN_ALLOWED_IPS to restore the fail-closed network-level gate.
  * Every /admin API route calls this first, before rate limiting or password checks.
  */
 export function requireAllowedIp(req: VercelRequest, res: VercelResponse): boolean {
   const allowlist = parseAllowlist(process.env.ADMIN_ALLOWED_IPS);
-  if (allowlist.length === 0) {
-    res.status(503).json({
-      error: "NOT_CONFIGURED",
-      message: "ADMIN_ALLOWED_IPS isn't set on this deployment — the license portal refuses all traffic until it is.",
-    });
-    return false;
-  }
+  if (allowlist.length === 0) return true;
   const ip = getClientIp(req);
   if (!isAllowedIp(ip, allowlist)) {
     // Deliberately generic — doesn't confirm whether the portal even exists at this path to an

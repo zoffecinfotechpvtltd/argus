@@ -109,7 +109,7 @@ the `/admin` license-issuing portal, and the `/api/contact` form handler.
    | `VITE_CONTACT_EMAIL` | Shown publicly on the site | `sales@yourdomain.com` |
    | `VITE_COMPANY_NAME` | Shown in the footer | `Your Company Pvt Ltd` |
    | `VITE_COMPANY_URL` | Footer link, optional | `https://yourdomain.com` |
-   | `ADMIN_ALLOWED_IPS` | **Required** for `/admin` to work at all — comma-separated IPs/CIDRs allowed to reach any admin API route. Unset = portal refuses all traffic (fails closed, not open). | `203.0.113.9, 198.51.100.0/24` |
+   | `ADMIN_ALLOWED_IPS` | **Optional (deferred for now)** — comma-separated IPs/CIDRs allowed to reach any admin API route. Unset = no network-level gate, just password + rate-limiting. Set this once real customer volume makes hardening the portal worth it. | `203.0.113.9, 198.51.100.0/24` |
    | `LICENSE_PRIVATE_KEY_PEM` | The exact contents of `secrets/license-private-key.pem` from step 2 | *(paste the whole PEM block)* |
    | `ADMIN_PASSWORD_HASH` | Output of `bun run scripts/hash-admin-password.ts "a real password"` — never store the plaintext | *(hash string)* |
    | `ADMIN_SESSION_SECRET` | Any long random string, e.g. `openssl rand -hex 32` | *(random hex)* |
