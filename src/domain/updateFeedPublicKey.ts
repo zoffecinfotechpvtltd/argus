@@ -2,5 +2,5 @@
 // This is the PUBLIC half of the update-feed signing keypair. It ships inside the compiled exe
 // and can only verify feed signatures, never create them, so committing it is safe.
 export const UPDATE_FEED_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAvz/7YHamlXoFBgX6rOYmG+V7tBmz7P8RjfMT9i39HSg=
+MCowBQYDK2VwAyEA6p/lczCUPGpI4qTuMT1qQwbU1AglM1RkbPBXyEDiF24=
 -----END PUBLIC KEY-----`;

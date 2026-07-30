@@ -2,5 +2,5 @@
 // This is the PUBLIC half of the exe-license signing keypair. It ships inside the compiled exe
 // and can only verify license signatures, never create them, so committing it is safe.
 export const LICENSE_PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAlrX1hqrp4nsZrl7N32eweJOUEKv24IjMVHXPnMNDgUY=
+MCowBQYDK2VwAyEAsvsIRXV2RNkSWReVVGzlitG0M8tSQM8FTm5Vh6sEXJg=
 -----END PUBLIC KEY-----`;
