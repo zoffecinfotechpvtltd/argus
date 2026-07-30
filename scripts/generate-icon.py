@@ -21,6 +21,7 @@ Usage: python3 scripts/generate-icon.py
 import struct
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -124,22 +125,38 @@ def simplify_master(im: Image.Image) -> Image.Image:
     linework and keeps the bulky shapes, independent of final render size. (An earlier version of
     this script scaled the kernel with the *target* size instead, which made it too small to
     matter at every size and also, at extreme sizes, big enough to erase the node circles
-    entirely — since dilate can't resurrect something erode reduced to nothing.) A light blur
-    afterward softens the harder edges the min/max filters leave, so later LANCZOS downscaling
-    anti-aliases cleanly instead of ringing on hard edges."""
+    entirely — since dilate can't resurrect something erode reduced to nothing.)
+
+    The min/max filter pair leaves a softly-graded edge band, not a hard one — an earlier version
+    of this function then Gaussian-blurred that band further "to help LANCZOS downscale cleanly."
+    In practice that produced a taskbar/desktop icon that read as out-of-focus rather than simply
+    small: a wide half-transparent halo around every shape, worst exactly at 32-48px where a real
+    icon needs to look intentional, not soft. The fix is a contrast curve on the alpha channel
+    instead of a blur — raising each value to a power > 1 pushes mid-tones down toward transparent
+    while leaving fully-opaque pixels alone, collapsing that halo into a much narrower, crisper
+    edge without reintroducing the hard-edge ringing the blur was originally added to avoid."""
     r, g, b, a = im.split()
-    kernel = round(im.size[0] * 0.04)
+    kernel = round(im.size[0] * 0.07)
     if kernel % 2 == 0:
         kernel += 1
     opened = a.filter(ImageFilter.MinFilter(kernel)).filter(ImageFilter.MaxFilter(kernel))
-    opened = opened.filter(ImageFilter.GaussianBlur(radius=max(1.0, kernel / 10)))
+    alpha = np.asarray(opened, dtype=np.float64) / 255.0
+    alpha = alpha**3.0
+    opened = Image.fromarray((alpha * 255).clip(0, 255).astype(np.uint8), "L")
     return Image.merge("RGBA", (r, g, b, opened))
 
 
 def render_size(master: Image.Image, simplified_master: Image.Image, size: int) -> Image.Image:
     src = simplified_master if size < SIMPLIFY_BELOW_PX else master
     src = progressive_downscale(src, size)
-    return src.resize((size, size), Image.LANCZOS)
+    out = src.resize((size, size), Image.LANCZOS)
+    if size < SIMPLIFY_BELOW_PX:
+        # LANCZOS downscale onto the now much-smaller canvas still softens edges a bit more than
+        # is ideal for a taskbar icon — a mild unsharp mask (only applied to the already-simplified
+        # small sizes, not the full-detail 64px+ frames) punches the edge contrast back up without
+        # introducing new ringing, since there's no fine linework left at this point to ring on.
+        out = out.filter(ImageFilter.UnsharpMask(radius=1.2, percent=120, threshold=2))
+    return out
 
 
 def flatten_on_white(im: Image.Image) -> Image.Image:
