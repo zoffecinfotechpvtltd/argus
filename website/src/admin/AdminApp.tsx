@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
 import { ArgusMark } from "../components/ArgusMark";
+import { useTheme } from "../hooks/useTheme";
 import { LoginForm } from "./LoginForm";
 import { IssueLicenseForm } from "./IssueLicenseForm";
 import { LicenseHistory } from "./LicenseHistory";
@@ -13,6 +15,7 @@ export function AdminApp() {
   const [session, setSession] = useState<SessionState>("checking");
   const [historyKey, setHistoryKey] = useState(0);
   const [backendError, setBackendError] = useState<string | null>(null);
+  const { theme, toggle: toggleTheme } = useTheme();
 
   useEffect(() => {
     fetch("/api/admin/session")
@@ -64,11 +67,21 @@ export function AdminApp() {
               <span className="block text-[11px] text-dim">Internal — never linked from the public site</span>
             </div>
           </div>
-          {session === "signedIn" && (
-            <button onClick={handleLogout} className="text-sm text-muted transition-colors hover:text-fog">
-              Sign out
+          <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+              className="cursor-pointer rounded-full p-1.5 text-muted transition-colors hover:text-fog"
+            >
+              {theme === "dark" ? <Sun size={16} aria-hidden="true" /> : <Moon size={16} aria-hidden="true" />}
             </button>
-          )}
+            {session === "signedIn" && (
+              <button onClick={handleLogout} className="text-sm text-muted transition-colors hover:text-fog">
+                Sign out
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

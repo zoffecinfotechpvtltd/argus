@@ -2,8 +2,10 @@
 // your own machine — this is the same signing logic, just reachable over the internet behind a
 // root-admin login so you can issue + email a license from anywhere, not only your dev box).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { render } from "@react-email/render";
 import { requireAllowedIp, requireSession } from "../../lib/adminAuth.js";
-import { escapeHtml, sendMail } from "../../lib/mail.js";
+import { sendMail } from "../../lib/mail.js";
+import { LicenseEmail } from "../../emails/LicenseEmail.js";
 import { isKvConfigured, lpushCapped, lrange, lrem } from "../../lib/kv.js";
 import { rateLimit } from "../../lib/rateLimit.js";
 import {
@@ -22,24 +24,27 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function licenseEmailHtml(opts: { customer: string; plan: LicensePlan; deviceLimit: number; expiresAt: string; licenseFile: string }): string {
+async function licenseEmailHtml(opts: {
+  customer: string;
+  plan: LicensePlan;
+  deviceLimit: number;
+  expiresAt: string;
+  licenseFile: string;
+}): Promise<string> {
   const planLabel = PLAN_DEVICE_RANGES[opts.plan].label;
   const expiryText = new Date(opts.expiresAt).getFullYear() > new Date().getFullYear() + 40
     ? "Perpetual (no renewal needed)"
     : new Date(opts.expiresAt).toLocaleDateString();
-  return `
-    <p>Hi ${escapeHtml(opts.customer)},</p>
-    <p>Your Argus license is attached (<code>${escapeHtml(opts.customer)}.license.key</code>) and also included below.</p>
-    <ul>
-      <li><strong>Plan:</strong> ${escapeHtml(planLabel)}</li>
-      <li><strong>Devices:</strong> ${opts.deviceLimit}</li>
-      <li><strong>Expires:</strong> ${expiryText}</li>
-    </ul>
-    <p>To apply it: open Argus, sign in as an admin, go to <strong>Settings → License</strong>, paste the
-    contents below into "Apply a license", and click Apply.</p>
-    <pre style="background:#111;color:#eee;padding:12px;border-radius:6px;font-size:12px;white-space:pre-wrap;word-break:break-all;">${escapeHtml(opts.licenseFile)}</pre>
-    <p>Questions? Just reply to this email.</p>
-  `;
+  return render(
+    <LicenseEmail
+      customer={opts.customer}
+      planLabel={planLabel}
+      deviceLimit={opts.deviceLimit}
+      expiryText={expiryText}
+      licenseFileName={`${opts.customer}.license.key`}
+      licenseFile={opts.licenseFile}
+    />
+  );
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -149,7 +154,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await sendMail({
         to: contactEmail,
         subject: `Your Argus license — ${customer}`,
-        html: licenseEmailHtml({ customer, plan: payload.plan, deviceLimit: payload.deviceLimit, expiresAt: payload.expiresAt, licenseFile }),
+        html: await licenseEmailHtml({ customer, plan: payload.plan, deviceLimit: payload.deviceLimit, expiresAt: payload.expiresAt, licenseFile }),
         attachments: [{ name: `${customer}.license.key`, contentBase64: Buffer.from(licenseFile, "utf-8").toString("base64"), contentType: "text/plain" }],
       });
       emailed = true;

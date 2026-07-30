@@ -1,12 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
 /**
- * Replaces the native <select> for the one dropdown on the site (Contact's plan picker). A native
- * select's own popup is OS-chrome — Chrome/Edge/Firefox all render it in the system's default
- * light style, tiny padding, no theming hook at all, regardless of how big or dark the rest of the
- * page is. This is a fully custom listbox (real ARIA roles, keyboard nav, click-outside-to-close)
- * styled to match the site instead.
+ * Replaces the native <select> everywhere on the site and admin portal. A native select's own
+ * popup is OS-chrome — Chrome/Edge/Firefox all render it in the system's default light style, tiny
+ * padding, no theming hook at all, regardless of how big or dark the rest of the page is (this is
+ * exactly why the admin portal's Plan dropdown showed a plain white popup even in dark mode). This
+ * is a fully custom listbox (real ARIA roles, keyboard nav, click-outside-to-close) styled to
+ * match the site instead.
  */
 export function CustomSelect({
   value,
@@ -16,13 +22,15 @@ export function CustomSelect({
 }: {
   value: string;
   onChange: (v: string) => void;
-  options: string[];
+  options: SelectOption[];
   placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+
+  const selected = options.find((o) => o.value === value);
 
   useEffect(() => {
     if (!open) return;
@@ -34,7 +42,7 @@ export function CustomSelect({
   }, [open]);
 
   useEffect(() => {
-    if (open) setActiveIndex(Math.max(0, options.indexOf(value)));
+    if (open) setActiveIndex(Math.max(0, options.findIndex((o) => o.value === value)));
   }, [open, value, options]);
 
   useEffect(() => {
@@ -63,7 +71,7 @@ export function CustomSelect({
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       if (activeIndex >= 0) {
-        onChange(options[activeIndex]!);
+        onChange(options[activeIndex]!.value);
         setOpen(false);
       }
     } else if (e.key === "Tab") {
@@ -81,7 +89,7 @@ export function CustomSelect({
         aria-expanded={open}
         className="input flex w-full cursor-pointer items-center justify-between text-left"
       >
-        <span className={value ? "text-fog" : "text-dim"}>{value || placeholder}</span>
+        <span className={selected ? "text-fog" : "text-dim"}>{selected?.label ?? placeholder}</span>
         <ChevronDown size={16} className={`shrink-0 text-dim transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
 
@@ -95,20 +103,20 @@ export function CustomSelect({
         >
           {options.map((opt, i) => (
             <li
-              key={opt}
+              key={opt.value}
               role="option"
-              aria-selected={opt === value}
+              aria-selected={opt.value === value}
               onMouseEnter={() => setActiveIndex(i)}
               onClick={() => {
-                onChange(opt);
+                onChange(opt.value);
                 setOpen(false);
               }}
               className={`flex cursor-pointer items-center justify-between px-3.5 py-2.5 text-fluid-sm ${
                 i === activeIndex ? "bg-accent-subtle text-accent" : "text-fog"
               }`}
             >
-              {opt}
-              {opt === value && <Check size={15} className="shrink-0 text-accent" aria-hidden="true" />}
+              {opt.label}
+              {opt.value === value && <Check size={15} className="shrink-0 text-accent" aria-hidden="true" />}
             </li>
           ))}
         </ul>

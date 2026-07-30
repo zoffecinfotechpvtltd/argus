@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { CheckCircle2, KeyRound, AlertTriangle } from "lucide-react";
+import { CustomSelect } from "../components/CustomSelect";
+import { CustomDatePicker } from "../components/CustomDatePicker";
 import { LICENSE_PLANS, PLAN_DEVICE_RANGES, suggestPlanForDeviceCount, type LicensePlan } from "./planData";
+
+const PLAN_OPTIONS = LICENSE_PLANS.map((p) => ({
+  value: p,
+  label: `${PLAN_DEVICE_RANGES[p].label} (${PLAN_DEVICE_RANGES[p].min}–${PLAN_DEVICE_RANGES[p].max ?? "∞"} devices)`,
+}));
 
 interface IssueResult {
   ok: boolean;
@@ -88,20 +95,14 @@ export function IssueLicenseForm({ onIssued }: { onIssued: () => void }) {
         </div>
         <div>
           <label className="mb-1.5 block text-sm text-muted">Plan</label>
-          <select
-            className="input"
+          <CustomSelect
             value={plan}
-            onChange={(e) => {
-              setPlan(e.target.value as LicensePlan);
+            onChange={(v) => {
+              setPlan(v as LicensePlan);
               setPlanTouched(true);
             }}
-          >
-            {LICENSE_PLANS.map((p) => (
-              <option key={p} value={p}>
-                {PLAN_DEVICE_RANGES[p].label} ({PLAN_DEVICE_RANGES[p].min}–{PLAN_DEVICE_RANGES[p].max ?? "∞"} devices)
-              </option>
-            ))}
-          </select>
+            options={PLAN_OPTIONS}
+          />
           {devices && (Number(devices) < range.min || (range.max !== null && Number(devices) > range.max)) ? (
             <p className="mt-1 flex items-center gap-1 text-xs text-amber-500">
               <AlertTriangle size={12} aria-hidden="true" />
@@ -122,7 +123,8 @@ export function IssueLicenseForm({ onIssued }: { onIssued: () => void }) {
         {!perpetual && (
           <div>
             <label className="mb-1.5 block text-sm text-muted">Expires on</label>
-            <input type="date" className="input" value={expires} onChange={(e) => setExpires(e.target.value)} required={!perpetual} />
+            <CustomDatePicker value={expires} onChange={setExpires} />
+            {!expires && <p className="mt-1 text-xs text-dim">Required unless perpetual is checked.</p>}
           </div>
         )}
 

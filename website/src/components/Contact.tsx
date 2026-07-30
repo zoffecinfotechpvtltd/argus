@@ -4,7 +4,10 @@ import { ScrollReveal } from "./ScrollReveal";
 import { CustomSelect } from "./CustomSelect";
 import { SITE } from "../config";
 
-const PLANS = ["Starter", "Professional", "Business", "Enterprise", "Unlimited", "Not sure yet"];
+const PLANS = ["Starter", "Professional", "Business", "Enterprise", "Unlimited", "Not sure yet"].map((p) => ({
+  value: p,
+  label: p,
+}));
 
 type Status = "idle" | "submitting" | "sent" | "error";
 
