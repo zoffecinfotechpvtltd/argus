@@ -19,7 +19,7 @@ const BUCKETS = [
  * except one alert nobody saw for 6 hours" and "everyone genuinely takes ~20 minutes". Computed
  * client-side from the last 500 alerts' own openedAt/ackedAt timestamps (not a new backend
  * metric) — only alerts that have actually been acknowledged count toward a bucket. */
-export function AckTimeHistogram() {
+export function AckTimeHistogram({ className = "" }: { className?: string }) {
   const colors = useEchartsColors();
   const [alerts, setAlerts] = useState<Alert[] | null>(null);
 
@@ -84,7 +84,7 @@ export function AckTimeHistogram() {
   );
 
   return (
-    <Card className="p-3">
+    <Card className={`p-3 ${className}`}>
       <div className="mb-1 text-xs text-text-secondary">Time to acknowledge{sampleSize > 0 ? ` (last ${sampleSize} acked)` : ""}</div>
       {loading ? (
         <div className="flex h-[140px] items-center justify-center text-xs text-text-muted">Loading…</div>

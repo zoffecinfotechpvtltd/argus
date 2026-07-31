@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentProps, type MouseEvent as ReactMouseEvent } from "react";
 import { List, type RowComponentProps } from "react-window";
 import {
   Area,
@@ -45,6 +45,33 @@ const AXIS_TICK = { fontSize: 10, fill: "#A1A1AA" };
 const CHART_MUTED_FILL = "rgba(161,161,170,0.12)"; // text-muted at low opacity, for chart backgrounds/cursors
 const STATE_ORDER: DeviceState[] = ["up", "degraded", "down", "flapping", "maintenance"];
 
+/**
+ * Dashboard-only elevation treatment — every other page in the app keeps the flat, shadow-at-rest-
+ * never Card from components/ui (see that file's own comment: "no shadow at rest... this system
+ * moves state through color only"). That's the right call for a dense operational tool like
+ * Inventory or Settings, but this page is the one place a "floating tile" reads as the room's own
+ * console glass rather than decoration — a real elevation cue for the one screen someone glances
+ * at from across a room. Two shadow layers (a tight contact shadow + a soft ambient one) instead of
+ * one flat blur reads as a physically lit surface rather than a CSS drop-shadow; a 1px inset top
+ * highlight is the light-catching-an-edge cue that actually sells "this tile sits above the page,"
+ * not just "this tile has a shadow." Kept to elevation + a subtle lift on hover — no color, no glow,
+ * same restraint the rest of the design system already uses for its own accent.
+ */
+function BentoCard({ className = "", children, ...props }: ComponentProps<typeof Card>) {
+  return (
+    <Card
+      className={`group relative overflow-hidden !border-border/50 !shadow-[0_2px_3px_rgba(24,24,27,0.08),0_6px_10px_rgba(24,24,27,0.08),0_30px_50px_-6px_rgba(24,24,27,0.35)] transition-[transform,box-shadow] duration-300 ease-out-expo hover:-translate-y-[4px] hover:!shadow-[0_4px_6px_rgba(24,24,27,0.10),0_10px_18px_rgba(24,24,27,0.10),0_44px_70px_-8px_rgba(24,24,27,0.45)] dark:!shadow-[0_2px_3px_rgba(0,0,0,0.4),0_6px_10px_rgba(0,0,0,0.35),0_30px_50px_-6px_rgba(0,0,0,0.65)] dark:hover:!shadow-[0_4px_6px_rgba(0,0,0,0.45),0_10px_18px_rgba(0,0,0,0.4),0_44px_70px_-8px_rgba(0,0,0,0.75)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${className}`}
+      {...props}
+    >
+      <span
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.14]"
+        aria-hidden="true"
+      />
+      {children}
+    </Card>
+  );
+}
+
 interface Segment {
   key: string;
   label: string;
@@ -58,7 +85,7 @@ interface Segment {
 function DonutCard({ title, segments }: { title: string; segments: Segment[] }) {
   const total = segments.reduce((sum, s) => sum + s.count, 0);
   return (
-    <Card className="p-3">
+    <BentoCard className="p-3">
       <div className="mb-2 text-xs text-text-secondary">{title}</div>
       {total === 0 ? (
         <div className="flex h-[92px] items-center justify-center text-xs text-text-muted">No data yet</div>
@@ -93,7 +120,7 @@ function DonutCard({ title, segments }: { title: string; segments: Segment[] }) 
           </div>
         </div>
       )}
-    </Card>
+    </BentoCard>
   );
 }
 
@@ -119,7 +146,7 @@ function DonutTooltip({ active, payload, total }: { active?: boolean; payload?: 
 function DeviceMixCard({ deviceMix }: { deviceMix: Array<{ type: string; label: string; count: number; pct: number }> }) {
   const treemapData = deviceMix.map((d, i) => ({ name: d.label, size: d.count, pct: d.pct, fill: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length]! }));
   return (
-    <Card className="p-3">
+    <BentoCard className="p-3">
       <div className="mb-2 text-xs text-text-secondary">Device mix</div>
       {deviceMix.length === 0 ? (
         <div className="flex h-[164px] items-center justify-center text-xs text-text-muted">No devices yet</div>
@@ -130,7 +157,7 @@ function DeviceMixCard({ deviceMix }: { deviceMix: Array<{ type: string; label: 
           </Treemap>
         </ResponsiveContainer>
       )}
-    </Card>
+    </BentoCard>
   );
 }
 
@@ -225,7 +252,7 @@ function LatencySparkline({ deviceId, color }: { deviceId: string; color: string
  * palette, unlike the plain device-mix-by-type pie above. */
 function GroupStateBarCard({ rows }: { rows: Array<{ label: string } & Record<DeviceState, number>> }) {
   return (
-    <Card className="p-3">
+    <BentoCard className="p-3">
       <div className="mb-2 flex items-center justify-between text-xs text-text-secondary">
         <span>Devices by group</span>
         <div className="hidden gap-2.5 sm:flex">
@@ -251,7 +278,7 @@ function GroupStateBarCard({ rows }: { rows: Array<{ label: string } & Record<De
           </BarChart>
         </ResponsiveContainer>
       )}
-    </Card>
+    </BentoCard>
   );
 }
 
@@ -307,7 +334,7 @@ function AlertsTrendCard() {
   const total = rows?.reduce((s, r) => s + r.critical + r.warning + r.info, 0) ?? 0;
 
   return (
-    <Card className="p-3">
+    <BentoCard className="p-3">
       <div className="mb-2 flex items-center justify-between text-xs text-text-secondary">
         <span>Alerts opened, last 14 days</span>
         <div className="flex gap-2.5">
@@ -343,7 +370,7 @@ function AlertsTrendCard() {
           </AreaChart>
         </ResponsiveContainer>
       )}
-    </Card>
+    </BentoCard>
   );
 }
 
@@ -387,7 +414,7 @@ function SlaHeadroomCard({ availabilityPct, avgLatencyMs }: { availabilityPct: n
       : null;
 
   return (
-    <Card className="p-3">
+    <BentoCard className="p-3">
       <div className="mb-1 text-xs text-text-secondary">SLA headroom</div>
       <div className="flex items-center gap-4">
         <SlaGauge pct={availabilityPct} targetPct={SLA_TARGET_PCT} />
@@ -414,7 +441,7 @@ function SlaHeadroomCard({ availabilityPct, avgLatencyMs }: { availabilityPct: n
           </div>
         </div>
       )}
-    </Card>
+    </BentoCard>
   );
 }
 
@@ -499,7 +526,7 @@ function BandwidthSummaryCard() {
   }, []);
 
   return (
-    <Card className="p-3">
+    <BentoCard className="p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs text-text-secondary">Bandwidth (last hour)</span>
         <Link to="/bandwidth" className="text-xs text-accent transition-opacity duration-150 hover:opacity-80">
@@ -539,7 +566,7 @@ function BandwidthSummaryCard() {
           </ResponsiveContainer>
         </>
       )}
-    </Card>
+    </BentoCard>
   );
 }
 
@@ -694,7 +721,7 @@ function GroupHealthComparison({ rows, colorFor }: { rows: GroupRadarRow[]; colo
     return row;
   });
   return (
-    <Card className="p-3">
+    <BentoCard className="p-3">
       <div className="mb-2 text-xs text-text-secondary">Group health comparison</div>
       {rows.length === 0 ? (
         <div className="flex h-[220px] items-center justify-center text-xs text-text-muted">No groups yet</div>
@@ -713,7 +740,7 @@ function GroupHealthComparison({ rows, colorFor }: { rows: GroupRadarRow[]; colo
           </BarChart>
         </ResponsiveContainer>
       )}
-    </Card>
+    </BentoCard>
   );
 }
 
@@ -748,7 +775,7 @@ interface ScatterPoint {
  * metric alone would hide. */
 function LatencyReliabilityScatter({ points }: { points: ScatterPoint[] }) {
   return (
-    <Card className="p-3">
+    <BentoCard className="p-3">
       <div className="mb-2 text-xs text-text-secondary">Latency vs. reliability</div>
       {points.length === 0 ? (
         <div className="flex h-[220px] items-center justify-center text-xs text-text-muted">No devices with both latency and uptime data yet</div>
@@ -768,7 +795,7 @@ function LatencyReliabilityScatter({ points }: { points: ScatterPoint[] }) {
           </ScatterChart>
         </ResponsiveContainer>
       )}
-    </Card>
+    </BentoCard>
   );
 }
 
@@ -1003,99 +1030,134 @@ export function Dashboard() {
 
   return (
     <Layout title="Executive Overview" subtitle="Real-time summary of network health and performance">
-      <div className="space-y-6">
-        {/* Top strip — asymmetric: one hero focal point (the number an operator checks first),
-            not six identical boxes competing for attention. */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
+      <div className="space-y-3">
+        {/* Bento cluster #1 — the hero occupies 2/3 width and both rows; Devices/Open alerts stack
+            in the remaining column (plain CSS grid auto-placement fills col-3 row-1 then col-3
+            row-2 on its own, no explicit placement needed). Up/Degraded/Down get their own full-
+            width row beneath — a mosaic of three different tile sizes instead of six equal boxes. */}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div
-            className={`md:col-span-4 transition-all duration-300 ease-out-expo ${mounted ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}
+            className={`md:col-span-2 md:row-span-2 transition-all duration-300 ease-out-expo ${mounted ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}
           >
             <HeroAvailabilityTile pct={summary?.availabilityTodayPct ?? 100} trend={statHistory.map((h) => h.availabilityTodayPct)} />
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:col-span-8 lg:grid-cols-5">
-            {[
-              { label: "Devices", value: summary?.totalDevices ?? "…", tone: undefined, trend: statHistory.map((h) => h.totalDevices) },
-              { label: "Up", value: summary?.byState.up ?? 0, tone: "success" as const, trend: statHistory.map((h) => h.up) },
-              { label: "Degraded", value: summary?.byState.degraded ?? 0, tone: "warning" as const, trend: statHistory.map((h) => h.degraded) },
-              { label: "Down", value: summary?.byState.down ?? 0, tone: "critical" as const, trend: statHistory.map((h) => h.down) },
-              {
-                label: "Open alerts",
-                value: (summary?.openAlerts.critical ?? 0) + (summary?.openAlerts.warning ?? 0) + (summary?.openAlerts.info ?? 0),
-                tone: undefined,
-                trend: statHistory.map((h) => h.openAlerts),
-              },
-            ].map((tile, i) => (
-              <div
-                key={tile.label}
-                className={`transition-all duration-300 ease-out-expo ${mounted ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}
-                style={{ transitionDelay: mounted ? `${60 + i * 40}ms` : "0ms" }}
-              >
-                <StatTile label={tile.label} value={tile.value} tone={tile.tone} trend={tile.trend} />
-              </div>
-            ))}
+          {[
+            {
+              label: "Devices",
+              value: summary?.totalDevices ?? "…",
+              tone: undefined,
+              trend: statHistory.map((h) => h.totalDevices),
+            },
+            {
+              label: "Open alerts",
+              value: (summary?.openAlerts.critical ?? 0) + (summary?.openAlerts.warning ?? 0) + (summary?.openAlerts.info ?? 0),
+              tone: undefined,
+              trend: statHistory.map((h) => h.openAlerts),
+            },
+          ].map((tile, i) => (
+            <div
+              key={tile.label}
+              className={`transition-all duration-300 ease-out-expo ${mounted ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}
+              style={{ transitionDelay: mounted ? `${60 + i * 40}ms` : "0ms" }}
+            >
+              <StatTile label={tile.label} value={tile.value} tone={tile.tone} trend={tile.trend} />
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {[
+            { label: "Up", value: summary?.byState.up ?? 0, tone: "success" as const, trend: statHistory.map((h) => h.up) },
+            { label: "Degraded", value: summary?.byState.degraded ?? 0, tone: "warning" as const, trend: statHistory.map((h) => h.degraded) },
+            { label: "Down", value: summary?.byState.down ?? 0, tone: "critical" as const, trend: statHistory.map((h) => h.down) },
+          ].map((tile, i) => (
+            <div
+              key={tile.label}
+              className={`transition-all duration-300 ease-out-expo ${mounted ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}
+              style={{ transitionDelay: mounted ? `${140 + i * 40}ms` : "0ms" }}
+            >
+              <StatTile label={tile.label} value={tile.value} tone={tile.tone} trend={tile.trend} />
+            </div>
+          ))}
+        </div>
+
+        {/* Bento cluster #2 — device mix (the richer treemap) gets the wide cell; the two status
+            donuts stack in the narrow column beside it. Availability itself lives only in the hero
+            tile above and the SLA headroom card further down; it doesn't need a third rendering
+            here (see "Removed" note at the bottom of this file). */}
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <DeviceMixCard deviceMix={deviceMix} />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-1">
+            <DonutCard title="Fleet health" segments={stateSegments} />
+            <DonutCard title="Open alerts by severity" segments={alertSegments} />
           </div>
         </div>
 
-        {/* Fleet overview — availability itself lives only in the hero tile above and the SLA
-            headroom card below; it doesn't need a third rendering here (see "Removed" note at
-            the bottom of this file). */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <DonutCard title="Fleet health" segments={stateSegments} />
-          <DonutCard title="Open alerts by severity" segments={alertSegments} />
-          <DeviceMixCard deviceMix={deviceMix} />
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <Card className="p-3">
-            <div className="mb-2 text-xs text-text-secondary">Latency leaders (highest response time)</div>
-            {latencyLeaders.length === 0 ? (
-              <div className="flex h-[100px] items-center justify-center text-xs text-text-muted">No latency data yet</div>
-            ) : (
-              <div className="space-y-1">
-                <ResponsiveContainer width="100%" height={Math.max(60, latencyLeaders.length * 24)}>
-                  <BarChart data={latencyLeaders} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="name" width={100} tick={AXIS_TICK} axisLine={false} tickLine={false} />
-                    <Tooltip content={<LatencyTooltip />} cursor={{ fill: CHART_MUTED_FILL }} />
-                    <Bar dataKey="lastLatencyMs" radius={[0, 4, 4, 0]} maxBarSize={14}>
-                      {latencyLeaders.map((d) => (
-                        <Cell key={d.id} fill={statusColor(d.state)} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-                <div className="space-y-1 border-t border-border pt-2">
-                  {latencyLeaders.map((d) => (
-                    <div key={d.id} className="flex items-center justify-between gap-2 text-2xs text-text-secondary">
-                      <span className="truncate">{d.name}</span>
-                      <LatencySparkline deviceId={d.id} color={statusColor(d.state)} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
-          <GroupStateBarCard rows={groupStateRows} />
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <GroupHealthComparison rows={groupRadarRows} colorFor={groupColorFor} />
-          <LatencyReliabilityScatter points={scatterPoints} />
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <AlertActivityCalendar />
+        {/* Alert activity moved up next to the fleet-overview cluster — the more glanceable,
+            day-to-day-relevant pair, ahead of the more analytical comparisons below. */}
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <AlertActivityCalendar className="h-full" />
+          </div>
           <AlertsTrendCard />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          <SlaHeadroomCard availabilityPct={summary?.availabilityTodayPct ?? 100} avgLatencyMs={avgLatencyMs} />
-          <BandwidthSummaryCard />
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <BentoCard className="p-3">
+              <div className="mb-2 text-xs text-text-secondary">Latency leaders (highest response time)</div>
+              {latencyLeaders.length === 0 ? (
+                <div className="flex h-[100px] items-center justify-center text-xs text-text-muted">No latency data yet</div>
+              ) : (
+                <div className="space-y-1">
+                  <ResponsiveContainer width="100%" height={Math.max(60, latencyLeaders.length * 24)}>
+                    <BarChart data={latencyLeaders} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
+                      <XAxis type="number" hide />
+                      <YAxis type="category" dataKey="name" width={100} tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                      <Tooltip content={<LatencyTooltip />} cursor={{ fill: CHART_MUTED_FILL }} />
+                      <Bar dataKey="lastLatencyMs" radius={[0, 4, 4, 0]} maxBarSize={14}>
+                        {latencyLeaders.map((d) => (
+                          <Cell key={d.id} fill={statusColor(d.state)} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-1 border-t border-border pt-2">
+                    {latencyLeaders.map((d) => (
+                      <div key={d.id} className="flex items-center justify-between gap-2 text-2xs text-text-secondary">
+                        <span className="truncate">{d.name}</span>
+                        <LatencySparkline deviceId={d.id} color={statusColor(d.state)} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </BentoCard>
+          </div>
+          <GroupStateBarCard rows={groupStateRows} />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <GroupHealthComparison rows={groupRadarRows} colorFor={groupColorFor} />
+          <div className="lg:col-span-2">
+            <LatencyReliabilityScatter points={scatterPoints} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <SlaHeadroomCard availabilityPct={summary?.availabilityTodayPct ?? 100} avgLatencyMs={avgLatencyMs} />
+          <div className="lg:col-span-2">
+            <BandwidthSummaryCard />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <NotificationDeliverySankey className="h-full" />
+          </div>
           <AckTimeHistogram />
-          <NotificationDeliverySankey />
         </div>
 
         <CriticalAlertsTable />
@@ -1258,13 +1320,54 @@ function PulseTrace({ color, flatline }: { color: string; flatline: boolean }) {
  * as remaining error budget, not as its own competing "the number that matters" moment — a card
  * that used to exist here purely to redraw this same figure as a gauge was removed rather than
  * kept as a third rendering of one metric. Same real `statHistory` trend data as every other tile —
- * no fabricated comparison. */
+ * no fabricated comparison.
+ *
+ * This is the one tile on the page with an interactive cursor-follow tilt + glow — the signature
+ * "floating above the screen" moment, spent in exactly one place rather than smeared across every
+ * card (which would read as gimmicky, not premium). Driven by direct DOM/style mutation on
+ * mousemove instead of React state — a per-pixel-of-cursor-movement re-render would be real,
+ * measurable jank for no visual benefit, where mutating a couple of CSS custom properties directly
+ * is the same technique browsers themselves use for anything animated at pointer-move frequency.
+ * Not a <Card> (that component doesn't forward refs) — same base visual classes, applied directly,
+ * so this can hold the ref the tilt math needs. */
 function HeroAvailabilityTile({ pct, trend }: { pct: number; trend: number[] }) {
   const good = pct >= SLA_TARGET_PCT;
   const color = good ? DEVICE_STATE_HEX.up : pct >= 99 ? DEVICE_STATE_HEX.degraded : DEVICE_STATE_HEX.down;
+  const ref = useRef<HTMLDivElement>(null);
+  const reducedMotion = useRef(typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+
+  function onMouseMove(e: ReactMouseEvent<HTMLDivElement>) {
+    if (reducedMotion.current || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width;
+    const py = (e.clientY - rect.top) / rect.height;
+    ref.current.style.setProperty("--tilt-x", `${(py - 0.5) * -6}deg`);
+    ref.current.style.setProperty("--tilt-y", `${(px - 0.5) * 6}deg`);
+    ref.current.style.setProperty("--glow-x", `${px * 100}%`);
+    ref.current.style.setProperty("--glow-y", `${py * 100}%`);
+  }
+  function onMouseLeave() {
+    ref.current?.style.setProperty("--tilt-x", "0deg");
+    ref.current?.style.setProperty("--tilt-y", "0deg");
+  }
+
   return (
-    <Card className="h-full p-5 transition-shadow duration-micro ease-out-expo hover:shadow-md">
-      <div className="flex items-center justify-between gap-2">
+    <div
+      ref={ref}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      className="group relative h-full overflow-hidden rounded-lg border border-border/60 bg-bg-surface p-5 shadow-[0_3px_6px_rgba(24,24,27,0.08),0_24px_48px_-16px_rgba(24,24,27,0.32)] [transform:perspective(1000px)_rotateX(var(--tilt-x,0deg))_rotateY(var(--tilt-y,0deg))] transition-[transform,box-shadow] duration-300 ease-out-expo will-change-transform hover:shadow-[0_6px_14px_rgba(24,24,27,0.12),0_36px_64px_-16px_rgba(24,24,27,0.4)] dark:shadow-[0_3px_6px_rgba(0,0,0,0.4),0_24px_48px_-14px_rgba(0,0,0,0.6)] dark:hover:shadow-[0_6px_14px_rgba(0,0,0,0.45),0_36px_64px_-14px_rgba(0,0,0,0.75)] motion-reduce:!transform-none motion-reduce:transition-none"
+    >
+      <span
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.14]"
+        aria-hidden="true"
+      />
+      <span
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{ background: "radial-gradient(420px circle at var(--glow-x,50%) var(--glow-y,0%), rgb(var(--color-accent) / 0.10), transparent 60%)" }}
+        aria-hidden="true"
+      />
+      <div className="relative flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-2xs font-medium uppercase tracking-tight text-text-secondary">Availability today</div>
           <div className="mt-1 flex items-baseline gap-1.5">
@@ -1276,8 +1379,10 @@ function HeroAvailabilityTile({ pct, trend }: { pct: number; trend: number[] }) 
         </div>
         <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />
       </div>
-      <PulseTrace color={color} flatline={trend.length < 2} />
-    </Card>
+      <div className="relative">
+        <PulseTrace color={color} flatline={trend.length < 2} />
+      </div>
+    </div>
   );
 }
 
@@ -1299,7 +1404,7 @@ function StatTile({
   const sparkColor = tone === "success" ? DEVICE_STATE_HEX.up : tone === "warning" ? DEVICE_STATE_HEX.degraded : tone === "critical" ? DEVICE_STATE_HEX.down : "#A1A1AA";
   const sparkData = (trend ?? []).map((v, i) => ({ i, v }));
   return (
-    <Card className="h-full p-3.5 transition-shadow duration-micro ease-out-expo hover:shadow-sm">
+    <BentoCard className="h-full p-3.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate text-2xs font-medium text-text-secondary">{label}</div>
@@ -1315,6 +1420,6 @@ function StatTile({
           </div>
         )}
       </div>
-    </Card>
+    </BentoCard>
   );
 }

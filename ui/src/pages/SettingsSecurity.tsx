@@ -172,8 +172,8 @@ export function SettingsSecurity() {
     <Layout title="Security" subtitle="Password and two-factor authentication for your account">
       <div className="mx-auto max-w-2xl space-y-6">
         <Card>
-          <CardHeader title="Change password" description="Use at least 10 characters — a passphrase is easier to remember than random symbols." />
           <CardBody>
+            <CardHeader title="Change password" description="Use at least 10 characters — a passphrase is easier to remember than random symbols." />
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <PasswordField label="Current password" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
               <PasswordField label="New password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" minLength={10} />
@@ -188,21 +188,21 @@ export function SettingsSecurity() {
         </Card>
 
         <Card>
-          <CardHeader
-            title="Two-factor authentication"
-            action={
-              user?.totpEnabled ? (
-                <Badge tone="success">
-                  <ShieldCheck size={11} aria-hidden="true" /> Enabled
-                </Badge>
-              ) : (
-                <Badge tone="neutral">
-                  <ShieldOff size={11} aria-hidden="true" /> Not enabled
-                </Badge>
-              )
-            }
-          />
           <CardBody>
+            <CardHeader
+              title="Two-factor authentication"
+              action={
+                user?.totpEnabled ? (
+                  <Badge tone="success">
+                    <ShieldCheck size={11} aria-hidden="true" /> Enabled
+                  </Badge>
+                ) : (
+                  <Badge tone="neutral">
+                    <ShieldOff size={11} aria-hidden="true" /> Not enabled
+                  </Badge>
+                )
+              }
+            />
             {user?.totpEnabled ? (
               <div className="space-y-4">
                 <p className="text-sm text-text-secondary">

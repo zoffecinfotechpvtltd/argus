@@ -14,7 +14,7 @@ interface NotificationLogEntry {
  * category/time/distribution). Two real columns from /notifications/log as delivered (channel,
  * then outcome), not a fabricated multi-stage escalation flow the backend doesn't track per
  * notification event. */
-export function NotificationDeliverySankey() {
+export function NotificationDeliverySankey({ className = "" }: { className?: string }) {
   const colors = useEchartsColors();
   const [entries, setEntries] = useState<NotificationLogEntry[] | null>(null);
 
@@ -79,7 +79,7 @@ export function NotificationDeliverySankey() {
   );
 
   return (
-    <Card className="p-3">
+    <Card className={`p-3 ${className}`}>
       <div className="mb-1 text-xs text-text-secondary">Notification delivery{total > 0 ? ` (last ${total})` : ""}</div>
       {loading ? (
         <div className="flex h-[140px] items-center justify-center text-xs text-text-muted">Loading…</div>

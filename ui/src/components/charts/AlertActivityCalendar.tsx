@@ -21,7 +21,7 @@ interface DayRow {
  * Self-fetches from the same /reports/alerts-summary endpoint the old AlertHeatmapCard used,
  * just over its own 35-day window (AlertsTrendCard's 14-day fetch is a different range, so the
  * two aren't sharing one call). */
-export function AlertActivityCalendar() {
+export function AlertActivityCalendar({ className = "" }: { className?: string }) {
   const colors = useEchartsColors();
   const [rows, setRows] = useState<DayRow[] | null>(null);
 
@@ -108,7 +108,7 @@ export function AlertActivityCalendar() {
   );
 
   return (
-    <Card className="p-3">
+    <Card className={`p-3 ${className}`}>
       <div className="mb-1 flex items-center justify-between text-xs text-text-secondary">
         <span>Alert activity (last {DAYS} days)</span>
         <div className="hidden gap-2.5 sm:flex">
