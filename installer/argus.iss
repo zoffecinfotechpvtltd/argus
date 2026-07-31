@@ -188,6 +188,16 @@ Filename: "{app}\Argus.exe"; Parameters: "--install-service"; WorkingDir: "{app}
 ; entries (not a single combined one) so uninstall can remove them individually by name.
 Filename: "netsh.exe"; Parameters: "advfirewall firewall add rule name=""Argus HTTP"" dir=in action=allow protocol=TCP localport={#MyAppPort}"; StatusMsg: "Allowing Argus through Windows Firewall…"; Flags: runhidden
 Filename: "netsh.exe"; Parameters: "advfirewall firewall add rule name=""Argus ICMP Echo"" protocol=icmpv4:8,any dir=in action=allow"; Flags: runhidden
+; Windows caches shortcut icons by bitmap, not by re-reading the target exe on every launch — an
+; icon.ico change (like the white-background/sharpening fix a few releases back) only shows up for
+; a shortcut Windows hasn't cached yet. Fresh installs are never affected (nothing cached for a
+; shortcut that didn't exist a moment ago), but a customer *updating* an existing install reuses
+; the same shortcut path Windows already cached an old icon bitmap for, so without this they'd see
+; the stale icon indefinitely — exactly what happened testing this locally, fixed by hand via
+; Explorer's "Change Icon" dialog. ie4uinit.exe -ClearIconCache is the actual Windows-supplied tool
+; for this (ships with every supported Windows version), so every update self-heals this instead of
+; requiring the same manual fix from every customer who updates.
+Filename: "{sys}\ie4uinit.exe"; Parameters: "-ClearIconCache"; Flags: runhidden
 Filename: "{app}\Argus-Launcher.exe"; WorkingDir: "{app}"; Description: "Open the Argus dashboard now"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]

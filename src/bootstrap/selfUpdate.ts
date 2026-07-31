@@ -93,6 +93,14 @@ for ($i = 0; $i -lt 10 -and -not $swapped; $i++) {
 
 if ($swapped) {
   if (Test-Path $backup) { Remove-Item $backup -Force -ErrorAction SilentlyContinue }
+  # Windows caches the Start Menu/desktop shortcut's icon as a bitmap, not a live reference to
+  # Argus.exe's icon resource — swapping the exe here (unlike a fresh install, which never had
+  # anything cached yet) reuses the same shortcut path Windows already cached the OLD icon
+  # bitmap for, so without this the shortcut would show a stale icon indefinitely after every
+  # in-app update. ie4uinit.exe -ClearIconCache is the Windows-supplied tool for exactly this,
+  # ships on every supported Windows version. Same fix as installer/argus.iss's [Run] step, for
+  # the update path that never goes through the installer at all.
+  try { Start-Process -FilePath "ie4uinit.exe" -ArgumentList "-ClearIconCache" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue } catch {}
 } elseif ((Test-Path $backup) -and -not (Test-Path $oldExe)) {
   # Move-Item never succeeded — restore the original rather than leaving the app missing.
   Rename-Item -Path $backup -NewName (Split-Path $oldExe -Leaf) -ErrorAction SilentlyContinue
