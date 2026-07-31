@@ -85,12 +85,12 @@ interface Segment {
 function DonutCard({ title, segments }: { title: string; segments: Segment[] }) {
   const total = segments.reduce((sum, s) => sum + s.count, 0);
   return (
-    <BentoCard className="p-3">
-      <div className="mb-2 text-xs text-text-secondary">{title}</div>
+    <BentoCard className="flex h-full flex-col p-3">
+      <div className="mb-2 shrink-0 text-xs text-text-secondary">{title}</div>
       {total === 0 ? (
-        <div className="flex h-[92px] items-center justify-center text-xs text-text-muted">No data yet</div>
+        <div className="flex flex-1 items-center justify-center text-xs text-text-muted">No data yet</div>
       ) : (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-1 items-center gap-3">
           <div className="relative shrink-0" style={{ width: 92, height: 92 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -146,16 +146,18 @@ function DonutTooltip({ active, payload, total }: { active?: boolean; payload?: 
 function DeviceMixCard({ deviceMix }: { deviceMix: Array<{ type: string; label: string; count: number; pct: number }> }) {
   const treemapData = deviceMix.map((d, i) => ({ name: d.label, size: d.count, pct: d.pct, fill: CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length]! }));
   return (
-    <BentoCard className="p-3">
-      <div className="mb-2 text-xs text-text-secondary">Device mix</div>
+    <BentoCard className="flex h-full min-h-[164px] flex-col p-3">
+      <div className="mb-2 shrink-0 text-xs text-text-secondary">Device mix</div>
       {deviceMix.length === 0 ? (
-        <div className="flex h-[164px] items-center justify-center text-xs text-text-muted">No devices yet</div>
+        <div className="flex flex-1 items-center justify-center text-xs text-text-muted">No devices yet</div>
       ) : (
-        <ResponsiveContainer width="100%" height={164}>
-          <Treemap data={treemapData} dataKey="size" isAnimationActive={false} content={<DeviceMixTile />}>
-            <Tooltip content={<DeviceMixTooltip />} />
-          </Treemap>
-        </ResponsiveContainer>
+        <div className="min-h-0 flex-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <Treemap data={treemapData} dataKey="size" isAnimationActive={false} content={<DeviceMixTile />}>
+              <Tooltip content={<DeviceMixTooltip />} />
+            </Treemap>
+          </ResponsiveContainer>
+        </div>
       )}
     </BentoCard>
   );
@@ -414,9 +416,9 @@ function SlaHeadroomCard({ availabilityPct, avgLatencyMs }: { availabilityPct: n
       : null;
 
   return (
-    <BentoCard className="p-3">
-      <div className="mb-1 text-xs text-text-secondary">SLA headroom</div>
-      <div className="flex items-center gap-4">
+    <BentoCard className="flex h-full flex-col p-3">
+      <div className="mb-1 shrink-0 text-xs text-text-secondary">SLA headroom</div>
+      <div className="flex flex-1 items-center gap-4">
         <SlaGauge pct={availabilityPct} targetPct={SLA_TARGET_PCT} />
         <div className="min-w-0 flex-1">
           <p className="text-xs text-text-secondary">Network availability</p>
@@ -526,25 +528,25 @@ function BandwidthSummaryCard() {
   }, []);
 
   return (
-    <BentoCard className="p-3">
-      <div className="mb-2 flex items-center justify-between">
+    <BentoCard className="flex h-full flex-col p-3">
+      <div className="mb-2 flex shrink-0 items-center justify-between">
         <span className="text-xs text-text-secondary">Bandwidth (last hour)</span>
         <Link to="/bandwidth" className="text-xs text-accent transition-opacity duration-150 hover:opacity-80">
           View all →
         </Link>
       </div>
       {state === "loading" ? (
-        <div className="flex h-[100px] items-center justify-center text-xs text-text-muted">Loading…</div>
+        <div className="flex flex-1 items-center justify-center text-xs text-text-muted">Loading…</div>
       ) : state === "empty" ? (
-        <div className="flex h-[100px] flex-col items-center justify-center gap-1 text-center text-xs text-text-muted">
+        <div className="flex flex-1 flex-col items-center justify-center gap-1 text-center text-xs text-text-muted">
           <span>No interfaces configured yet.</span>
           <Link to="/bandwidth" className="text-accent hover:opacity-80">
             Set up bandwidth monitoring →
           </Link>
         </div>
       ) : (
-        <>
-          <div className="mb-2 flex gap-4">
+        <div className="flex flex-1 flex-col">
+          <div className="mb-2 flex shrink-0 gap-4">
             <div>
               <div className="flex items-center gap-1 text-2xs text-text-muted">
                 <ArrowDown size={11} className="text-info" aria-hidden="true" /> Inbound
@@ -558,13 +560,15 @@ function BandwidthSummaryCard() {
               <div className="font-mono text-base font-semibold tabular-nums text-text-primary">{formatBps(totalOut)}</div>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={64}>
-            <AreaChart data={points} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-              <Area type="monotone" dataKey="inbound" stroke="#39C5D8" fill="#39C5D8" fillOpacity={0.3} strokeWidth={1.25} isAnimationActive={false} />
-              <Area type="monotone" dataKey="outbound" stroke="#6757E8" fill="#6757E8" fillOpacity={0.18} strokeWidth={1.25} isAnimationActive={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </>
+          <div className="min-h-[64px] flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={points} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                <Area type="monotone" dataKey="inbound" stroke="#39C5D8" fill="#39C5D8" fillOpacity={0.3} strokeWidth={1.25} isAnimationActive={false} />
+                <Area type="monotone" dataKey="outbound" stroke="#6757E8" fill="#6757E8" fillOpacity={0.18} strokeWidth={1.25} isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       )}
     </BentoCard>
   );
@@ -1085,7 +1089,7 @@ export function Dashboard() {
             donuts stack in the narrow column beside it. Availability itself lives only in the hero
             tile above and the SLA headroom card further down; it doesn't need a third rendering
             here (see "Removed" note at the bottom of this file). */}
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:items-stretch">
           <div className="md:col-span-2">
             <DeviceMixCard deviceMix={deviceMix} />
           </div>
@@ -1275,7 +1279,7 @@ const PULSE_PATH = "M0,20 L14,20 L19,20 L23,6 L27,34 L31,14 L35,20 L48,20 L100,2
 
 function PulseTrace({ color, flatline }: { color: string; flatline: boolean }) {
   return (
-    <div className="relative h-9 w-full overflow-hidden" aria-hidden="true">
+    <div className="relative h-full min-h-9 w-full overflow-hidden" aria-hidden="true">
       <div className={`flex h-full w-[200%] ${flatline ? "" : "pulse-scroll"}`}>
         {[0, 1].map((copy) => (
           <svg key={copy} viewBox="0 0 100 40" preserveAspectRatio="none" className="h-full w-1/2">
@@ -1356,7 +1360,7 @@ function HeroAvailabilityTile({ pct, trend }: { pct: number; trend: number[] }) 
       ref={ref}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
-      className="group relative h-full overflow-hidden rounded-lg border border-border/60 bg-bg-surface p-5 shadow-[0_3px_6px_rgba(24,24,27,0.08),0_24px_48px_-16px_rgba(24,24,27,0.32)] [transform:perspective(1000px)_rotateX(var(--tilt-x,0deg))_rotateY(var(--tilt-y,0deg))] transition-[transform,box-shadow] duration-300 ease-out-expo will-change-transform hover:shadow-[0_6px_14px_rgba(24,24,27,0.12),0_36px_64px_-16px_rgba(24,24,27,0.4)] dark:shadow-[0_3px_6px_rgba(0,0,0,0.4),0_24px_48px_-14px_rgba(0,0,0,0.6)] dark:hover:shadow-[0_6px_14px_rgba(0,0,0,0.45),0_36px_64px_-14px_rgba(0,0,0,0.75)] motion-reduce:!transform-none motion-reduce:transition-none"
+      className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/60 bg-bg-surface p-5 shadow-[0_3px_6px_rgba(24,24,27,0.08),0_24px_48px_-16px_rgba(24,24,27,0.32)] [transform:perspective(1000px)_rotateX(var(--tilt-x,0deg))_rotateY(var(--tilt-y,0deg))] transition-[transform,box-shadow] duration-300 ease-out-expo will-change-transform hover:shadow-[0_6px_14px_rgba(24,24,27,0.12),0_36px_64px_-16px_rgba(24,24,27,0.4)] dark:shadow-[0_3px_6px_rgba(0,0,0,0.4),0_24px_48px_-14px_rgba(0,0,0,0.6)] dark:hover:shadow-[0_6px_14px_rgba(0,0,0,0.45),0_36px_64px_-14px_rgba(0,0,0,0.75)] motion-reduce:!transform-none motion-reduce:transition-none"
     >
       <span
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.14]"
@@ -1367,7 +1371,7 @@ function HeroAvailabilityTile({ pct, trend }: { pct: number; trend: number[] }) 
         style={{ background: "radial-gradient(420px circle at var(--glow-x,50%) var(--glow-y,0%), rgb(var(--color-accent) / 0.10), transparent 60%)" }}
         aria-hidden="true"
       />
-      <div className="relative flex items-center justify-between gap-2">
+      <div className="relative flex shrink-0 items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-2xs font-medium uppercase tracking-tight text-text-secondary">Availability today</div>
           <div className="mt-1 flex items-baseline gap-1.5">
@@ -1379,7 +1383,12 @@ function HeroAvailabilityTile({ pct, trend }: { pct: number; trend: number[] }) 
         </div>
         <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />
       </div>
-      <div className="relative">
+      {/* flex-1, not a fixed height: this tile spans two grid rows next to the shorter Devices/Open
+          alerts pair, so its own content has real extra vertical room to work with — the pulse
+          trace grows to fill it instead of leaving dead gray space beneath a small fixed-height
+          sliver, which is what a professional dashboard's "hero" panel is supposed to do with the
+          extra weight its size implies. */}
+      <div className="relative mt-2 min-h-0 flex-1">
         <PulseTrace color={color} flatline={trend.length < 2} />
       </div>
     </div>
@@ -1404,7 +1413,7 @@ function StatTile({
   const sparkColor = tone === "success" ? DEVICE_STATE_HEX.up : tone === "warning" ? DEVICE_STATE_HEX.degraded : tone === "critical" ? DEVICE_STATE_HEX.down : "#A1A1AA";
   const sparkData = (trend ?? []).map((v, i) => ({ i, v }));
   return (
-    <BentoCard className="h-full p-3.5">
+    <BentoCard className="flex h-full flex-col justify-center p-3.5">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate text-2xs font-medium text-text-secondary">{label}</div>
