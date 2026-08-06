@@ -314,6 +314,17 @@ export class Scheduler {
           Object.assign(device, patch);
         }
       }
+
+      // Persist this check's own failure reason (or clear it) — see aggregateChecks.ts: a
+      // secondary check can be failing while the device itself still reads "up" off ICMP, and
+      // without this the reason was invisible everywhere (never logged, never stored). Only
+      // writes when it actually changed, same reasoning as the deviceFacts patch above.
+      const newLastError = result.error ?? null;
+      if (newLastError !== (check.lastError ?? null)) {
+        const errorPatch = { lastError: newLastError, lastErrorAt: newLastError ? nowIso : null };
+        await this.app.repos.check.update(check.tenantId, check.id, errorPatch);
+        Object.assign(check, errorPatch);
+      }
     }
 
     const outcome = aggregateCheckResults(results);

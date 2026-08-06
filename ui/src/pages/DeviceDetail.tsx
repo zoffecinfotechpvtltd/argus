@@ -19,6 +19,8 @@ interface Check {
   enabled: boolean;
   thresholds: { latencyMs?: number; lossPct?: number };
   config: Record<string, unknown>;
+  lastError?: string | null;
+  lastErrorAt?: string | null;
 }
 
 interface MaintenanceWindow {
@@ -371,6 +373,12 @@ export function DeviceDetail() {
                       Enabled
                     </label>
                   </div>
+                  {check.lastError && (
+                    <p className="mt-2 rounded-md border border-critical/30 bg-critical-subtle px-3 py-2 text-xs text-critical">
+                      Last failed{check.lastErrorAt ? ` ${new Date(check.lastErrorAt).toLocaleString()}` : ""}: {check.lastError}
+                      {check.kind !== "icmp" && " — this check is failing, but doesn't affect the device's own up/down status."}
+                    </p>
+                  )}
                   {(check.kind === "icmp" || check.kind === "http") && (
                     <div className="mt-3 flex flex-wrap gap-4">
                       <FieldGroup label="Latency threshold (ms)">

@@ -170,6 +170,13 @@ export interface Check {
   thresholds: CheckThresholds;
   enabled: boolean;
   createdAt: string;
+  /** The error string from this check's most recent failed run (e.g. "system/status HTTP 403"),
+   * cleared to null the moment it next succeeds. Distinct from device-level up/down state — see
+   * aggregateChecks.ts: a secondary check (SNMP, HTTP, a vendor API) can be failing here while the
+   * device itself still reads "up" off ICMP. Without this, a failing secondary check was invisible
+   * everywhere (never logged, never stored) — the checker returned the reason but nothing kept it. */
+  lastError?: string | null;
+  lastErrorAt?: string | null;
 }
 
 export type DeviceState = "up" | "degraded" | "down" | "flapping" | "maintenance";

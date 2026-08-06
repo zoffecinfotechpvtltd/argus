@@ -314,6 +314,8 @@ function rowToCheck(r: any): Check {
     thresholds: r.thresholds ?? {},
     enabled: r.enabled,
     createdAt: r.created_at,
+    lastError: r.last_error ?? null,
+    lastErrorAt: r.last_error_at ?? null,
   };
 }
 
@@ -332,11 +334,13 @@ export class PgCheckRepo implements CheckRepo {
     const existing = await this.findById(tenantId, id);
     if (!existing) return null;
     const merged = { ...existing, ...patch };
-    await this.db.query(`UPDATE checks SET kind=$1, config=$2, thresholds=$3, enabled=$4 WHERE id=$5 AND tenant_id=$6`, [
+    await this.db.query(`UPDATE checks SET kind=$1, config=$2, thresholds=$3, enabled=$4, last_error=$5, last_error_at=$6 WHERE id=$7 AND tenant_id=$8`, [
       merged.kind,
       JSON.stringify(merged.config),
       JSON.stringify(merged.thresholds),
       merged.enabled,
+      merged.lastError ?? null,
+      merged.lastErrorAt ?? null,
       id,
       tenantId,
     ]);

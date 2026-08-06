@@ -338,6 +338,8 @@ function rowToCheck(r: any): Check {
     thresholds: JSON.parse(r.thresholds ?? "{}"),
     enabled: !!r.enabled,
     createdAt: r.created_at,
+    lastError: r.last_error ?? null,
+    lastErrorAt: r.last_error_at ?? null,
   };
 }
 
@@ -369,7 +371,7 @@ export class SqliteCheckRepo implements CheckRepo {
     const merged = { ...existing, ...patch };
     this.db
       .query<any, any>(
-        `UPDATE checks SET kind=$kind, config=$config, thresholds=$thresholds, enabled=$enabled WHERE id=$id AND tenant_id=$tenant_id`
+        `UPDATE checks SET kind=$kind, config=$config, thresholds=$thresholds, enabled=$enabled, last_error=$last_error, last_error_at=$last_error_at WHERE id=$id AND tenant_id=$tenant_id`
       )
       .run({
         $id: id,
@@ -378,6 +380,8 @@ export class SqliteCheckRepo implements CheckRepo {
         $config: JSON.stringify(merged.config),
         $thresholds: JSON.stringify(merged.thresholds),
         $enabled: merged.enabled ? 1 : 0,
+        $last_error: merged.lastError ?? null,
+        $last_error_at: merged.lastErrorAt ?? null,
       });
     return this.findById(tenantId, id);
   }
