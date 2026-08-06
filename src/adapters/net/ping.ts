@@ -39,7 +39,7 @@ export async function pingHost(ip: string, count = 3, timeoutMs = 1000): Promise
   if (!isValidIPv4(ip)) throw new Error(`Refusing to ping non-IPv4 literal: ${ip}`);
 
   const args = buildArgs(ip, count, timeoutMs);
-  const proc = Bun.spawn(args, { stdout: "pipe", stderr: "pipe" });
+  const proc = Bun.spawn(args, { stdout: "pipe", stderr: "pipe", windowsHide: true });
   const [stdout] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
   await proc.exited;
 

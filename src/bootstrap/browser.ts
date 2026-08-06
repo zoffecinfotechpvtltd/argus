@@ -6,7 +6,7 @@ export function openBrowser(url: string): void {
     if (process.platform === "win32") {
       // `start` is a cmd.exe builtin, not an executable — must go through cmd /c. The empty "" is
       // the (required) window-title argument `start` expects before the target when it's quoted.
-      spawn("cmd", ["/c", "start", '""', url], { detached: true, stdio: "ignore" }).unref();
+      spawn("cmd", ["/c", "start", '""', url], { detached: true, stdio: "ignore", windowsHide: true }).unref();
     } else if (process.platform === "darwin") {
       spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
     } else {

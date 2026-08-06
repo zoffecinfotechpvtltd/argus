@@ -5,7 +5,7 @@ export async function readArpTable(): Promise<Map<string, string>> {
 
   try {
     if (process.platform === "win32") {
-      const proc = Bun.spawn(["arp", "-a"], { stdout: "pipe", stderr: "pipe" });
+      const proc = Bun.spawn(["arp", "-a"], { stdout: "pipe", stderr: "pipe", windowsHide: true });
       const out = await new Response(proc.stdout).text();
       await proc.exited;
       // Lines look like: "  192.168.1.1          aa-bb-cc-dd-ee-ff     dynamic"
@@ -17,7 +17,7 @@ export async function readArpTable(): Promise<Map<string, string>> {
     } else {
       // Prefer `ip neigh` (modern Linux); fall back to `arp -a` (macOS / older Linux).
       try {
-        const proc = Bun.spawn(["ip", "neigh"], { stdout: "pipe", stderr: "pipe" });
+        const proc = Bun.spawn(["ip", "neigh"], { stdout: "pipe", stderr: "pipe", windowsHide: true });
         const out = await new Response(proc.stdout).text();
         await proc.exited;
         const re = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*?lladdr\s+([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})/g;
@@ -26,7 +26,7 @@ export async function readArpTable(): Promise<Map<string, string>> {
           map.set(m[1]!, m[2]!.toUpperCase());
         }
       } catch {
-        const proc = Bun.spawn(["arp", "-a"], { stdout: "pipe", stderr: "pipe" });
+        const proc = Bun.spawn(["arp", "-a"], { stdout: "pipe", stderr: "pipe", windowsHide: true });
         const out = await new Response(proc.stdout).text();
         await proc.exited;
         const re = /\((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\)\s+at\s+([0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5})/g;
