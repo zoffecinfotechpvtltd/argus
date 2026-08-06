@@ -1,18 +1,18 @@
 import snmp from "net-snmp";
 import type { SnmpCredential } from "@domain/snmpCredential";
 
-const AUTH_PROTOCOLS: Record<string, number> = {
+const AUTH_PROTOCOLS: Record<"md5" | "sha" | "sha256", number> = {
   md5: snmp.AuthProtocols.md5,
   sha: snmp.AuthProtocols.sha,
   sha256: snmp.AuthProtocols.sha256,
 };
 
-const PRIV_PROTOCOLS: Record<string, number> = {
+const PRIV_PROTOCOLS: Record<"des" | "aes", number> = {
   des: snmp.PrivProtocols.des,
   aes: snmp.PrivProtocols.aes,
 };
 
-const SECURITY_LEVELS: Record<string, number> = {
+const SECURITY_LEVELS: Record<"noAuthNoPriv" | "authNoPriv" | "authPriv", number> = {
   noAuthNoPriv: snmp.SecurityLevel.noAuthNoPriv,
   authNoPriv: snmp.SecurityLevel.authNoPriv,
   authPriv: snmp.SecurityLevel.authPriv,

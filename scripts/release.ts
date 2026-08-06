@@ -64,7 +64,7 @@ await step("Clean", () => {
 
 await step("Test", () => {
   run(["bun", "run", "generate:embeds"]);
-  run(["bun", "test"]);
+  run(["bun", "test", "tests/"]);
   run(["bunx", "tsc", "--noEmit"]);
   run(["bunx", "eslint", ".", "--ext", ".ts,.tsx"]);
 });
