@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Copy, KeyRound, Plus, Trash2 } from "lucide-react";
 import { Layout } from "../components/Layout";
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Input, SkeletonRows, useConfirm, useToast } from "../components/ui";
 
 interface ApiKeySummary {
@@ -58,14 +58,34 @@ export function AdminApiKeys() {
       variant: "destructive",
     });
     if (!ok) return;
-    await api.delete(`/admin/api-keys/${key.id}`);
-    toast.success("API key revoked.");
-    await load();
+    try {
+      await api.delete(`/admin/api-keys/${key.id}`);
+      toast.success("API key revoked.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to revoke API key.");
+    }
   }
+
+  const sortedKeys = useMemo(() => (keys ?? []).slice().sort((a, b) => Number(!!a.revokedAt) - Number(!!b.revokedAt)), [keys]);
+  const activeCount = (keys ?? []).filter((k) => !k.revokedAt).length;
 
   return (
     <Layout title="API Keys" subtitle="Read-only external access for integrations (Prometheus, CMDB sync, reporting tools)">
       <div className="mx-auto max-w-3xl space-y-6">
+        {keys !== null && keys.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg border border-border bg-bg-surface p-3">
+              <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Active keys</p>
+              <p className="mt-1 text-sm font-semibold text-text-primary">{activeCount}</p>
+            </div>
+            <div className="rounded-lg border border-border bg-bg-surface p-3">
+              <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Revoked</p>
+              <p className="mt-1 text-sm font-semibold text-text-secondary">{keys.length - activeCount}</p>
+            </div>
+          </div>
+        )}
+
         <Card>
           <CardBody>
             <CardHeader title="Create a key" />
@@ -116,8 +136,8 @@ export function AdminApiKeys() {
                 </tr>
               </thead>
               <tbody>
-                {keys.map((k) => (
-                  <tr key={k.id} className="border-b border-border/60 last:border-b-0">
+                {sortedKeys.map((k) => (
+                  <tr key={k.id} className={`border-b border-border/60 last:border-b-0 ${k.revokedAt ? "opacity-50" : ""}`}>
                     <td className="px-3 py-2 text-text-primary">{k.name}</td>
                     <td className="px-3 py-2 font-mono text-xs text-text-secondary">argus_{k.keyPrefix}_…</td>
                     <td className="px-3 py-2 text-text-secondary">{new Date(k.createdAt).toLocaleString()}</td>

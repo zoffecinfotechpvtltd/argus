@@ -12,6 +12,7 @@ interface GeneralSettings {
   polling: { defaultIntervalSec: number; concurrency: number };
   retention: { rawDays: number; rollupDays: number };
   updateCheckUrl: string;
+  heartbeatUrl: string;
   version: string;
   mode: "exe" | "saas";
 }
@@ -39,6 +40,8 @@ export function SettingsGeneral() {
   const [restartNotice, setRestartNotice] = useState("");
   const [updateCheck, setUpdateCheck] = useState<UpdateCheckResult | null>(null);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [testingHeartbeat, setTestingHeartbeat] = useState(false);
+  const [heartbeatResult, setHeartbeatResult] = useState<{ ok: boolean; error?: string } | null>(null);
   const [applyingUpdate, setApplyingUpdate] = useState(false);
   const [backupSchedule, setBackupSchedule] = useState<BackupScheduleConfig | null>(null);
   const [savingBackupSchedule, setSavingBackupSchedule] = useState(false);
@@ -98,6 +101,19 @@ export function SettingsGeneral() {
     }
   }
 
+  async function testHeartbeat() {
+    setTestingHeartbeat(true);
+    setHeartbeatResult(null);
+    try {
+      const res = await api.post<{ ok: boolean; error?: string }>("/settings/heartbeat-test");
+      setHeartbeatResult(res);
+    } catch (err) {
+      setHeartbeatResult({ ok: false, error: err instanceof ApiError ? err.message : "Request failed" });
+    } finally {
+      setTestingHeartbeat(false);
+    }
+  }
+
   async function applyUpdate() {
     const ok = await confirm({
       title: "Update Argus?",
@@ -118,6 +134,15 @@ export function SettingsGeneral() {
   async function handleRestoreFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    const ok = await confirm({
+      title: "Restore from backup?",
+      message: `This replaces your entire device inventory, history, and config with the contents of "${file.name}". Whatever's in Argus right now that isn't in that file will be gone — there's no undo.`,
+      confirmLabel: "Restore",
+    });
+    if (!ok) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
     try {
       const buf = await file.arrayBuffer();
       const res = await fetch("/api/backup/restore", { method: "POST", body: buf, credentials: "same-origin" });
@@ -166,6 +191,27 @@ export function SettingsGeneral() {
   return (
     <Layout title="General" subtitle="Instance name, retention, updates, and backups">
       <div className="mx-auto max-w-2xl space-y-6">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Version</p>
+            <p className="mt-1 truncate text-sm font-semibold text-text-primary" title={`${settings.version} (${settings.mode} mode)`}>
+              {settings.version} <span className="font-normal capitalize text-text-secondary">· {settings.mode}</span>
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Update checks</p>
+            <p className={`mt-1 text-sm font-semibold ${settings.updateCheckUrl ? "text-success" : "text-text-secondary"}`}>
+              {settings.updateCheckUrl ? "Configured" : "Not configured"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Heartbeat</p>
+            <p className={`mt-1 text-sm font-semibold ${settings.heartbeatUrl ? "text-success" : "text-text-secondary"}`}>
+              {settings.heartbeatUrl ? "Configured" : "Not configured"}
+            </p>
+          </div>
+        </div>
+
         <Card>
           <CardBody>
             <CardHeader title="Instance settings" />
@@ -298,6 +344,46 @@ export function SettingsGeneral() {
                 )}
                 {!updateCheck.error && updateCheck.updateAvailable === false && <p className="text-accent">You're up to date.</p>}
               </div>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody>
+            <CardHeader
+              title="Heartbeat"
+              description="Pings an external dead-man's-switch URL every 5 minutes. If the whole Argus process, the Windows service, or the machine itself goes down, this is the only thing that can still notice — nothing running inside a dead process can alert on its own behalf."
+            />
+            <FieldGroup
+              label="Heartbeat URL (optional)"
+              hint={
+                <>
+                  A push-monitor ping URL from healthchecks.io, Cronitor, Uptime Kuma, or similar. Set that service's own grace period to at least 15-20 minutes
+                  so one missed ping doesn't false-page.
+                </>
+              }
+            >
+              {(ids) => (
+                <Input
+                  {...ids}
+                  className="w-full"
+                  placeholder="https://hc-ping.com/your-check-uuid"
+                  value={settings.heartbeatUrl}
+                  onChange={(e) => setSettings({ ...settings, heartbeatUrl: e.target.value })}
+                />
+              )}
+            </FieldGroup>
+            <div className="flex items-center gap-3 pt-3">
+              {dirty && <Button onClick={save}>Save</Button>}
+              <Button variant="secondary" size="sm" onClick={testHeartbeat} disabled={testingHeartbeat || !settings.heartbeatUrl}>
+                {testingHeartbeat ? "Sending…" : "Send test ping"}
+              </Button>
+            </div>
+            {!settings.heartbeatUrl && <p className="mt-2 text-xs text-text-secondary">Set a heartbeat URL above (and save) to enable this.</p>}
+            {heartbeatResult && (
+              <p className={`mt-2 text-sm ${heartbeatResult.ok ? "text-accent" : "text-critical"}`}>
+                {heartbeatResult.ok ? "Ping sent successfully." : heartbeatResult.error}
+              </p>
             )}
           </CardBody>
         </Card>

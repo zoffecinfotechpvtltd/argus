@@ -81,6 +81,15 @@ function entityLabel(entityType: string): string {
   return ENTITY_LABELS[entityType] ?? entityType.replace(/_/g, " ");
 }
 
+/** Colors the timeline dot by what kind of thing happened, purely from the verb in the action
+ * code — so a new action falls into a sensible bucket without needing its own entry here. */
+function actionDotClass(action: string): string {
+  const verb = action.split(".")[1] ?? action;
+  if (/delete|revoke|disable|storm_guard/.test(verb)) return "bg-critical";
+  if (/create|invite|apply|complete|resolve/.test(verb)) return "bg-success";
+  return "bg-border-strong";
+}
+
 /** Turns each action's specific `detail` shape into one short sentence fragment. Anything not
  * explicitly handled still gets a readable "key value, key value" line instead of raw JSON. */
 function summarizeDetail(entry: AuditEntry, deviceNameById: Record<string, string>): string | null {
@@ -186,32 +195,48 @@ export function AuditLog() {
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="mx-auto max-w-4xl space-y-4"
       >
-        <div className="flex flex-wrap items-center gap-3">
-          <Select value={action} onChange={(e) => setAction(e.target.value)} className="w-auto">
-            <option value="">All actions</option>
-            {actionOptions.map((a) => (
-              <option key={a} value={a}>
-                {actionLabel(a)}
-              </option>
-            ))}
-          </Select>
-          <Select value={actorId} onChange={(e) => setActorId(e.target.value)} className="w-auto">
-            <option value="">All users</option>
-            {Object.entries(actors)
-              .sort((a, b) => a[1].localeCompare(b[1]))
-              .map(([id, email]) => (
-                <option key={id} value={id}>
-                  {email}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={action} onChange={(e) => setAction(e.target.value)} className="w-auto">
+              <option value="">All actions</option>
+              {actionOptions.map((a) => (
+                <option key={a} value={a}>
+                  {actionLabel(a)}
                 </option>
               ))}
-          </Select>
-          <Select value={period} onChange={(e) => setPeriod(e.target.value)} className="w-auto">
-            {PERIOD_OPTIONS.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </Select>
+            </Select>
+            <Select value={actorId} onChange={(e) => setActorId(e.target.value)} className="w-auto">
+              <option value="">All users</option>
+              {Object.entries(actors)
+                .sort((a, b) => a[1].localeCompare(b[1]))
+                .map(([id, email]) => (
+                  <option key={id} value={id}>
+                    {email}
+                  </option>
+                ))}
+            </Select>
+            <Select value={period} onChange={(e) => setPeriod(e.target.value)} className="w-auto">
+              {PERIOD_OPTIONS.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </Select>
+            {(action || actorId || period) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setAction("");
+                  setActorId("");
+                  setPeriod("");
+                }}
+                className="cursor-pointer text-2xs font-medium text-accent hover:text-accent-hover"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+          {entries !== null && <span className="shrink-0 text-2xs text-text-muted">{total.toLocaleString()} event{total === 1 ? "" : "s"}</span>}
         </div>
 
         {entries === null ? (
@@ -231,7 +256,7 @@ export function AuditLog() {
                   const who = e.userId ? (actors[e.userId] ?? "a user") : "System";
                   return (
                     <div key={e.id} className="relative flex gap-3">
-                      <span className="relative z-10 mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full border-2 border-bg-canvas bg-border-strong" aria-hidden="true" />
+                      <span className={`relative z-10 mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full border-2 border-bg-canvas ${actionDotClass(e.action)}`} aria-hidden="true" />
                       <div className="min-w-0 flex-1 pb-0.5">
                         <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
                           <p className="text-sm text-text-primary">

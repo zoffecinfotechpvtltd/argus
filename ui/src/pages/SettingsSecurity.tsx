@@ -1,10 +1,18 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Check, Copy, Eye, EyeOff, KeyRound, ShieldCheck, ShieldOff } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, KeyRound, Monitor, ShieldCheck, ShieldOff } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../api/client";
-import { Badge, Button, Card, CardBody, CardHeader, FieldGroup, Input, useToast } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardHeader, FieldGroup, Input, useConfirm, useToast } from "../components/ui";
 import { useAuth } from "../auth/AuthContext";
+
+interface SessionInfo {
+  id: string;
+  createdAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  ip: string | null;
+}
 
 function PasswordField({
   label,
@@ -98,10 +106,46 @@ function ManualEntryReveal({ secret }: { secret: string }) {
 export function SettingsSecurity() {
   const { user, refresh } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
+
+  const [sessions, setSessions] = useState<SessionInfo[] | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  async function loadSessions() {
+    if (!user) return;
+    try {
+      setSessions(await api.get<SessionInfo[]>(`/users/${user.id}/sessions`));
+    } catch {
+      setSessions([]);
+    }
+  }
+
+  useEffect(() => {
+    loadSessions().catch(() => {});
+  }, [user?.id]);
+
+  async function revokeSession(session: SessionInfo) {
+    const ok = await confirm({
+      title: "Sign out this session?",
+      message: "Whoever's signed in there will need to log in again. If this is your own current browser, you'll be signed out too.",
+      confirmLabel: "Sign out",
+    });
+    if (!ok) return;
+    setRevokingId(session.id);
+    try {
+      await api.delete(`/sessions/${session.id}`);
+      toast.success("Session signed out.");
+      await loadSessions();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to sign out that session.");
+    } finally {
+      setRevokingId(null);
+    }
+  }
 
   const [enrolling, setEnrolling] = useState(false);
   const [secret, setSecret] = useState<string | null>(null);
@@ -154,6 +198,8 @@ export function SettingsSecurity() {
       setVerifying(false);
     }
   }
+
+  const activeSessions = (sessions ?? []).filter((s) => !s.revokedAt && new Date(s.expiresAt).getTime() > Date.now());
 
   async function disable2fa() {
     setDisabling(true);
@@ -263,6 +309,39 @@ export function SettingsSecurity() {
                 <Button onClick={startEnroll} disabled={enrolling}>
                   {enrolling ? "Starting…" : "Set up 2FA"}
                 </Button>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardBody>
+            <CardHeader
+              title="Active sessions"
+              description="Every browser currently signed in as you. Sign one out remotely if you don't recognize it, or after using a shared/public computer."
+            />
+            {sessions === null ? (
+              <p className="text-sm text-text-secondary">Loading…</p>
+            ) : activeSessions.length === 0 ? (
+              <p className="text-sm text-text-secondary">No active sessions found.</p>
+            ) : (
+              <div className="space-y-2">
+                {activeSessions.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Monitor size={16} className="shrink-0 text-text-muted" aria-hidden="true" />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm text-text-primary">{s.ip ?? "Unknown IP"}</p>
+                        <p className="text-2xs text-text-secondary">
+                          Signed in {new Date(s.createdAt).toLocaleString()} · expires {new Date(s.expiresAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <Button variant="secondary" size="sm" disabled={revokingId === s.id} onClick={() => revokeSession(s)}>
+                      {revokingId === s.id ? "Signing out…" : "Sign out"}
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
           </CardBody>

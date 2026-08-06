@@ -463,7 +463,18 @@ export function Discovery() {
                                   </option>
                                 ))}
                               </Select>
-                              <span className="shrink-0 text-xs text-text-secondary" title="Classification confidence">
+                              <span
+                                className={`shrink-0 text-xs font-medium ${
+                                  d.confidence >= 0.8 ? "text-success" : d.confidence >= 0.5 ? "text-warning" : "text-text-muted"
+                                }`}
+                                title={
+                                  d.confidence >= 0.8
+                                    ? "High confidence — port/protocol fingerprint or SNMP identity matched"
+                                    : d.confidence >= 0.5
+                                      ? "Medium confidence — inferred from vendor or hostname alone, worth a glance before importing"
+                                      : "Low confidence — little to go on, double-check the type before importing"
+                                }
+                              >
                                 {Math.round(d.confidence * 100)}%
                               </span>
                             </div>

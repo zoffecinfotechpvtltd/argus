@@ -24,6 +24,18 @@ describe("classifyDevice", () => {
     expect(r.type).toBe("firewall");
   });
 
+  it("classifies a Sophos unit that self-reports as bare 'SFOS ...' with no 'sophos' or 'firewall' word", () => {
+    const r = classifyDevice({ openPorts: [443], ouiVendor: null, snmpSysDescr: "SFOS 19.5.3 MR-3-Build396" });
+    expect(r.type).toBe("firewall");
+    expect(r.confidence).toBeGreaterThan(0.8);
+  });
+
+  it("classifies a FortiWiFi branch appliance (not the FortiGate line) via sysDescr", () => {
+    const r = classifyDevice({ openPorts: [443, 22], ouiVendor: "Fortinet, Inc.", snmpSysDescr: "FortiWiFi-60F v7.0.5,build0304" });
+    expect(r.type).toBe("firewall");
+    expect(r.confidence).toBeGreaterThan(0.8);
+  });
+
   it("classifies a Cisco Catalyst switch via sysDescr", () => {
     const r = classifyDevice({ openPorts: [22, 161], ouiVendor: "Cisco Systems, Inc", snmpSysDescr: "Cisco IOS Software, Catalyst L3 Switch" });
     expect(r.type).toBe("switch");

@@ -16,7 +16,7 @@ import { HmacAckTokenSigner, InstanceKeySecretCipher } from "@adapters/crypto";
 import { DefaultSystemEmailSender } from "@adapters/notify/systemEmail";
 import { DefaultSyslogForwarder } from "@adapters/notify/syslogForwarder";
 import type { AppContainer } from "@ports/context";
-import type { Checker, LicenseService, Notifier, NotifierRegistry } from "@ports/services";
+import type { Checker, ExternalUrlGuard, LicenseService, Notifier, NotifierRegistry } from "@ports/services";
 import type { LicenseState } from "@domain/license";
 
 const noopNotifier: Notifier = {
@@ -68,6 +68,7 @@ export function buildTestContainer(
       instanceName: "Test",
       polling: { defaultIntervalSec: 60, concurrency: 50 },
       retention: { rawDays: 30, rollupDays: 365 },
+      heartbeatUrl: "",
     },
     clock,
     logger: { debug() {}, info() {}, warn() {}, error() {} },
@@ -92,6 +93,10 @@ export function buildTestContainer(
     license: buildStubLicenseService(opts.license ?? UNLIMITED_LICENSE),
     shutdownRequester: { requestShutdown: () => {} },
     secretCipher: new InstanceKeySecretCipher(Buffer.alloc(32)),
+    // Real DNS-resolving guard would try to hit the network for every test that touches a
+    // heartbeat/update-check route — tests don't exercise the SSRF-rejection path itself (that's
+    // externalUrlGuard's own unit tests' job), so a stub that always allows is correct here.
+    externalUrlGuard: { assertSafe: async () => {} } satisfies ExternalUrlGuard,
     systemEmail: new DefaultSystemEmailSender(new SqliteSettingsRepo(db), Buffer.alloc(32)),
     syslogForwarder: new DefaultSyslogForwarder(new SqliteSettingsRepo(db), { debug() {}, info() {}, warn() {}, error() {} }),
     repos: {

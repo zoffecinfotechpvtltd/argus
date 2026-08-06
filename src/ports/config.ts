@@ -11,6 +11,12 @@ export interface AppConfig {
   instanceName: string;
   /** Static JSON URL to check for newer releases against (Settings -> About). Off by default. */
   updateCheckUrl?: string;
+  /** Dead-man's-switch URL (e.g. a healthchecks.io/Cronitor/Uptime-Kuma push-monitor ping URL) —
+   * pinged on a fixed interval by HeartbeatScheduler. Solves the one failure mode nothing else in
+   * this file can: if the whole Argus process/service (or the machine it runs on) goes down, there
+   * is no in-process alerting left to fire — only an external service watching for missed pings
+   * can notice. Off by default, same reasoning as updateCheckUrl. */
+  heartbeatUrl?: string;
   polling: {
     defaultIntervalSec: number;
     concurrency: number;

@@ -1,11 +1,30 @@
 import { useEffect, useState } from "react";
-import { Mail, Webhook, BellRing, ChevronDown, Radio } from "lucide-react";
+import { Mail, Webhook, BellRing, ChevronDown, Radio, Check, Minus } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../api/client";
 import type { NotificationPrefs } from "../api/alertTypes";
 import { Button, Card, CardBody, CardHeader, FieldGroup, Input, Select, Skeleton, useToast } from "../components/ui";
 import { useAuth } from "../auth/AuthContext";
 import { useDirty } from "../hooks/useDirty";
+
+/** At-a-glance status pill for the summary strip — a filled colored dot reads faster than parsing
+ * a sentence in each card's own description below, especially with three cards to scan. */
+function ChannelStatusPill({ icon: Icon, label, configured }: { icon: typeof Mail; label: string; configured: boolean }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg border border-border bg-bg-subtle/40 px-3 py-2.5">
+      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${configured ? "bg-success-subtle text-success" : "bg-bg-subtle text-text-muted"}`}>
+        <Icon size={14} aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <div className="text-xs font-medium text-text-primary">{label}</div>
+        <div className={`flex items-center gap-1 text-2xs ${configured ? "text-success" : "text-text-muted"}`}>
+          {configured ? <Check size={11} aria-hidden="true" /> : <Minus size={11} aria-hidden="true" />}
+          {configured ? "Configured" : "Not set up"}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface SmtpStatus {
   host?: string;
@@ -59,9 +78,17 @@ export function SettingsNotifications() {
   }, [isAdmin]);
 
   async function saveSmtp() {
-    await api.put("/settings/notifications/smtp", smtp);
-    setSmtpStatus({ ...smtp, hasPassword: !!smtp.pass });
-    toast.success("SMTP settings saved.");
+    try {
+      await api.put("/settings/notifications/smtp", smtp);
+      setSmtpStatus({ ...smtp, hasPassword: !!smtp.pass });
+      toast.success("SMTP settings saved.");
+    } catch (err) {
+      // Every "test" function on this page already catches and surfaces its own failure — the
+      // four "save" functions right next to them didn't, so a rejected save (a validation error,
+      // a transient network blip) left the form looking like nothing happened at all, no different
+      // from a successful save the user just hadn't noticed yet.
+      toast.error(err instanceof ApiError ? err.message : "Failed to save SMTP settings.");
+    }
   }
 
   async function testSmtp() {
@@ -74,10 +101,14 @@ export function SettingsNotifications() {
   }
 
   async function saveWebhook() {
-    await api.put("/settings/notifications/webhook", { secret: webhookSecret || undefined });
-    setWebhookHasSecret(!!webhookSecret);
-    setWebhookSecret("");
-    toast.success("Webhook secret saved.");
+    try {
+      await api.put("/settings/notifications/webhook", { secret: webhookSecret || undefined });
+      setWebhookHasSecret(!!webhookSecret);
+      setWebhookSecret("");
+      toast.success("Webhook secret saved.");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to save the webhook secret.");
+    }
   }
 
   async function testWebhook() {
@@ -90,8 +121,12 @@ export function SettingsNotifications() {
   }
 
   async function saveSyslog() {
-    await api.put("/settings/notifications/syslog", syslog);
-    toast.success("Syslog forwarding settings saved.");
+    try {
+      await api.put("/settings/notifications/syslog", syslog);
+      toast.success("Syslog forwarding settings saved.");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to save syslog settings.");
+    }
   }
 
   async function testSyslog() {
@@ -108,9 +143,13 @@ export function SettingsNotifications() {
 
   async function savePrefs() {
     if (!prefs) return;
-    await api.put("/notification-prefs", prefs);
-    markPrefsClean();
-    toast.success("Preferences saved.");
+    try {
+      await api.put("/notification-prefs", prefs);
+      markPrefsClean();
+      toast.success("Preferences saved.");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to save preferences.");
+    }
   }
 
   function toggleChannel(channel: "email" | "webhook") {
@@ -124,6 +163,14 @@ export function SettingsNotifications() {
       <div className="mx-auto max-w-3xl space-y-6">
         {isAdmin && (
         <>
+        <div>
+          <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-text-secondary">Instance delivery channels</h2>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <ChannelStatusPill icon={Mail} label="Email (SMTP)" configured={!!smtpStatus?.host} />
+            <ChannelStatusPill icon={Webhook} label="Webhook signing" configured={webhookHasSecret} />
+            <ChannelStatusPill icon={Radio} label="Syslog forwarding" configured={syslog.enabled} />
+          </div>
+        </div>
         <Card>
           <CardBody>
             <CardHeader
@@ -285,6 +332,10 @@ export function SettingsNotifications() {
           </CardBody>
         </Card>
         </>
+        )}
+
+        {isAdmin && (
+          <h2 className="pt-2 text-xs font-medium uppercase tracking-wide text-text-secondary">My personal preferences</h2>
         )}
 
         {prefs === null ? (

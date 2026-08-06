@@ -137,6 +137,11 @@ export function Alerts() {
       await api.post(`/alerts/${a.id}/ack`);
       toast.success(`Acknowledged: ${a.title}`);
       await load();
+    } catch {
+      // Previously uncaught — a failed ack (permissions, someone else already resolved it, a
+      // network blip) left the button just silently doing nothing, with no way to tell whether it
+      // worked. Same error-toast treatment addNote already gets a few lines below.
+      toast.error("Failed to acknowledge — try again.");
     } finally {
       setBusyId(null);
     }
@@ -148,6 +153,8 @@ export function Alerts() {
       await api.post(`/alerts/${a.id}/resolve`);
       toast.success(`Resolved: ${a.title}`);
       await load();
+    } catch {
+      toast.error("Failed to resolve — try again.");
     } finally {
       setBusyId(null);
     }

@@ -62,6 +62,7 @@ const ROUTES: RouteCase[] = [
   { method: "GET", path: "/api/backup", minRole: "admin" },
   { method: "GET", path: "/api/settings/general", minRole: "admin" },
   { method: "GET", path: "/api/settings/update-check", minRole: "admin" },
+  { method: "POST", path: "/api/settings/heartbeat-test", minRole: "admin" },
 ];
 
 const ROLE_RANK: Record<Role, number> = { viewer: 0, operator: 1, admin: 2 };

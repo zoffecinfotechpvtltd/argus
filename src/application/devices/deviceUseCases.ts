@@ -20,7 +20,16 @@ export interface CreateDeviceInput {
   snmpCredsEnc?: string | null;
   tags?: string[];
   uplinkDeviceId?: string | null;
+  criticalAsset?: boolean;
+  apiVendor?: "fortigate" | null;
+  /** Already-encrypted at the API layer. */
+  apiCredsEnc?: string | null;
 }
+
+/** Device types whose downtime is inherently high-stakes regardless of what else is happening on
+ * the network — default them to critical (instant page, no storm/rate-limit buffering) unless the
+ * caller explicitly overrides it. */
+export const DEFAULT_CRITICAL_TYPES: ReadonlySet<DeviceType> = new Set(["camera", "firewall"]);
 
 export async function createDevice(app: AppContainer, tenantId: string, actorUserId: string, input: CreateDeviceInput): Promise<Device> {
   const existing = await app.repos.device.findByIp(tenantId, input.ip);
@@ -30,6 +39,7 @@ export async function createDevice(app: AppContainer, tenantId: string, actorUse
 
   const now = app.clock.nowIso();
   const deviceId = randomUUID();
+  const type = input.type ?? "unknown";
   const device: Device = {
     id: deviceId,
     tenantId,
@@ -37,7 +47,7 @@ export async function createDevice(app: AppContainer, tenantId: string, actorUse
     ip: input.ip,
     mac: input.mac ?? null,
     vendor: input.vendor ?? null,
-    type: input.type ?? "unknown",
+    type,
     location: input.location ?? null,
     groupId: input.groupId ?? null,
     responsibleUserId: input.responsibleUserId ?? null,
@@ -46,6 +56,13 @@ export async function createDevice(app: AppContainer, tenantId: string, actorUse
     snmpCredsEnc: input.snmpCredsEnc ?? null,
     tags: input.tags ?? [],
     uplinkDeviceId: input.uplinkDeviceId ?? null,
+    criticalAsset: input.criticalAsset ?? DEFAULT_CRITICAL_TYPES.has(type),
+    model: null,
+    firmwareVersion: null,
+    serialNumber: null,
+    haRole: null,
+    apiVendor: input.apiVendor ?? null,
+    apiCredsEnc: input.apiCredsEnc ?? null,
     createdAt: now,
     updatedAt: now,
   };
@@ -56,6 +73,7 @@ export async function createDevice(app: AppContainer, tenantId: string, actorUse
     hasHttp: !!input.hasHttp,
     hasHttps: !!input.hasHttps,
     hasSnmp: !!input.snmpCredsEnc,
+    hasVendorApi: !!input.apiCredsEnc,
     nowIso: now,
   });
 
@@ -96,6 +114,9 @@ export interface UpdateDeviceInput {
   snmpCredsEnc?: string | null;
   tags?: string[];
   uplinkDeviceId?: string | null;
+  criticalAsset?: boolean;
+  apiVendor?: "fortigate" | null;
+  apiCredsEnc?: string | null;
 }
 
 export async function updateDevice(

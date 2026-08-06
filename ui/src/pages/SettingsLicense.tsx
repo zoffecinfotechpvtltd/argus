@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { KeyRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { KeyRound, Upload } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../api/client";
 import { Badge, Button, Card, CardBody, CardHeader, Skeleton, Textarea, useToast } from "../components/ui";
@@ -39,6 +39,14 @@ const STATUS_LABEL: Record<LicenseInfo["status"], string> = {
   invalid: "Invalid license file",
 };
 
+const EXPIRY_PREFIX: Record<LicenseInfo["status"], string> = {
+  unlicensed: "Renews / expires",
+  valid: "Renews / expires",
+  grace: "Renewal was due",
+  expired: "Expired",
+  invalid: "Renews / expires",
+};
+
 const STATUS_TONE: Record<LicenseInfo["status"], BadgeTone> = {
   unlicensed: "neutral",
   valid: "success",
@@ -52,6 +60,19 @@ export function SettingsLicense() {
   const [licenseKey, setLicenseKey] = useState("");
   const [applying, setApplying] = useState(false);
   const toast = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setLicenseKey((await file.text()).trim());
+    } catch {
+      toast.error("Couldn't read that file.");
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   function refresh() {
     api.get<LicenseInfo>("/license").then(setInfo).catch(() => {});
@@ -128,12 +149,18 @@ export function SettingsLicense() {
                 )}
               </div>
 
-              {info.expiresAt && (
-                <p className="text-xs">
-                  {info.status === "grace" ? "Renewal was due" : info.status === "expired" ? "Expired" : "Renews / expires"}{" "}
-                  {new Date(info.expiresAt).toLocaleDateString()}
-                </p>
-              )}
+              {info.expiresAt &&
+                (() => {
+                  const daysLeft = Math.ceil((new Date(info.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+                  const soon = info.status === "valid" && daysLeft <= 14;
+                  const countdown = daysLeft <= 0 ? "today" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`;
+                  return (
+                    <p className={`text-xs ${soon ? "font-medium text-warning" : ""}`}>
+                      {EXPIRY_PREFIX[info.status]} {new Date(info.expiresAt).toLocaleDateString()}
+                      {soon && ` — ${countdown}`}
+                    </p>
+                  );
+                })()}
 
               {info.status === "grace" && (
                 <p className="rounded-md border border-warning/30 bg-warning-subtle px-3 py-2 text-xs text-warning">
@@ -169,8 +196,15 @@ export function SettingsLicense() {
               }
               description={
                 <>
-                  Paste the contents of the <code>.license.key</code> file you received after purchase.
+                  Paste the contents of the <code>.license.key</code> file you received after purchase, or upload it directly.
                 </>
+              }
+              action={
+                <label className="flex cursor-pointer items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-2xs font-medium text-text-secondary transition-colors duration-150 hover:bg-bg-subtle hover:text-text-primary">
+                  <Upload size={12} aria-hidden="true" />
+                  Upload file
+                  <input ref={fileInputRef} type="file" accept=".key,.license.key,.txt" onChange={handleFile} className="hidden" />
+                </label>
               }
             />
             <Textarea className="h-28 w-full font-mono text-xs" placeholder="Paste license key…" value={licenseKey} onChange={(e) => setLicenseKey(e.target.value)} />

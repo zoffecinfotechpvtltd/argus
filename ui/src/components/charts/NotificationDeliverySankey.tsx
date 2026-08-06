@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import ReactECharts from "echarts-for-react";
-import { Card } from "../ui";
+import { Link } from "react-router-dom";
 import { api } from "../../api/client";
 import { useEchartsColors, echartsTooltipStyle } from "../../lib/echartsTheme";
+import { BentoCard } from "./BentoCard";
 
 interface NotificationLogEntry {
   channel: "email" | "webhook";
@@ -79,15 +80,20 @@ export function NotificationDeliverySankey({ className = "" }: { className?: str
   );
 
   return (
-    <Card className={`p-3 ${className}`}>
+    <BentoCard className={`p-3 ${className}`}>
       <div className="mb-1 text-xs text-text-secondary">Notification delivery{total > 0 ? ` (last ${total})` : ""}</div>
       {loading ? (
         <div className="flex h-[140px] items-center justify-center text-xs text-text-muted">Loading…</div>
       ) : empty ? (
-        <div className="flex h-[140px] items-center justify-center text-xs text-text-muted">No notifications sent yet</div>
+        <div className="flex h-[140px] flex-col items-center justify-center gap-1 text-center text-xs text-text-muted">
+          <span>No notifications sent yet</span>
+          <Link to="/settings/notifications" className="text-accent hover:opacity-80">
+            Set up alert notifications →
+          </Link>
+        </div>
       ) : (
         <ReactECharts option={option} style={{ height: 140, width: "100%" }} notMerge lazyUpdate />
       )}
-    </Card>
+    </BentoCard>
   );
 }

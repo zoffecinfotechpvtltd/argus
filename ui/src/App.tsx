@@ -10,12 +10,14 @@ import { Setup } from "./pages/Setup";
 import { Dashboard } from "./pages/Dashboard";
 import { Discovery } from "./pages/Discovery";
 import { Bandwidth } from "./pages/Bandwidth";
+import { Firewalls } from "./pages/Firewalls";
 import { Inventory } from "./pages/Inventory";
 import { Alerts } from "./pages/Alerts";
 import { SettingsNotifications } from "./pages/SettingsNotifications";
 import { DeviceDetail } from "./pages/DeviceDetail";
 import { Topology } from "./pages/Topology";
 import { Reports } from "./pages/Reports";
+import { Sla } from "./pages/Sla";
 import { Users } from "./pages/Users";
 import { AuditLog } from "./pages/AuditLog";
 import { SettingsGeneral } from "./pages/SettingsGeneral";
@@ -149,6 +151,14 @@ export function App() {
                   }
                 />
                 <Route
+                  path="/firewalls"
+                  element={
+                    <Gate>
+                      <Firewalls />
+                    </Gate>
+                  }
+                />
+                <Route
                   path="/alerts"
                   element={
                     <Gate>
@@ -185,6 +195,14 @@ export function App() {
                   element={
                     <Gate>
                       <Reports />
+                    </Gate>
+                  }
+                />
+                <Route
+                  path="/sla"
+                  element={
+                    <Gate>
+                      <Sla />
                     </Gate>
                   }
                 />

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Globe } from "lucide-react";
+import { Globe, Search } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../api/client";
 import type { Device, DeviceGroup } from "../api/types";
@@ -35,6 +35,7 @@ export function SettingsStatusPage() {
   const tenantId = useTenantId();
   const toast = useToast();
   const [dirty, markClean] = useDirty(config);
+  const [deviceFilter, setDeviceFilter] = useState("");
 
   useEffect(() => {
     Promise.all([
@@ -74,6 +75,25 @@ export function SettingsStatusPage() {
     setConfig({ ...config, deviceIds: has ? config.deviceIds.filter((d) => d !== id) : [...config.deviceIds, id] });
   }
 
+  const visibleDevices = useMemo(() => {
+    if (!devices) return [];
+    const q = deviceFilter.trim().toLowerCase();
+    if (!q) return devices;
+    return devices.filter((d) => d.name.toLowerCase().includes(q));
+  }, [devices, deviceFilter]);
+
+  function selectAllVisible() {
+    if (!config) return;
+    const selectable = visibleDevices.filter((d) => !(d.groupId && groupIdSet.has(d.groupId))).map((d) => d.id);
+    setConfig({ ...config, deviceIds: Array.from(new Set([...config.deviceIds, ...selectable])) });
+  }
+
+  function clearAllVisible() {
+    if (!config) return;
+    const visibleIds = new Set(visibleDevices.map((d) => d.id));
+    setConfig({ ...config, deviceIds: config.deviceIds.filter((id) => !visibleIds.has(id)) });
+  }
+
   async function save() {
     if (!config) return;
     setSaving(true);
@@ -108,6 +128,26 @@ export function SettingsStatusPage() {
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="mx-auto max-w-2xl space-y-6"
       >
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Publish state</p>
+            <p className={`mt-1 flex items-center gap-1.5 text-sm font-semibold ${config.enabled ? "text-success" : "text-text-secondary"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${config.enabled ? "bg-success" : "bg-text-muted"}`} aria-hidden="true" />
+              {config.enabled ? "Published" : "Unpublished"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Devices exposed</p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">{exposedDeviceCount}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Live to the public</p>
+            <p className={`mt-1 text-sm font-semibold ${config.enabled && exposedDeviceCount > 0 ? "text-success" : "text-text-secondary"}`}>
+              {config.enabled && exposedDeviceCount > 0 ? "Yes" : "No"}
+            </p>
+          </div>
+        </div>
+
         <Card>
           <CardBody>
             <CardHeader
@@ -178,12 +218,39 @@ export function SettingsStatusPage() {
             )}
 
             <div>
-              <h4 className="mb-1.5 text-xs font-medium uppercase tracking-wide text-text-secondary">Individual devices</h4>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <h4 className="text-xs font-medium uppercase tracking-wide text-text-secondary">Individual devices</h4>
+                {devices.length > 0 && (
+                  <div className="flex items-center gap-2 text-2xs">
+                    <button type="button" onClick={selectAllVisible} className="cursor-pointer font-medium text-accent hover:text-accent-hover">
+                      Select all{deviceFilter ? " shown" : ""}
+                    </button>
+                    <span className="text-text-muted">·</span>
+                    <button type="button" onClick={clearAllVisible} className="cursor-pointer font-medium text-text-secondary hover:text-text-primary">
+                      Clear{deviceFilter ? " shown" : ""}
+                    </button>
+                  </div>
+                )}
+              </div>
+              {devices.length > 5 && (
+                <div className="relative mb-2">
+                  <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" aria-hidden="true" />
+                  <input
+                    type="text"
+                    value={deviceFilter}
+                    onChange={(e) => setDeviceFilter(e.target.value)}
+                    placeholder="Filter devices…"
+                    className="w-full rounded-md border border-border bg-bg-surface py-1.5 pl-8 pr-3 text-sm text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+                  />
+                </div>
+              )}
               {devices.length === 0 ? (
                 <p className="text-xs text-text-secondary">No devices yet.</p>
+              ) : visibleDevices.length === 0 ? (
+                <p className="text-xs text-text-secondary">No devices match "{deviceFilter}".</p>
               ) : (
                 <div className="max-h-[320px] space-y-0.5 overflow-y-auto rounded-md border border-border p-1">
-                  {devices.map((d) => {
+                  {visibleDevices.map((d) => {
                     const coveredByGroup = !!d.groupId && groupIdSet.has(d.groupId);
                     return (
                       <label

@@ -4,6 +4,7 @@ import type { Device, DeviceType } from "@domain/entities";
 import { buildDefaultChecks } from "@domain/defaultChecks";
 import type { DeviceWithChecks } from "@ports/repos";
 import { assertLicenseAllowsNewDevice } from "@application/license";
+import { DEFAULT_CRITICAL_TYPES } from "@application/devices/deviceUseCases";
 
 export interface ImportSelection {
   ip: string;
@@ -59,6 +60,13 @@ export async function importDiscoveredDevices(
       snmpCredsEnc: sel.snmpCredsEnc ?? null,
       tags: [],
       uplinkDeviceId: null,
+      criticalAsset: DEFAULT_CRITICAL_TYPES.has(sel.type),
+      model: null,
+      firmwareVersion: null,
+      serialNumber: null,
+      haRole: null,
+      apiVendor: null,
+      apiCredsEnc: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -69,6 +77,7 @@ export async function importDiscoveredDevices(
       hasHttp: sel.openPorts.includes(80),
       hasHttps: sel.openPorts.includes(443),
       hasSnmp: !!sel.snmpCredsEnc,
+      hasVendorApi: false, // vendor API creds aren't collected during discovery; add via device edit
       nowIso: now,
     });
 

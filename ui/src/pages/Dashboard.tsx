@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ComponentProps, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { List, type RowComponentProps } from "react-window";
 import {
   Area,
@@ -33,7 +33,8 @@ import { SEVERITY_COLOR, SEVERITY_HEX } from "../api/alertTypes";
 import { CATEGORICAL_PALETTE, DEVICE_STATE_HEX, type DeviceState } from "../lib/statusTokens";
 import type { Device, DeviceGroup, DeviceType } from "../api/types";
 import { DEVICE_TYPE_LABELS } from "../api/types";
-import { Card, EmptyState, Input, Select, SkeletonCards } from "../components/ui";
+import { EmptyState, Input, Select, SkeletonCards } from "../components/ui";
+import { BentoCard } from "../components/charts/BentoCard";
 import { formatBps } from "../lib/format";
 import { AlertActivityCalendar } from "../components/charts/AlertActivityCalendar";
 import { SlaGauge } from "../components/charts/SlaGauge";
@@ -45,31 +46,14 @@ const AXIS_TICK = { fontSize: 10, fill: "#A1A1AA" };
 const CHART_MUTED_FILL = "rgba(161,161,170,0.12)"; // text-muted at low opacity, for chart backgrounds/cursors
 const STATE_ORDER: DeviceState[] = ["up", "degraded", "down", "flapping", "maintenance"];
 
-/**
- * Dashboard-only elevation treatment — every other page in the app keeps the flat, shadow-at-rest-
- * never Card from components/ui (see that file's own comment: "no shadow at rest... this system
- * moves state through color only"). That's the right call for a dense operational tool like
- * Inventory or Settings, but this page is the one place a "floating tile" reads as the room's own
- * console glass rather than decoration — a real elevation cue for the one screen someone glances
- * at from across a room. Two shadow layers (a tight contact shadow + a soft ambient one) instead of
- * one flat blur reads as a physically lit surface rather than a CSS drop-shadow; a 1px inset top
- * highlight is the light-catching-an-edge cue that actually sells "this tile sits above the page,"
- * not just "this tile has a shadow." Kept to elevation + a subtle lift on hover — no color, no glow,
- * same restraint the rest of the design system already uses for its own accent.
- */
-function BentoCard({ className = "", children, ...props }: ComponentProps<typeof Card>) {
-  return (
-    <Card
-      className={`group relative overflow-hidden !border-border/50 !shadow-[0_2px_3px_rgba(24,24,27,0.08),0_6px_10px_rgba(24,24,27,0.08),0_30px_50px_-6px_rgba(24,24,27,0.35)] transition-[transform,box-shadow] duration-300 ease-out-expo hover:-translate-y-[4px] hover:!shadow-[0_4px_6px_rgba(24,24,27,0.10),0_10px_18px_rgba(24,24,27,0.10),0_44px_70px_-8px_rgba(24,24,27,0.45)] dark:!shadow-[0_2px_3px_rgba(0,0,0,0.4),0_6px_10px_rgba(0,0,0,0.35),0_30px_50px_-6px_rgba(0,0,0,0.65)] dark:hover:!shadow-[0_4px_6px_rgba(0,0,0,0.45),0_10px_18px_rgba(0,0,0,0.4),0_44px_70px_-8px_rgba(0,0,0,0.75)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${className}`}
-      {...props}
-    >
-      <span
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.14]"
-        aria-hidden="true"
-      />
-      {children}
-    </Card>
-  );
+// Recharts renders a category-axis tick as plain SVG <text> with no width constraint and no
+// truncation of its own — a device/group name longer than the axis's own `width` doesn't wrap or
+// ellipsize, it just draws past its column and overlaps the bars next to it. CSS text-overflow
+// doesn't reach SVG text either, so this has to truncate the string itself before Recharts ever
+// sees it, the same way DeviceMixTile and Topology's node labels already do.
+const AXIS_LABEL_MAX = 14;
+function truncateAxisLabel(value: string): string {
+  return value.length > AXIS_LABEL_MAX ? `${value.slice(0, AXIS_LABEL_MAX - 1)}…` : value;
 }
 
 interface Segment {
@@ -91,25 +75,39 @@ function DonutCard({ title, segments }: { title: string; segments: Segment[] }) 
         <div className="flex flex-1 items-center justify-center text-xs text-text-muted">No data yet</div>
       ) : (
         <div className="flex flex-1 items-center gap-3">
-          <div className="relative shrink-0" style={{ width: 92, height: 92 }}>
+          <div className="relative shrink-0" style={{ width: 96, height: 96 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={segments} dataKey="count" nameKey="label" innerRadius={28} outerRadius={44} paddingAngle={2} strokeWidth={0} isAnimationActive={false}>
+                <Pie
+                  data={segments}
+                  dataKey="count"
+                  nameKey="label"
+                  innerRadius={30}
+                  outerRadius={46}
+                  paddingAngle={segments.filter((s) => s.count > 0).length > 1 ? 4 : 0}
+                  cornerRadius={6}
+                  strokeWidth={0}
+                  isAnimationActive={false}
+                >
                   {segments.map((s) => (
-                    <Cell key={s.key} fill={s.color} />
+                    <Cell key={s.key} fill={s.color} fillOpacity={s.count > 0 ? 1 : 0.15} />
                   ))}
                 </Pie>
-                <Tooltip content={<DonutTooltip total={total} />} />
+                {/* No hover tooltip here, deliberately — at 96px this ring is too small for a
+                    tooltip to ever have room to render without overlapping either the ring or the
+                    center total (that collision is exactly what used to happen). The legend beside
+                    it already shows every segment's label and count permanently, so a tooltip would
+                    only repeat information already on screen, not add any. */}
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-mono text-lg font-semibold tabular-nums text-text-primary">{total}</span>
+              <span className="font-mono text-xl font-bold tabular-nums tracking-tightest text-text-primary">{total}</span>
               <span className="text-2xs uppercase tracking-wide text-text-muted">total</span>
             </div>
           </div>
           <div className="min-w-0 flex-1 space-y-1">
             {segments.map((s) => (
-              <div key={s.key} className="flex items-center justify-between gap-2 text-xs">
+              <div key={s.key} className={`flex items-center justify-between gap-2 rounded-md px-1 py-0.5 text-xs transition-colors duration-150 hover:bg-bg-subtle/60 ${s.count === 0 ? "opacity-40" : ""}`}>
                 <span className="flex min-w-0 items-center gap-1.5 truncate text-text-secondary">
                   <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
                   <span className="truncate">{s.label}</span>
@@ -121,20 +119,6 @@ function DonutCard({ title, segments }: { title: string; segments: Segment[] }) 
         </div>
       )}
     </BentoCard>
-  );
-}
-
-function DonutTooltip({ active, payload, total }: { active?: boolean; payload?: Array<{ payload: Segment }>; total: number }) {
-  if (!active || !payload?.length) return null;
-  const row = payload[0]!.payload;
-  const pct = total > 0 ? Math.round((row.count / total) * 100) : 0;
-  return (
-    <div className="rounded-md border border-border bg-bg-elevated px-3 py-2 text-xs shadow-md">
-      <p className="font-medium text-text-primary">{row.label}</p>
-      <p className="text-text-secondary">
-        {row.count} · {pct}%
-      </p>
-    </div>
   );
 }
 
@@ -175,16 +159,21 @@ interface DeviceMixTileProps {
 
 function DeviceMixTile({ x = 0, y = 0, width = 0, height = 0, name, pct, fill }: DeviceMixTileProps) {
   const showLabel = width > 46 && height > 28;
+  // Flat, fully-saturated fill — a top-lit gradient was tried here and looked like a washed-out
+  // haze eating the label rather than a considered highlight (gradients on a hard-edged block this
+  // size just don't read as "glassy," they read as broken). Flat categorical color + a generous
+  // corner radius is the actual modern-dashboard move (Linear, Vercel, Stripe all do this), not a
+  // deficiency to compensate for with an effect.
   return (
     <g>
-      <rect x={x} y={y} width={width} height={height} fill={fill} stroke="rgb(var(--color-bg-surface))" strokeWidth={2} />
+      <rect x={x} y={y} width={width} height={height} rx={8} ry={8} fill={fill} stroke="rgb(var(--color-bg-surface))" strokeWidth={3} />
       {showLabel && (
-        <text x={x + 6} y={y + 16} fontSize={10.5} fontWeight={600} fill="#fff" style={{ pointerEvents: "none" }}>
+        <text x={x + 10} y={y + 20} fontSize={11.5} fontWeight={600} fill="#fff" style={{ pointerEvents: "none" }}>
           {name}
         </text>
       )}
       {showLabel && height > 42 && (
-        <text x={x + 6} y={y + 30} fontSize={10} fill="rgba(255,255,255,0.85)" style={{ pointerEvents: "none" }}>
+        <text x={x + 10} y={y + 36} fontSize={10.5} fill="rgba(255,255,255,0.85)" style={{ pointerEvents: "none" }}>
           {pct}%
         </text>
       )}
@@ -226,7 +215,11 @@ function LatencySparkline({ deviceId, color }: { deviceId: string; color: string
   useEffect(() => {
     let cancelled = false;
     api
-      .get<{ points: Array<{ ts: string; value: number }> }>(`/metrics/${deviceId}?range=6h&name=latencyMs`)
+      // The scheduler records latency per check kind ("icmp.latencyMs"), never a bare "latencyMs" —
+      // this queried the wrong metric name and silently returned zero points forever, so every
+      // sparkline here rendered as the empty placeholder div below no matter how much real ICMP
+      // history a device had (see DeviceDetail.tsx's own latency chart, which gets this right).
+      .get<{ points: Array<{ ts: string; value: number }> }>(`/metrics/${deviceId}?range=6h&name=icmp.latencyMs`)
       .then((res) => {
         if (!cancelled) setPoints(res.points);
       })
@@ -272,7 +265,7 @@ function GroupStateBarCard({ rows }: { rows: Array<{ label: string } & Record<De
         <ResponsiveContainer width="100%" height={Math.max(60, rows.length * 26)}>
           <BarChart data={rows} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
             <XAxis type="number" hide />
-            <YAxis type="category" dataKey="label" width={100} tick={AXIS_TICK} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="label" width={100} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={truncateAxisLabel} />
             <Tooltip cursor={{ fill: CHART_MUTED_FILL }} content={<GroupStateTooltip />} />
             {STATE_ORDER.map((s, i) => (
               <Bar key={s} dataKey={s} stackId="state" fill={DEVICE_STATE_HEX[s]} radius={i === STATE_ORDER.length - 1 ? [0, 4, 4, 0] : undefined} maxBarSize={16} />
@@ -355,6 +348,14 @@ function AlertsTrendCard() {
       ) : (
         <ResponsiveContainer width="100%" height={140}>
           <AreaChart data={rows} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+            <defs>
+              {(["critical", "warning", "info"] as const).map((s) => (
+                <linearGradient key={s} id={`alerts-trend-${s}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={SEVERITY_HEX[s]} stopOpacity={0.55} />
+                  <stop offset="100%" stopColor={SEVERITY_HEX[s]} stopOpacity={0.04} />
+                </linearGradient>
+              ))}
+            </defs>
             <XAxis
               dataKey="day"
               tick={AXIS_TICK}
@@ -366,9 +367,9 @@ function AlertsTrendCard() {
             />
             <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} allowDecimals={false} width={28} />
             <Tooltip content={<AlertsTrendTooltip />} />
-            <Area type="monotone" dataKey="critical" stackId="sev" stroke={SEVERITY_HEX.critical} fill={SEVERITY_HEX.critical} fillOpacity={0.55} isAnimationActive={false} />
-            <Area type="monotone" dataKey="warning" stackId="sev" stroke={SEVERITY_HEX.warning} fill={SEVERITY_HEX.warning} fillOpacity={0.5} isAnimationActive={false} />
-            <Area type="monotone" dataKey="info" stackId="sev" stroke={SEVERITY_HEX.info} fill={SEVERITY_HEX.info} fillOpacity={0.45} isAnimationActive={false} />
+            <Area type="monotone" dataKey="critical" stackId="sev" stroke={SEVERITY_HEX.critical} strokeWidth={1.75} fill="url(#alerts-trend-critical)" isAnimationActive={false} />
+            <Area type="monotone" dataKey="warning" stackId="sev" stroke={SEVERITY_HEX.warning} strokeWidth={1.75} fill="url(#alerts-trend-warning)" isAnimationActive={false} />
+            <Area type="monotone" dataKey="info" stackId="sev" stroke={SEVERITY_HEX.info} strokeWidth={1.75} fill="url(#alerts-trend-info)" isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
       )}
@@ -563,8 +564,18 @@ function BandwidthSummaryCard() {
           <div className="min-h-[64px] flex-1">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={points} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                <Area type="monotone" dataKey="inbound" stroke="#39C5D8" fill="#39C5D8" fillOpacity={0.3} strokeWidth={1.25} isAnimationActive={false} />
-                <Area type="monotone" dataKey="outbound" stroke="#6757E8" fill="#6757E8" fillOpacity={0.18} strokeWidth={1.25} isAnimationActive={false} />
+                <defs>
+                  <linearGradient id="bw-inbound" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#39C5D8" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#39C5D8" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="bw-outbound" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6757E8" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#6757E8" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="inbound" stroke="#39C5D8" fill="url(#bw-inbound)" strokeWidth={1.5} isAnimationActive={false} />
+                <Area type="monotone" dataKey="outbound" stroke="#6757E8" fill="url(#bw-outbound)" strokeWidth={1.5} isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -727,8 +738,17 @@ function GroupHealthComparison({ rows, colorFor }: { rows: GroupRadarRow[]; colo
   return (
     <BentoCard className="p-3">
       <div className="mb-2 text-xs text-text-secondary">Group health comparison</div>
-      {rows.length === 0 ? (
-        <div className="flex h-[220px] items-center justify-center text-xs text-text-muted">No groups yet</div>
+      {/* A "comparison" of one bucket (everything still Ungrouped) isn't a comparison — same
+          low-value-chart problem a single-slice pie would have, just with bars instead. Point at
+          the actual fix (create groups, assign devices) rather than render a chart with nothing to
+          compare against. */}
+      {rows.length <= 1 ? (
+        <div className="flex h-[220px] flex-col items-center justify-center gap-1 text-center text-xs text-text-muted">
+          <span>{rows.length === 0 ? "No devices yet" : "Everything's in one group — nothing to compare yet"}</span>
+          <Link to="/inventory" className="text-accent hover:opacity-80">
+            Organize devices into groups →
+          </Link>
+        </div>
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -782,7 +802,10 @@ function LatencyReliabilityScatter({ points }: { points: ScatterPoint[] }) {
     <BentoCard className="p-3">
       <div className="mb-2 text-xs text-text-secondary">Latency vs. reliability</div>
       {points.length === 0 ? (
-        <div className="flex h-[220px] items-center justify-center text-xs text-text-muted">No devices with both latency and uptime data yet</div>
+        <div className="flex h-[220px] flex-col items-center justify-center gap-1 text-center text-xs text-text-muted">
+          <span>No devices with both latency and uptime data yet</span>
+          <span>Needs a device that's been up recently and monitored for a few days</span>
+        </div>
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <ScatterChart margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
@@ -1119,7 +1142,7 @@ export function Dashboard() {
                   <ResponsiveContainer width="100%" height={Math.max(60, latencyLeaders.length * 24)}>
                     <BarChart data={latencyLeaders} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
                       <XAxis type="number" hide />
-                      <YAxis type="category" dataKey="name" width={100} tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="name" width={100} tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={truncateAxisLabel} />
                       <Tooltip content={<LatencyTooltip />} cursor={{ fill: CHART_MUTED_FILL }} />
                       <Bar dataKey="lastLatencyMs" radius={[0, 4, 4, 0]} maxBarSize={14}>
                         {latencyLeaders.map((d) => (
@@ -1269,52 +1292,44 @@ export function Dashboard() {
   );
 }
 
-/** One heartbeat-shaped path, tileable edge-to-edge (starts and ends at baseline y=20 so two
- * copies placed side by side read as one continuous rhythm, not a visible seam). This is the
- * signature element referenced in docs/improvement-plan/01-DESIGN-SYSTEM.md — a live pulse trace
- * instead of the generic radial-progress-ring every SaaS dashboard already reaches for, because a
- * heartbeat is literally what an uptime monitor watches: an unbroken rhythm, or the flat/spiked
- * line that means it wasn't. */
-const PULSE_PATH = "M0,20 L14,20 L19,20 L23,6 L27,34 L31,14 L35,20 L48,20 L100,20";
-
-function PulseTrace({ color, flatline }: { color: string; flatline: boolean }) {
-  return (
-    <div className="relative h-full min-h-9 w-full overflow-hidden" aria-hidden="true">
-      <div className={`flex h-full w-[200%] ${flatline ? "" : "pulse-scroll"}`}>
-        {[0, 1].map((copy) => (
-          <svg key={copy} viewBox="0 0 100 40" preserveAspectRatio="none" className="h-full w-1/2">
-            <path
-              d={flatline ? "M0,20 L100,20" : PULSE_PATH}
-              fill="none"
-              stroke={color}
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-        ))}
+/** Real trend, drawn plainly — this replaces an earlier version of this tile that played a fixed,
+ * always-identical decorative "heartbeat" SVG path whenever any two trend points existed, which
+ * looked like live telemetry but was the same waveform regardless of what availability actually
+ * did. Every other chart on this page carries an explicit "not fabricated" comment (see
+ * SlaHeadroomCard, StatTile) — this was the one tile that didn't earn it. A monitoring product
+ * cannot afford a chart that *looks* like data and isn't: the one thing worse than an ugly trend
+ * line is a reassuring one that's lying. Y-domain is tight (dataMin, not 0) since fleet
+ * availability lives in a narrow high band — a 0-100 axis would flatten every real change into
+ * visual noise near the top. Below 3 points there isn't a shape worth drawing yet, so it says so
+ * instead of drawing something anyway. */
+function AvailabilityTrendChart({ trend, color }: { trend: number[]; color: string }) {
+  if (trend.length < 3) {
+    return (
+      <div className="flex h-full min-h-9 w-full items-center gap-2 text-2xs text-text-muted">
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-60" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
+        </span>
+        Gathering trend data — checking in every few seconds
       </div>
-      {/* Edge fade is a mask on a flat single-color layer, not a gradient fill — the mask's alpha
-          channel is a gradient, but the visible color underneath (bg-bg-surface) never varies. */}
-      <div
-        className="pointer-events-none absolute inset-0 bg-bg-surface"
-        style={{
-          maskImage: "linear-gradient(to right, black, transparent, black)",
-          WebkitMaskImage: "linear-gradient(to right, black, transparent, black)",
-        }}
-      />
-      <style>{`
-        @keyframes argus-pulse-scroll {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-        .pulse-scroll { animation: argus-pulse-scroll 3s linear infinite; }
-        @media (prefers-reduced-motion: reduce) {
-          .pulse-scroll { animation: none; }
-        }
-      `}</style>
-    </div>
+    );
+  }
+  const data = trend.map((v, i) => ({ i, v }));
+  const min = Math.min(...trend);
+  const gradientId = "hero-availability-fill";
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.28} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <YAxis hide domain={[Math.min(min - 0.2, 99), 100]} />
+        <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.75} fill={`url(#${gradientId})`} isAnimationActive={false} dot={false} />
+      </AreaChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -1334,41 +1349,19 @@ function PulseTrace({ color, flatline }: { color: string; flatline: boolean }) {
  * is the same technique browsers themselves use for anything animated at pointer-move frequency.
  * Not a <Card> (that component doesn't forward refs) — same base visual classes, applied directly,
  * so this can hold the ref the tilt math needs. */
+/** Static shell, deliberately — an earlier version tracked the cursor to tilt this tile in 3D
+ * perspective and sweep a spotlight glow under it. On a data dashboard that reads as a marketing
+ * page's hero card doing tricks, not a monitoring product's headline number; the motion competed
+ * with the number itself for attention every time someone's mouse crossed it. Same restrained
+ * hover as BentoCard now uses everywhere else on this page — shadow/border only, nothing moves. */
 function HeroAvailabilityTile({ pct, trend }: { pct: number; trend: number[] }) {
   const good = pct >= SLA_TARGET_PCT;
   const color = good ? DEVICE_STATE_HEX.up : pct >= 99 ? DEVICE_STATE_HEX.degraded : DEVICE_STATE_HEX.down;
-  const ref = useRef<HTMLDivElement>(null);
-  const reducedMotion = useRef(typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-
-  function onMouseMove(e: ReactMouseEvent<HTMLDivElement>) {
-    if (reducedMotion.current || !ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const px = (e.clientX - rect.left) / rect.width;
-    const py = (e.clientY - rect.top) / rect.height;
-    ref.current.style.setProperty("--tilt-x", `${(py - 0.5) * -6}deg`);
-    ref.current.style.setProperty("--tilt-y", `${(px - 0.5) * 6}deg`);
-    ref.current.style.setProperty("--glow-x", `${px * 100}%`);
-    ref.current.style.setProperty("--glow-y", `${py * 100}%`);
-  }
-  function onMouseLeave() {
-    ref.current?.style.setProperty("--tilt-x", "0deg");
-    ref.current?.style.setProperty("--tilt-y", "0deg");
-  }
 
   return (
-    <div
-      ref={ref}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-      className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/60 bg-bg-surface p-5 shadow-[0_3px_6px_rgba(24,24,27,0.08),0_24px_48px_-16px_rgba(24,24,27,0.32)] [transform:perspective(1000px)_rotateX(var(--tilt-x,0deg))_rotateY(var(--tilt-y,0deg))] transition-[transform,box-shadow] duration-300 ease-out-expo will-change-transform hover:shadow-[0_6px_14px_rgba(24,24,27,0.12),0_36px_64px_-16px_rgba(24,24,27,0.4)] dark:shadow-[0_3px_6px_rgba(0,0,0,0.4),0_24px_48px_-14px_rgba(0,0,0,0.6)] dark:hover:shadow-[0_6px_14px_rgba(0,0,0,0.45),0_36px_64px_-14px_rgba(0,0,0,0.75)] motion-reduce:!transform-none motion-reduce:transition-none"
-    >
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-bg-surface p-5 shadow-[0_1px_2px_rgba(24,24,27,0.06),0_8px_16px_-4px_rgba(24,24,27,0.10)] transition-[box-shadow,border-color] duration-300 ease-out-expo hover:border-border hover:shadow-[0_1px_2px_rgba(24,24,27,0.08),0_16px_28px_-6px_rgba(24,24,27,0.16)] dark:shadow-[0_1px_2px_rgba(0,0,0,0.5),0_8px_16px_-4px_rgba(0,0,0,0.4)] dark:hover:shadow-[0_1px_2px_rgba(0,0,0,0.6),0_16px_28px_-6px_rgba(0,0,0,0.55)]">
       <span
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent dark:via-white/[0.14]"
-        aria-hidden="true"
-      />
-      <span
-        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background: "radial-gradient(420px circle at var(--glow-x,50%) var(--glow-y,0%), rgb(var(--color-accent) / 0.10), transparent 60%)" }}
         aria-hidden="true"
       />
       <div className="relative flex shrink-0 items-center justify-between gap-2">
@@ -1384,12 +1377,12 @@ function HeroAvailabilityTile({ pct, trend }: { pct: number; trend: number[] }) 
         <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-hidden="true" />
       </div>
       {/* flex-1, not a fixed height: this tile spans two grid rows next to the shorter Devices/Open
-          alerts pair, so its own content has real extra vertical room to work with — the pulse
-          trace grows to fill it instead of leaving dead gray space beneath a small fixed-height
+          alerts pair, so its own content has real extra vertical room to work with — the trend
+          chart grows to fill it instead of leaving dead gray space beneath a small fixed-height
           sliver, which is what a professional dashboard's "hero" panel is supposed to do with the
           extra weight its size implies. */}
       <div className="relative mt-2 min-h-0 flex-1">
-        <PulseTrace color={color} flatline={trend.length < 2} />
+        <AvailabilityTrendChart trend={trend} color={color} />
       </div>
     </div>
   );

@@ -155,6 +155,8 @@ export function DeviceDetail() {
   const lossPct = useMetric(deviceId, "lossPct", range);
   const cpuPct = useMetric(deviceId, "cpuPct", range);
   const memPct = useMetric(deviceId, "memUsedPct", range);
+  const sessionCount = useMetric(deviceId, "sessionCount", range);
+  const vpnTunnelsUp = useMetric(deviceId, "vpnTunnelsUp", range);
 
   const rangeAlerts = useMemo(() => {
     const since = Date.now() - RANGE_HOURS[range] * 60 * 60 * 1000;
@@ -231,6 +233,12 @@ export function DeviceDetail() {
 
   const currentState = status?.state ?? null;
   const hasSnmp = !!device.snmpCredsEnc;
+  // CPU/mem come from either source — SNMP's generic hrProcessorLoad/hrStorage OIDs, or (for a
+  // FortiGate) the vendor API's own resource/usage endpoint — so gating the charts on hasSnmp
+  // alone silently hid them for every API-monitored firewall, which populates these exact same
+  // metric names through a different checker. Session count / VPN tunnels are API-only.
+  const hasCpuMemSource = hasSnmp || !!device.apiVendor;
+  const hasVendorApi = !!device.apiVendor;
 
   return (
     <Layout>
@@ -244,7 +252,11 @@ export function DeviceDetail() {
                 <p className="text-sm text-text-secondary">
                   {DEVICE_TYPE_LABELS[device.type]} · <span className="font-mono">{device.ip}</span>
                   {group && <> · {group.name}</>}
+                  {device.model && <> · {device.model}</>}
+                  {device.firmwareVersion && <> · fw {device.firmwareVersion}</>}
+                  {device.haRole && <> · HA {device.haRole}</>}
                 </p>
+                {device.serialNumber && <p className="text-xs text-text-secondary">S/N {device.serialNumber}</p>}
               </div>
             </div>
             <div className="flex items-center gap-2" role="group" aria-label="Time range">
@@ -321,8 +333,10 @@ export function DeviceDetail() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <ChartCard title="Latency (ms)" data={icmpLatency} unit="ms" syncId="device-metrics" />
               <ChartCard title="Packet loss (%)" data={lossPct} unit="%" syncId="device-metrics" />
-              {hasSnmp && <ChartCard title="CPU (%)" data={cpuPct} unit="%" syncId="device-metrics" />}
-              {hasSnmp && <ChartCard title="Memory used (%)" data={memPct} unit="%" syncId="device-metrics" />}
+              {hasCpuMemSource && <ChartCard title="CPU (%)" data={cpuPct} unit="%" syncId="device-metrics" />}
+              {hasCpuMemSource && <ChartCard title="Memory used (%)" data={memPct} unit="%" syncId="device-metrics" />}
+              {hasVendorApi && <ChartCard title="Active sessions" data={sessionCount} unit="" syncId="device-metrics" />}
+              {hasVendorApi && <ChartCard title="VPN tunnels up" data={vpnTunnelsUp} unit="" syncId="device-metrics" />}
             </div>
           </div>
         )}

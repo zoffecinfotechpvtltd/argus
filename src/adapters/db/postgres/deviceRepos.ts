@@ -19,6 +19,13 @@ function rowToDevice(r: any): Device {
     snmpCredsEnc: r.snmp_creds_enc,
     tags: r.tags ?? [],
     uplinkDeviceId: r.uplink_device_id,
+    criticalAsset: r.critical_asset,
+    model: r.model,
+    firmwareVersion: r.firmware_version,
+    serialNumber: r.serial_number,
+    haRole: r.ha_role,
+    apiVendor: r.api_vendor,
+    apiCredsEnc: r.api_creds_enc,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -34,8 +41,8 @@ export class PgDeviceRepo implements DeviceRepo {
 
   async create(d: Device): Promise<Device> {
     await this.db.query(
-      `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+      `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
       [
         d.id,
         d.tenantId,
@@ -52,6 +59,13 @@ export class PgDeviceRepo implements DeviceRepo {
         d.snmpCredsEnc,
         JSON.stringify(d.tags ?? []),
         d.uplinkDeviceId,
+        d.criticalAsset,
+        d.model,
+        d.firmwareVersion,
+        d.serialNumber,
+        d.haRole,
+        d.apiVendor,
+        d.apiCredsEnc,
         d.createdAt,
         d.updatedAt,
       ]
@@ -65,8 +79,9 @@ export class PgDeviceRepo implements DeviceRepo {
     const merged: Device = { ...existing, ...patch, id, tenantId };
     await this.db.query(
       `UPDATE devices SET name=$1, ip=$2, mac=$3, vendor=$4, type=$5, location=$6, group_id=$7, responsible_user_id=$8,
-       interval_sec=$9, enabled=$10, snmp_creds_enc=$11, tags=$12, uplink_device_id=$13, updated_at=$14
-       WHERE id=$15 AND tenant_id=$16`,
+       interval_sec=$9, enabled=$10, snmp_creds_enc=$11, tags=$12, uplink_device_id=$13, critical_asset=$14,
+       model=$15, firmware_version=$16, serial_number=$17, ha_role=$18, api_vendor=$19, api_creds_enc=$20, updated_at=$21
+       WHERE id=$22 AND tenant_id=$23`,
       [
         merged.name,
         merged.ip,
@@ -81,6 +96,13 @@ export class PgDeviceRepo implements DeviceRepo {
         merged.snmpCredsEnc,
         JSON.stringify(merged.tags ?? []),
         merged.uplinkDeviceId,
+        merged.criticalAsset,
+        merged.model,
+        merged.firmwareVersion,
+        merged.serialNumber,
+        merged.haRole,
+        merged.apiVendor,
+        merged.apiCredsEnc,
         new Date().toISOString(),
         id,
         tenantId,
@@ -183,8 +205,8 @@ export class PgDeviceRepo implements DeviceRepo {
       await client.query("BEGIN");
       for (const { device, checks } of items) {
         await client.query(
-          `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, created_at, updated_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+          `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, created_at, updated_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
           [
             device.id,
             device.tenantId,
@@ -201,6 +223,13 @@ export class PgDeviceRepo implements DeviceRepo {
             device.snmpCredsEnc,
             JSON.stringify(device.tags ?? []),
             device.uplinkDeviceId,
+            device.criticalAsset,
+            device.model,
+            device.firmwareVersion,
+            device.serialNumber,
+            device.haRole,
+            device.apiVendor,
+            device.apiCredsEnc,
             device.createdAt,
             device.updatedAt,
           ]

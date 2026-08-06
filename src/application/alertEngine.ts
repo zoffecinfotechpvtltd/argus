@@ -96,9 +96,12 @@ export class AlertEngine {
     // processEscalationForAlert itself (application/escalation.ts), not here — see that function's
     // doc comment for why centralizing it there instead of gating entry to bufferDownAlert/
     // routeInitialNotification is what makes it hold for the whole outage, not just this first call.
-    if (event.type === "DeviceWentDown") {
+    if (event.type === "DeviceWentDown" && !resolved.criticalAsset) {
       this.bufferDownAlert(resolved, created);
     } else {
+      // Critical assets (cameras, firewalls, anything flagged criticalAsset) skip the storm buffer
+      // entirely — their own downtime is always actionable on its own, independent of whether a
+      // wider outage is also happening, so waiting stormWindowMs to find out isn't acceptable.
       await this.routeInitialNotification(resolved, created);
     }
   }
@@ -209,7 +212,9 @@ export class AlertEngine {
     const nowMs = this.app.clock.now().getTime();
     const history = this.sentTimestamps.get(device.id) ?? [];
 
-    if (isRateLimited(history, nowMs, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX)) {
+    // Critical assets always page — a flapping camera/firewall must not get throttled into a
+    // once-an-hour summary the way a noisy ordinary device would.
+    if (!device.criticalAsset && isRateLimited(history, nowMs, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX)) {
       const lastSummary = this.summaryLastSentAt.get(device.id) ?? 0;
       if (nowMs - lastSummary > RATE_LIMIT_WINDOW_MS) {
         await this.sendRateLimitSummary(device, alert, history.length);

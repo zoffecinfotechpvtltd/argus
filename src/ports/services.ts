@@ -18,6 +18,15 @@ export interface CheckResult {
   latencyMs?: number;
   values?: Record<string, number>;
   error?: string;
+  /** Non-numeric device identity facts a vendor-API checker learned this poll (model, firmware,
+   * serial, HA role) — the scheduler persists these onto the Device record. Only set when at least
+   * one fact was actually read back; omitted (not present with undefined fields) otherwise. */
+  deviceFacts?: {
+    model?: string;
+    firmwareVersion?: string;
+    serialNumber?: string;
+    haRole?: "primary" | "secondary";
+  };
 }
 
 export interface Checker {
@@ -132,6 +141,14 @@ export interface DbMaintenance {
 export interface SecretCipher {
   encrypt(plaintext: string): string;
   decrypt(ciphertext: string): string;
+}
+
+/** SSRF guard for any admin-configured "call out to an external URL" setting (update feed,
+ * heartbeat dead-man's-switch, ...) — a port so application/ code (e.g. HeartbeatScheduler) never
+ * needs to import the DNS-resolving adapter directly. Rejects (throws) rather than returning a
+ * boolean so the caller's own error message doesn't have to be reconstructed from a bare `false`. */
+export interface ExternalUrlGuard {
+  assertSafe(url: string): Promise<void>;
 }
 
 export interface SystemEmailResult {

@@ -3,6 +3,7 @@ import type { CheckResult, Checker } from "@ports/services";
 import { pollSnmpMetrics } from "@adapters/net/snmpMetrics";
 import { decryptSecret } from "@adapters/crypto";
 import { isBlockedAddress } from "@domain/ssrfGuard";
+import { parseSnmpCredential } from "@domain/snmpCredential";
 
 export class SnmpChecker implements Checker {
   constructor(private instanceKey: Buffer) {}
@@ -17,9 +18,9 @@ export class SnmpChecker implements Checker {
 
     if (!device.snmpCredsEnc) return { ok: false, error: "No SNMP credentials configured for this device" };
 
-    let community: string;
+    let credential;
     try {
-      community = decryptSecret(this.instanceKey, device.snmpCredsEnc);
+      credential = parseSnmpCredential(decryptSecret(this.instanceKey, device.snmpCredsEnc));
     } catch {
       return { ok: false, error: "Failed to decrypt SNMP credentials" };
     }
@@ -27,7 +28,7 @@ export class SnmpChecker implements Checker {
     const start = performance.now();
     const result = await pollSnmpMetrics({
       ip: device.ip,
-      community,
+      credential,
       interfaces: check.config.interfaces,
       timeoutMs: check.config.timeoutMs ?? 3000,
     });

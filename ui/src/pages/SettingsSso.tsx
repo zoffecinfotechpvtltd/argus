@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Fingerprint, Link2 } from "lucide-react";
+import { Fingerprint, Link2, ShieldOff } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../api/client";
 import { CopyField } from "../components/CopyField";
 import { useTenantId } from "../hooks/useTenantId";
-import { Button, Card, CardBody, CardHeader, FieldGroup, Input, Skeleton, Textarea, useToast } from "../components/ui";
+import { Button, Card, CardBody, CardHeader, EmptyState, FieldGroup, Input, Skeleton, Textarea, useToast } from "../components/ui";
 import { useDirty } from "../hooks/useDirty";
+import { useAuth } from "../auth/AuthContext";
 
 interface SamlConfig {
   enabled: boolean;
@@ -33,6 +34,7 @@ function isValidUrl(value: string): boolean {
  * useTenantId's own doc comment) — surfaced up top since that's the reason most admins land here.
  */
 export function SettingsSso() {
+  const { mode } = useAuth();
   const [config, setConfig] = useState<SamlConfig | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -41,12 +43,16 @@ export function SettingsSso() {
   const [dirty, markClean] = useDirty(config);
 
   useEffect(() => {
+    if (mode === "exe") {
+      setLoaded(true);
+      return;
+    }
     api
       .get<SamlConfig | null>("/settings/sso/saml")
       .then((c) => setConfig(c ?? EMPTY_CONFIG))
       .catch(() => setConfig(EMPTY_CONFIG))
       .finally(() => setLoaded(true));
-  }, []);
+  }, [mode]);
 
   async function save() {
     if (!config) return;
@@ -68,6 +74,21 @@ export function SettingsSso() {
   const loginUrl = tenantId ? `${origin}/api/sso/saml/${tenantId}/login` : null;
 
   const canSave = !!config && isValidUrl(config.entryPoint) && config.idpIssuer.trim().length > 0 && config.idpCert.trim().length > 0;
+  const certLooksLikePem = !config?.idpCert.trim() || /-----BEGIN CERTIFICATE-----[\s\S]+-----END CERTIFICATE-----/.test(config.idpCert);
+
+  if (mode === "exe") {
+    return (
+      <Layout title="SSO / SAML" subtitle="Sign in through your identity provider">
+        <div className="mx-auto max-w-2xl">
+          <EmptyState
+            icon={ShieldOff}
+            title="Not available on this install"
+            description="SSO/SAML sign-in is a hosted (Argus Cloud) feature — this on-prem install authenticates users directly against its own local accounts instead. See the Users page to invite teammates."
+          />
+        </div>
+      </Layout>
+    );
+  }
 
   if (!loaded || !config) {
     return (
@@ -87,6 +108,20 @@ export function SettingsSso() {
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="mx-auto max-w-2xl space-y-6"
       >
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">SSO sign-in</p>
+            <p className={`mt-1 flex items-center gap-1.5 text-sm font-semibold ${config.enabled ? "text-success" : "text-text-secondary"}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${config.enabled ? "bg-success" : "bg-text-muted"}`} aria-hidden="true" />
+              {config.enabled ? "Enabled" : "Disabled"}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Identity provider</p>
+            <p className={`mt-1 text-sm font-semibold ${canSave ? "text-success" : "text-text-secondary"}`}>{canSave ? "Configured" : "Not configured"}</p>
+          </div>
+        </div>
+
         <Card>
           <CardBody>
             <CardHeader
@@ -154,13 +189,20 @@ export function SettingsSso() {
 
               <FieldGroup label="IdP signing certificate" hint="The X.509 certificate your IdP uses to sign assertions — paste the full PEM block, including the BEGIN/END lines.">
                 {(ids) => (
-                  <Textarea
-                    {...ids}
-                    className="h-32 w-full font-mono text-xs"
-                    placeholder={"-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"}
-                    value={config.idpCert}
-                    onChange={(e) => setConfig({ ...config, idpCert: e.target.value })}
-                  />
+                  <>
+                    <Textarea
+                      {...ids}
+                      className="h-32 w-full font-mono text-xs"
+                      placeholder={"-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"}
+                      value={config.idpCert}
+                      onChange={(e) => setConfig({ ...config, idpCert: e.target.value })}
+                    />
+                    {!certLooksLikePem && (
+                      <p className="mt-1 text-2xs text-warning">
+                        This doesn't look like a PEM certificate — make sure it includes the -----BEGIN CERTIFICATE----- and -----END CERTIFICATE----- lines.
+                      </p>
+                    )}
+                  </>
                 )}
               </FieldGroup>
 

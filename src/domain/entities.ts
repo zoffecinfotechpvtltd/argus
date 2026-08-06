@@ -117,11 +117,27 @@ export interface Device {
    * only by the alert engine to suppress a downstream device's paging while its uplink is down
    * (the alert itself still opens and is visible in the UI; only notification is held back). */
   uplinkDeviceId: string | null;
+  /** When true, a DOWN transition on this device skips the storm buffer and per-hour rate limit
+   * entirely — it pages immediately instead of waiting to see if it's part of a wider outage.
+   * For assets whose own downtime is always actionable regardless of what else is happening
+   * (cameras, firewalls), not for "this device is part of a group that might storm together". */
+  criticalAsset: boolean;
+  /** Vendor identity facts (FortiGate model, firmware build, serial, HA role) — populated by the
+   * matching vendor-API checker via CheckResult.deviceFacts on its normal poll cadence, not
+   * admin-entered. Null until the first successful poll, or always null if apiVendor is unset. */
+  model: string | null;
+  firmwareVersion: string | null;
+  serialNumber: string | null;
+  haRole: "primary" | "secondary" | null;
+  /** Which vendor REST API apiCredsEnc's decrypted+parsed JSON should be interpreted as, and which
+   * check kind buildDefaultChecks attaches. Null = no vendor API configured for this device. */
+  apiVendor: "fortigate" | null;
+  apiCredsEnc: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export type CheckKind = "icmp" | "tcp" | "http" | "snmp";
+export type CheckKind = "icmp" | "tcp" | "http" | "snmp" | "fortigate_api";
 
 export interface CheckConfig {
   // tcp/http

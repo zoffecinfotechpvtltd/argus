@@ -16,6 +16,12 @@ export interface Device {
   snmpCredsEnc: string | null;
   tags: string[];
   uplinkDeviceId: string | null;
+  criticalAsset: boolean;
+  model: string | null;
+  firmwareVersion: string | null;
+  serialNumber: string | null;
+  haRole: "primary" | "secondary" | null;
+  apiVendor: "fortigate" | null;
   createdAt: string;
   updatedAt: string;
 }

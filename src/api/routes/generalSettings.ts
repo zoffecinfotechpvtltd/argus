@@ -3,13 +3,11 @@ import { z } from "zod";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { createHash } from "node:crypto";
-import { lookup } from "node:dns/promises";
 import { requireAuth, requireRole, tenantOf } from "@api/middleware/auth";
 import { validateJson, getValidated } from "@api/middleware/validate";
 import { isNewerVersion } from "@domain/semver";
 import { verifyUpdateFeed } from "@domain/updateFeed";
 import { UPDATE_FEED_PUBLIC_KEY_PEM } from "@domain/updateFeedPublicKey";
-import { isBlockedAddress, isPrivateAddress } from "@domain/ssrfGuard";
 import { VERSION as CURRENT_VERSION } from "@bootstrap/version";
 import { isServiceInstalled, spawnSelfUpdateHelper } from "@bootstrap/selfUpdate";
 import { createBackupZip } from "@application/backup";
@@ -19,35 +17,6 @@ import type { AppEnv } from "@api/honoTypes";
 const CONFIG_PATH = "./config.json";
 const UPDATE_CHECK_TIMEOUT_MS = 5000;
 const UPDATE_DOWNLOAD_TIMEOUT_MS = 5 * 60 * 1000;
-
-/** SSRF guard for the update-check/update-apply URLs, same rationale and DNS-rebinding caveat as
- * @adapters/notify/webhookNotifier.ts's validateWebhookUrl: both the admin-configured check URL
- * and the signed feed's download URL are meant to point at an external update server, not the LAN
- * this product monitors, so private ranges are blocked in addition to loopback/link-local. Only
- * https:// is allowed — plain http would let a network-position attacker tamper with the download
- * even though the payload is separately signature- and checksum-verified. */
-async function assertSafeUpdateUrl(target: string): Promise<void> {
-  let parsed: URL;
-  try {
-    parsed = new URL(target);
-  } catch {
-    throw new Error(`Invalid URL: ${target}`);
-  }
-  if (parsed.protocol !== "https:") throw new Error(`URL must be https://: ${target}`);
-
-  let addresses: { address: string; family: number }[];
-  try {
-    addresses = await lookup(parsed.hostname, { all: true });
-  } catch {
-    throw new Error(`Could not resolve hostname: ${parsed.hostname}`);
-  }
-  for (const addr of addresses) {
-    // Checked regardless of family — see ssrfGuard.ts; a hostname with only a AAAA record used to
-    // skip validation entirely here since the loop never found an IPv4 address to check.
-    if (isBlockedAddress(addr.address)) throw new Error(`Blocked by SSRF guard: ${parsed.hostname} resolves to a link-local/loopback address`);
-    if (isPrivateAddress(addr.address)) throw new Error(`Blocked by SSRF guard: ${parsed.hostname} resolves to a private network address`);
-  }
-}
 
 /** True only when the instance can actually apply an update by itself: Windows (the only platform
  * bootstrap/selfUpdate.ts implements the swap-and-relaunch script for), and not running as a
@@ -72,6 +41,9 @@ const GeneralSettingsSchema = z.object({
   updateCheckUrl: z
     .union([z.string().url().refine((u) => u.startsWith("https://"), "Update check URL must be https://"), z.literal("")])
     .optional(),
+  heartbeatUrl: z
+    .union([z.string().url().refine((u) => u.startsWith("https://"), "Heartbeat URL must be https://"), z.literal("")])
+    .optional(),
 });
 
 export function generalSettingsRoutes(app: AppContainer) {
@@ -86,6 +58,7 @@ export function generalSettingsRoutes(app: AppContainer) {
       retention: app.config.retention,
       mode: app.config.mode,
       updateCheckUrl: app.config.updateCheckUrl ?? "",
+      heartbeatUrl: app.config.heartbeatUrl ?? "",
       version: CURRENT_VERSION,
       restartRequired: false,
     });
@@ -96,7 +69,7 @@ export function generalSettingsRoutes(app: AppContainer) {
     if (!url) return c.json({ configured: false, currentVersion: CURRENT_VERSION });
 
     try {
-      await assertSafeUpdateUrl(url);
+      await app.externalUrlGuard.assertSafe(url);
       const res = await fetch(url, { signal: AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS) });
       if (!res.ok) return c.json({ configured: true, currentVersion: CURRENT_VERSION, error: `Update server returned ${res.status}` }, 502);
 
@@ -133,7 +106,7 @@ export function generalSettingsRoutes(app: AppContainer) {
 
     let raw: string;
     try {
-      await assertSafeUpdateUrl(url);
+      await app.externalUrlGuard.assertSafe(url);
       const res = await fetch(url, { signal: AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS) });
       if (!res.ok) throw new Error(`Update server returned ${res.status}`);
       raw = await res.text();
@@ -156,7 +129,7 @@ export function generalSettingsRoutes(app: AppContainer) {
 
     let bytes: ArrayBuffer;
     try {
-      await assertSafeUpdateUrl(feed.url);
+      await app.externalUrlGuard.assertSafe(feed.url);
       const dl = await fetch(feed.url, { signal: AbortSignal.timeout(UPDATE_DOWNLOAD_TIMEOUT_MS) });
       if (!dl.ok) throw new Error(`Download returned ${dl.status}`);
       bytes = await dl.arrayBuffer();
@@ -205,6 +178,22 @@ export function generalSettingsRoutes(app: AppContainer) {
     return c.json({ ok: true, applying: true, toVersion: feed.version });
   });
 
+  // Lets an admin confirm their dead-man's-switch URL actually works before trusting it — same
+  // "send test" reasoning as the SMTP/webhook notification settings, applied here instead of
+  // waiting for HeartbeatScheduler's own next tick (up to HEARTBEAT_INTERVAL_MS away).
+  router.post("/settings/heartbeat-test", requireAuth(app), requireRole("admin"), async (c) => {
+    const url = app.config.heartbeatUrl;
+    if (!url) return c.json({ error: "NOT_CONFIGURED", message: "Set a heartbeat URL first." }, 400);
+    try {
+      await app.externalUrlGuard.assertSafe(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(UPDATE_CHECK_TIMEOUT_MS) });
+      if (!res.ok) return c.json({ ok: false, error: `Heartbeat URL returned HTTP ${res.status}` }, 502);
+      return c.json({ ok: true });
+    } catch (err) {
+      return c.json({ ok: false, error: (err as Error).message }, 502);
+    }
+  });
+
   router.put("/settings/general", requireAuth(app), requireRole("admin"), validateJson(GeneralSettingsSchema), async (c) => {
     const body = getValidated<typeof GeneralSettingsSchema>(c);
     const current = existsSync(CONFIG_PATH) ? JSON.parse(readFileSync(CONFIG_PATH, "utf-8")) : {};
@@ -222,6 +211,14 @@ export function generalSettingsRoutes(app: AppContainer) {
     });
 
     const restartRequired = body.port !== app.config.port || body.polling.concurrency !== app.config.polling.concurrency;
+
+    // Written to config.json above, but nothing previously re-read that back into the running
+    // app.config — every non-restart-required field (instanceName, logLevel, retention,
+    // updateCheckUrl, heartbeatUrl, ...) was silently stuck at its process-start value until the
+    // next restart, contradicting the UI's implicit "saved = live" promise (only port/concurrency
+    // actually need a restart — that's exactly what restartRequired already exists to flag).
+    Object.assign(app.config, updated);
+
     return c.json({ ok: true, restartRequired, message: restartRequired ? "Some changes require a restart to take effect." : undefined });
   });
 

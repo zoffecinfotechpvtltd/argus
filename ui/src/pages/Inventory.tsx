@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, Download, Layers, ListFilter, Plus, Router, Search, Trash2, Upload, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, CalendarClock, Download, Layers, ListFilter, Plus, Router, Search, Trash2, Upload, X, Zap } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { StatusDot } from "../components/StatusDot";
 import { api, ApiError } from "../api/client";
@@ -63,11 +63,28 @@ interface DeviceForm {
   intervalSec: number;
   hasHttp: boolean;
   hasHttps: boolean;
+  snmpVersion: "1" | "2c" | "3";
   snmpCommunity: string;
+  snmpV3Username: string;
+  snmpV3SecurityLevel: "noAuthNoPriv" | "authNoPriv" | "authPriv";
+  snmpV3AuthProtocol: "md5" | "sha" | "sha256";
+  snmpV3AuthKey: string;
+  snmpV3PrivProtocol: "des" | "aes";
+  snmpV3PrivKey: string;
+  vendorApiVendor: "" | "fortigate";
+  vendorApiToken: string;
+  vendorApiPort: string;
+  vendorApiVerifyTls: boolean;
   location: string;
   tagsText: string;
   uplinkDeviceId: string;
+  criticalAsset: boolean;
 }
+
+/** Mirrors DEFAULT_CRITICAL_TYPES in src/application/devices/deviceUseCases.ts — pre-checks the
+ * box on create so the common case (adding a camera/firewall) needs no extra click, while still
+ * leaving it fully overridable per device. */
+const DEFAULT_CRITICAL_TYPES = new Set<DeviceType>(["camera", "firewall"]);
 
 const emptyForm: DeviceForm = {
   name: "",
@@ -77,10 +94,22 @@ const emptyForm: DeviceForm = {
   intervalSec: 60,
   hasHttp: false,
   hasHttps: false,
+  snmpVersion: "2c",
   snmpCommunity: "",
+  snmpV3Username: "",
+  snmpV3SecurityLevel: "authPriv",
+  snmpV3AuthProtocol: "sha",
+  snmpV3AuthKey: "",
+  snmpV3PrivProtocol: "aes",
+  snmpV3PrivKey: "",
+  vendorApiVendor: "",
+  vendorApiToken: "",
+  vendorApiPort: "",
+  vendorApiVerifyTls: true,
   location: "",
   tagsText: "",
   uplinkDeviceId: "",
+  criticalAsset: false,
 };
 
 function parseTagsText(text: string): string[] {
@@ -165,18 +194,17 @@ export function Inventory() {
 
   function openEdit(d: Device) {
     setForm({
+      ...emptyForm, // SNMP secrets are never sent back from the API — v2c/v3 fields start blank/default, "Leave blank to keep unchanged"
       id: d.id,
       name: d.name,
       ip: d.ip,
       type: d.type,
       groupId: d.groupId ?? "",
       intervalSec: d.intervalSec,
-      hasHttp: false,
-      hasHttps: false,
-      snmpCommunity: "",
       location: d.location ?? "",
       tagsText: d.tags.join(", "),
       uplinkDeviceId: d.uplinkDeviceId ?? "",
+      criticalAsset: d.criticalAsset,
     });
     setError(null);
     setDrawerOpen(true);
@@ -194,10 +222,34 @@ export function Inventory() {
         intervalSec: form.intervalSec,
         hasHttp: form.hasHttp,
         hasHttps: form.hasHttps,
-        snmpCommunity: form.snmpCommunity || undefined,
+        ...(form.snmpVersion === "3"
+          ? form.snmpV3Username
+            ? {
+                snmpV3: {
+                  username: form.snmpV3Username,
+                  securityLevel: form.snmpV3SecurityLevel,
+                  authProtocol: form.snmpV3SecurityLevel === "noAuthNoPriv" ? undefined : form.snmpV3AuthProtocol,
+                  authKey: form.snmpV3SecurityLevel === "noAuthNoPriv" ? undefined : form.snmpV3AuthKey || undefined,
+                  privProtocol: form.snmpV3SecurityLevel === "authPriv" ? form.snmpV3PrivProtocol : undefined,
+                  privKey: form.snmpV3SecurityLevel === "authPriv" ? form.snmpV3PrivKey || undefined : undefined,
+                },
+              }
+            : {}
+          : { snmpCommunity: form.snmpCommunity || undefined, snmpVersion: form.snmpVersion }),
+        ...(form.vendorApiVendor === "fortigate" && form.vendorApiToken
+          ? {
+              vendorApi: {
+                vendor: form.vendorApiVendor,
+                apiToken: form.vendorApiToken,
+                port: form.vendorApiPort ? Number(form.vendorApiPort) : undefined,
+                verifyTls: form.vendorApiVerifyTls,
+              },
+            }
+          : {}),
         location: form.location || null,
         tags: parseTagsText(form.tagsText),
         uplinkDeviceId: form.uplinkDeviceId || null,
+        criticalAsset: form.criticalAsset,
       };
       if (form.id) {
         await api.patch(`/devices/${form.id}`, payload);
@@ -884,7 +936,17 @@ export function Inventory() {
           <div className="grid grid-cols-2 gap-3">
             <FieldGroup label="Type">
               {(ids) => (
-                <Select {...ids} className="w-full" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as DeviceType })}>
+                <Select
+                  {...ids}
+                  className="w-full"
+                  value={form.type}
+                  onChange={(e) => {
+                    const type = e.target.value as DeviceType;
+                    // Only auto-flip the default on create — editing an existing device must never
+                    // silently override a criticality the admin already set deliberately.
+                    setForm({ ...form, type, criticalAsset: form.id ? form.criticalAsset : DEFAULT_CRITICAL_TYPES.has(type) });
+                  }}
+                >
                   {DEVICE_TYPES.map((t) => (
                     <option key={t} value={t}>
                       {DEVICE_TYPE_LABELS[t]}
@@ -918,6 +980,15 @@ export function Inventory() {
               )}
             </FieldGroup>
           </div>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-text-secondary">
+            <input
+              type="checkbox"
+              checked={form.criticalAsset}
+              onChange={(e) => setForm({ ...form, criticalAsset: e.target.checked })}
+              className="cursor-pointer accent-accent"
+            />
+            Critical asset — page instantly on DOWN, skip storm grouping and hourly rate-limiting
+          </label>
           <FieldGroup label="Uplink device (optional)" hint="If this device sits behind another (e.g. a core switch), alerts on it are held back while its uplink is down.">
             {(ids) => (
               <Select {...ids} className="w-full" value={form.uplinkDeviceId} onChange={(e) => setForm({ ...form, uplinkDeviceId: e.target.value })}>
@@ -952,17 +1023,170 @@ export function Inventory() {
               Has HTTPS (443)
             </label>
           </div>
-          <FieldGroup label="SNMP community (optional)">
+          <FieldGroup label="SNMP version (optional)">
             {(ids) => (
-              <Input
+              <Select
                 {...ids}
                 className="w-full"
-                value={form.snmpCommunity}
-                onChange={(e) => setForm({ ...form, snmpCommunity: e.target.value })}
-                placeholder={form.id ? "Leave blank to keep unchanged" : "public"}
-              />
+                value={form.snmpVersion}
+                onChange={(e) => setForm({ ...form, snmpVersion: e.target.value as DeviceForm["snmpVersion"] })}
+              >
+                <option value="2c">v2c</option>
+                <option value="1">v1</option>
+                <option value="3">v3 (auth/priv)</option>
+              </Select>
             )}
           </FieldGroup>
+          {form.snmpVersion === "3" ? (
+            <div className="grid grid-cols-2 gap-3">
+              <FieldGroup label="Username">
+                {(ids) => (
+                  <Input
+                    {...ids}
+                    className="w-full"
+                    value={form.snmpV3Username}
+                    onChange={(e) => setForm({ ...form, snmpV3Username: e.target.value })}
+                    placeholder={form.id ? "Leave blank to keep unchanged" : "netmon"}
+                  />
+                )}
+              </FieldGroup>
+              <FieldGroup label="Security level">
+                {(ids) => (
+                  <Select
+                    {...ids}
+                    className="w-full"
+                    value={form.snmpV3SecurityLevel}
+                    onChange={(e) => setForm({ ...form, snmpV3SecurityLevel: e.target.value as DeviceForm["snmpV3SecurityLevel"] })}
+                  >
+                    <option value="authPriv">authPriv</option>
+                    <option value="authNoPriv">authNoPriv</option>
+                    <option value="noAuthNoPriv">noAuthNoPriv</option>
+                  </Select>
+                )}
+              </FieldGroup>
+              {form.snmpV3SecurityLevel !== "noAuthNoPriv" && (
+                <>
+                  <FieldGroup label="Auth protocol">
+                    {(ids) => (
+                      <Select
+                        {...ids}
+                        className="w-full"
+                        value={form.snmpV3AuthProtocol}
+                        onChange={(e) => setForm({ ...form, snmpV3AuthProtocol: e.target.value as DeviceForm["snmpV3AuthProtocol"] })}
+                      >
+                        <option value="sha">SHA</option>
+                        <option value="sha256">SHA256</option>
+                        <option value="md5">MD5</option>
+                      </Select>
+                    )}
+                  </FieldGroup>
+                  <FieldGroup label="Auth key">
+                    {(ids) => (
+                      <Input
+                        {...ids}
+                        type="password"
+                        className="w-full"
+                        value={form.snmpV3AuthKey}
+                        onChange={(e) => setForm({ ...form, snmpV3AuthKey: e.target.value })}
+                        placeholder={form.id ? "Leave blank to keep unchanged" : "min. 8 characters"}
+                      />
+                    )}
+                  </FieldGroup>
+                </>
+              )}
+              {form.snmpV3SecurityLevel === "authPriv" && (
+                <>
+                  <FieldGroup label="Privacy protocol">
+                    {(ids) => (
+                      <Select
+                        {...ids}
+                        className="w-full"
+                        value={form.snmpV3PrivProtocol}
+                        onChange={(e) => setForm({ ...form, snmpV3PrivProtocol: e.target.value as DeviceForm["snmpV3PrivProtocol"] })}
+                      >
+                        <option value="aes">AES</option>
+                        <option value="des">DES</option>
+                      </Select>
+                    )}
+                  </FieldGroup>
+                  <FieldGroup label="Privacy key">
+                    {(ids) => (
+                      <Input
+                        {...ids}
+                        type="password"
+                        className="w-full"
+                        value={form.snmpV3PrivKey}
+                        onChange={(e) => setForm({ ...form, snmpV3PrivKey: e.target.value })}
+                        placeholder={form.id ? "Leave blank to keep unchanged" : "min. 8 characters"}
+                      />
+                    )}
+                  </FieldGroup>
+                </>
+              )}
+            </div>
+          ) : (
+            <FieldGroup label="SNMP community (optional)">
+              {(ids) => (
+                <Input
+                  {...ids}
+                  className="w-full"
+                  value={form.snmpCommunity}
+                  onChange={(e) => setForm({ ...form, snmpCommunity: e.target.value })}
+                  placeholder={form.id ? "Leave blank to keep unchanged" : "public"}
+                />
+              )}
+            </FieldGroup>
+          )}
+          <FieldGroup label="Vendor API (optional)" hint="For a FortiGate firewall — polls CPU/mem/session/VPN-tunnel metrics and firmware/serial/HA role over its REST API, in addition to any SNMP/HTTP checks above.">
+            {(ids) => (
+              <Select
+                {...ids}
+                className="w-full"
+                value={form.vendorApiVendor}
+                onChange={(e) => setForm({ ...form, vendorApiVendor: e.target.value as DeviceForm["vendorApiVendor"] })}
+              >
+                <option value="">None</option>
+                <option value="fortigate">FortiGate</option>
+              </Select>
+            )}
+          </FieldGroup>
+          {form.vendorApiVendor === "fortigate" && (
+            <div className="grid grid-cols-2 gap-3">
+              <FieldGroup label="API token">
+                {(ids) => (
+                  <Input
+                    {...ids}
+                    type="password"
+                    className="w-full"
+                    value={form.vendorApiToken}
+                    onChange={(e) => setForm({ ...form, vendorApiToken: e.target.value })}
+                    placeholder={form.id ? "Leave blank to keep unchanged" : "REST API admin token"}
+                  />
+                )}
+              </FieldGroup>
+              <FieldGroup label="Port (optional)">
+                {(ids) => (
+                  <Input
+                    {...ids}
+                    type="number"
+                    className="w-full"
+                    value={form.vendorApiPort}
+                    onChange={(e) => setForm({ ...form, vendorApiPort: e.target.value })}
+                    placeholder="443"
+                  />
+                )}
+              </FieldGroup>
+              <label className="col-span-2 flex cursor-pointer items-center gap-2 text-sm text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={form.vendorApiVerifyTls}
+                  onChange={(e) => setForm({ ...form, vendorApiVerifyTls: e.target.checked })}
+                  className="cursor-pointer accent-accent"
+                />
+                Verify TLS certificate (turn off only for a self-signed lab appliance)
+              </label>
+            </div>
+          )}
           {error && (
             <p role="alert" className="text-sm text-critical">
               {error}
@@ -973,6 +1197,13 @@ export function Inventory() {
     </Layout>
   );
 }
+
+type SortKey = "state" | "name" | "ip" | "type" | "intervalSec" | "enabled";
+
+// Down-first, not alphabetical — the point of sorting by status in a monitoring table is "show me
+// what needs attention," so a plain string sort (which would put "degraded" before "down") would
+// actively work against that.
+const STATE_SORT_RANK: Record<string, number> = { down: 0, flapping: 1, degraded: 2, maintenance: 3, up: 4 };
 
 function DeviceTable({
   devices,
@@ -987,24 +1218,89 @@ function DeviceTable({
   selected: Set<string>;
   onToggleSelect: (id: string) => void;
 }) {
+  const [sortKey, setSortKey] = useState<SortKey>("state");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const sorted = useMemo(() => {
+    const list = [...devices];
+    list.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "state":
+          cmp = (STATE_SORT_RANK[a.state ?? "up"] ?? 5) - (STATE_SORT_RANK[b.state ?? "up"] ?? 5);
+          break;
+        case "name":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "ip":
+          cmp = a.ip.localeCompare(b.ip, undefined, { numeric: true });
+          break;
+        case "type":
+          cmp = DEVICE_TYPE_LABELS[a.type].localeCompare(DEVICE_TYPE_LABELS[b.type]);
+          break;
+        case "intervalSec":
+          cmp = a.intervalSec - b.intervalSec;
+          break;
+        case "enabled":
+          cmp = Number(b.enabled) - Number(a.enabled);
+          break;
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return list;
+  }, [devices, sortKey, sortDir]);
+
+  function SortHeader({ label, sortKeyName, className = "" }: { label: string; sortKeyName: SortKey; className?: string }) {
+    const active = sortKey === sortKeyName;
+    return (
+      <th
+        className={`cursor-pointer select-none px-3 py-2.5 transition-colors duration-150 hover:text-text-primary ${className}`}
+        onClick={() => toggleSort(sortKeyName)}
+        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
+      >
+        <span className="flex items-center gap-1">
+          {label}
+          {active ? (
+            sortDir === "asc" ? (
+              <ArrowUp size={11} aria-hidden="true" />
+            ) : (
+              <ArrowDown size={11} aria-hidden="true" />
+            )
+          ) : (
+            <ArrowUpDown size={11} className="opacity-30" aria-hidden="true" />
+          )}
+        </span>
+      </th>
+    );
+  }
+
   return (
     <div className="overflow-x-auto rounded-lg border border-border">
       <table className="w-full text-sm">
         <thead className="sticky top-0 z-10 border-b border-border-strong bg-bg-surface text-left text-2xs font-medium uppercase tracking-wide text-text-muted">
           <tr>
             <th className="w-8 px-3 py-2.5"></th>
-            <th className="w-8 px-1 py-2.5"></th>
-            <th className="px-3 py-2.5">Name</th>
-            <th className="px-3 py-2.5">IP</th>
-            <th className="px-3 py-2.5">Type</th>
+            <SortHeader label="Status" sortKeyName="state" className="w-8" />
+            <SortHeader label="Name" sortKeyName="name" />
+            <SortHeader label="IP" sortKeyName="ip" />
+            <SortHeader label="Type" sortKeyName="type" />
             <th className="px-3 py-2.5">Tags</th>
-            <th className="px-3 py-2.5">Interval</th>
-            <th className="px-3 py-2.5">Enabled</th>
+            <SortHeader label="Interval" sortKeyName="intervalSec" />
+            <SortHeader label="Enabled" sortKeyName="enabled" />
             <th className="px-3 py-2.5"></th>
           </tr>
         </thead>
         <tbody>
-          {devices.map((d) => (
+          {sorted.map((d) => (
             <tr
               key={d.id}
               className="cursor-pointer border-b border-border/60 transition-colors duration-150 last:border-b-0 hover:bg-bg-subtle/50"
@@ -1022,7 +1318,16 @@ function DeviceTable({
               <td className="px-1 py-2.5">
                 <StatusDot state={d.state ?? null} pulse={d.state === "down" || d.state === "flapping"} />
               </td>
-              <td className="px-3 py-2.5 font-medium text-text-primary">{d.name}</td>
+              <td className="px-3 py-2.5 font-medium text-text-primary">
+                <span className="flex items-center gap-1.5">
+                  {d.name}
+                  {d.criticalAsset && (
+                    <Zap size={12} className="shrink-0 text-warning" aria-hidden="true">
+                      <title>Critical asset — pages instantly on DOWN, skips storm grouping</title>
+                    </Zap>
+                  )}
+                </span>
+              </td>
               <td className="px-3 py-2.5 font-mono text-text-secondary">{d.ip}</td>
               <td className="px-3 py-2.5 text-text-secondary">{DEVICE_TYPE_LABELS[d.type]}</td>
               <td className="px-3 py-2.5">

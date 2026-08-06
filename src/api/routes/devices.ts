@@ -7,9 +7,68 @@ import { validateJson, validateQuery, getValidated, getValidatedQuery } from "@a
 import { createDevice, deleteDevice, DuplicateDeviceError, updateDevice } from "@application/devices/deviceUseCases";
 import { LicenseLimitError } from "@application/license";
 import { encryptSecret } from "@adapters/crypto";
+import { serializeSnmpCredential } from "@domain/snmpCredential";
+import { serializeVendorApiCredential } from "@domain/vendorApiCredential";
 import type { AppEnv } from "@api/honoTypes";
 
 const DeviceTypeEnum = z.enum(["camera", "firewall", "switch", "router", "server", "workstation", "printer", "access_point", "nas", "iot", "unknown"]);
+
+/** SNMPv3 credentials, provided instead of (never alongside) snmpCommunity. authKey/privKey are
+ * required only at the security levels that actually use them (enforced in buildSnmpCredsEnc,
+ * not here, since that check depends on securityLevel — awkward to express as a single zod shape). */
+const SnmpV3Schema = z.object({
+  username: z.string().min(1).max(200),
+  securityLevel: z.enum(["noAuthNoPriv", "authNoPriv", "authPriv"]),
+  authProtocol: z.enum(["md5", "sha", "sha256"]).optional(),
+  authKey: z.string().min(8).max(200).optional(),
+  privProtocol: z.enum(["des", "aes"]).optional(),
+  privKey: z.string().min(8).max(200).optional(),
+});
+
+/** Builds the encrypted snmp_creds_enc blob from either legacy snmpCommunity (v2c) or the new
+ * snmpV3 object — never both; snmpV3 wins if somehow both are sent. Returns undefined (meaning
+ * "no change") when neither is present, so callers can spread the result without clobbering an
+ * existing credential on an update that isn't touching SNMP at all. */
+function buildSnmpCredsEnc(
+  app: AppContainer,
+  body: { snmpCommunity?: string | null; snmpVersion?: "1" | "2c"; snmpV3?: z.infer<typeof SnmpV3Schema> }
+): string | null | undefined {
+  if (body.snmpV3) {
+    if (body.snmpV3.securityLevel !== "noAuthNoPriv" && !body.snmpV3.authKey) {
+      throw new InvalidSnmpV3Error("authKey is required for authNoPriv/authPriv security levels");
+    }
+    if (body.snmpV3.securityLevel === "authPriv" && !body.snmpV3.privKey) {
+      throw new InvalidSnmpV3Error("privKey is required for the authPriv security level");
+    }
+    return encryptSecret(app.instanceKey, serializeSnmpCredential({ version: "3", ...body.snmpV3 }));
+  }
+  if (body.snmpCommunity === null) return null; // explicit clear
+  if (body.snmpCommunity) {
+    return encryptSecret(app.instanceKey, serializeSnmpCredential({ version: body.snmpVersion ?? "2c", community: body.snmpCommunity }));
+  }
+  return undefined; // untouched
+}
+
+class InvalidSnmpV3Error extends Error {}
+
+/** Only "fortigate" exists today (Sophos to follow) — kept as its own enum rather than folded into
+ * DeviceTypeEnum since a device's *type* (firewall) and *which vendor REST API* it exposes are
+ * independent facts (a device could be type=firewall with no API configured at all). */
+const VendorApiSchema = z.object({
+  vendor: z.literal("fortigate"),
+  apiToken: z.string().min(1).max(500),
+  port: z.number().int().min(1).max(65535).optional(),
+  verifyTls: z.boolean().optional(),
+});
+
+/** Mirrors buildSnmpCredsEnc: returns undefined ("no change") when vendorApi isn't present, so
+ * an update that isn't touching the vendor API doesn't clobber an existing apiCredsEnc. */
+function buildApiCredsEnc(app: AppContainer, body: { vendorApi?: z.infer<typeof VendorApiSchema> | null }): { apiVendor: "fortigate" | null; apiCredsEnc: string | null } | undefined {
+  if (body.vendorApi === null) return { apiVendor: null, apiCredsEnc: null }; // explicit clear
+  if (!body.vendorApi) return undefined; // untouched
+  const { vendor, ...cred } = body.vendorApi;
+  return { apiVendor: vendor, apiCredsEnc: encryptSecret(app.instanceKey, serializeVendorApiCredential(cred)) };
+}
 
 const CreateDeviceSchema = z.object({
   name: z.string().min(1).max(200),
@@ -24,8 +83,12 @@ const CreateDeviceSchema = z.object({
   hasHttp: z.boolean().optional(),
   hasHttps: z.boolean().optional(),
   snmpCommunity: z.string().min(1).max(200).optional(),
+  snmpVersion: z.enum(["1", "2c"]).optional(),
+  snmpV3: SnmpV3Schema.optional(),
+  vendorApi: VendorApiSchema.optional(),
   tags: z.array(z.string().min(1).max(50)).max(20).optional(),
   uplinkDeviceId: z.string().nullable().optional(),
+  criticalAsset: z.boolean().optional(),
 });
 
 const UpdateDeviceSchema = z.object({
@@ -39,8 +102,12 @@ const UpdateDeviceSchema = z.object({
   intervalSec: z.number().int().min(10).max(86400).optional(),
   enabled: z.boolean().optional(),
   snmpCommunity: z.string().min(1).max(200).nullable().optional(),
+  snmpVersion: z.enum(["1", "2c"]).optional(),
+  snmpV3: SnmpV3Schema.optional(),
+  vendorApi: VendorApiSchema.nullable().optional(),
   tags: z.array(z.string().min(1).max(50)).max(20).optional(),
   uplinkDeviceId: z.string().nullable().optional(),
+  criticalAsset: z.boolean().optional(),
 });
 
 const ListDevicesQuerySchema = z.object({
@@ -86,12 +153,15 @@ export function deviceRoutes(app: AppContainer) {
     const user = c.get("user");
     const body = getValidated<typeof CreateDeviceSchema>(c);
     try {
+      const apiCreds = buildApiCredsEnc(app, body);
       const device = await createDevice(app, tenantId, user.id, {
         ...body,
-        snmpCredsEnc: body.snmpCommunity ? encryptSecret(app.instanceKey, body.snmpCommunity) : null,
+        snmpCredsEnc: buildSnmpCredsEnc(app, body) ?? null,
+        ...(apiCreds ?? {}),
       });
       return c.json(device, 201);
     } catch (err) {
+      if (err instanceof InvalidSnmpV3Error) return c.json({ error: "INVALID_SNMP_V3", message: err.message }, 400);
       if (err instanceof DuplicateDeviceError) return c.json({ error: "DUPLICATE_IP", message: err.message }, 409);
       if (err instanceof LicenseLimitError) return c.json({ error: "LICENSE_LIMIT_EXCEEDED", message: err.message }, 402);
       throw err;
@@ -102,13 +172,16 @@ export function deviceRoutes(app: AppContainer) {
     const tenantId = tenantOf(c);
     const user = c.get("user");
     const body = getValidated<typeof UpdateDeviceSchema>(c);
-    const { snmpCommunity, ...rest } = body;
-    const patch = {
-      ...rest,
-      ...(snmpCommunity !== undefined
-        ? { snmpCredsEnc: snmpCommunity === null ? null : encryptSecret(app.instanceKey, snmpCommunity) }
-        : {}),
-    };
+    const { snmpCommunity, snmpVersion, snmpV3, vendorApi, ...rest } = body;
+    let snmpCredsEnc: string | null | undefined;
+    try {
+      snmpCredsEnc = buildSnmpCredsEnc(app, { snmpCommunity, snmpVersion, snmpV3 });
+    } catch (err) {
+      if (err instanceof InvalidSnmpV3Error) return c.json({ error: "INVALID_SNMP_V3", message: err.message }, 400);
+      throw err;
+    }
+    const apiCreds = buildApiCredsEnc(app, { vendorApi });
+    const patch = { ...rest, ...(snmpCredsEnc !== undefined ? { snmpCredsEnc } : {}), ...(apiCreds ?? {}) };
     const device = await updateDevice(app, tenantId, user.id, c.req.param("id")!, patch);
     if (!device) return c.json({ error: "NOT_FOUND" }, 404);
     return c.json(device);

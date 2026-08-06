@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import ReactECharts from "echarts-for-react";
 import { format, subDays } from "date-fns";
-import { Card } from "../ui";
 import { api } from "../../api/client";
 import { useEchartsColors, echartsTooltipStyle } from "../../lib/echartsTheme";
 import { SEVERITY_HEX } from "../../lib/statusTokens";
+import { BentoCard } from "./BentoCard";
 
 const DAYS = 35;
 
@@ -59,7 +59,7 @@ export function AlertActivityCalendar({ className = "" }: { className?: string }
       return {
         value: [date, total],
         detail: c,
-        itemStyle: { color: worst ?? colors.bgSubtle, opacity: worst ? opacity : 1 },
+        itemStyle: { color: worst ?? colors.bgSubtle, opacity: worst ? opacity : 1, borderRadius: 3, borderColor: colors.bgSurface, borderWidth: 3 },
       };
     });
     return { data: points, allZero: zero, range: [format(from, "yyyy-MM-dd"), format(to, "yyyy-MM-dd")] as [string, string] };
@@ -81,8 +81,8 @@ export function AlertActivityCalendar({ className = "" }: { className?: string }
       calendar: {
         range,
         cellSize: [16, 16],
-        splitLine: { lineStyle: { color: colors.border, width: 1 } },
-        itemStyle: { color: colors.bgSubtle, borderColor: colors.bgSurface, borderWidth: 2 },
+        splitLine: { show: false },
+        itemStyle: { color: colors.bgSubtle, borderColor: colors.bgSurface, borderWidth: 3, borderRadius: 3 },
         yearLabel: { show: false },
         monthLabel: { color: colors.textMuted, fontSize: 10, fontFamily: "Geist" },
         dayLabel: { color: colors.textMuted, fontSize: 9, fontFamily: "Geist Mono", firstDay: 1, nameMap: "en" },
@@ -108,7 +108,7 @@ export function AlertActivityCalendar({ className = "" }: { className?: string }
   );
 
   return (
-    <Card className={`p-3 ${className}`}>
+    <BentoCard className={`p-3 ${className}`}>
       <div className="mb-1 flex items-center justify-between text-xs text-text-secondary">
         <span>Alert activity (last {DAYS} days)</span>
         <div className="hidden gap-2.5 sm:flex">
@@ -131,6 +131,6 @@ export function AlertActivityCalendar({ className = "" }: { className?: string }
           )}
         </>
       )}
-    </Card>
+    </BentoCard>
   );
 }

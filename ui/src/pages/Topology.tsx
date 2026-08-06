@@ -9,7 +9,8 @@ import { useWsMessages } from "../ws/WebSocketProvider";
 import { useContainerSize } from "../hooks/useContainerSize";
 import type { DeviceGroup, DeviceType } from "../api/types";
 import { DEVICE_TYPE_LABELS } from "../api/types";
-import { Button, Card } from "../components/ui";
+import { Button } from "../components/ui";
+import { BentoCard } from "../components/charts/BentoCard";
 import { DEVICE_STATE_HEX } from "../lib/statusTokens";
 import type { DeviceState } from "../lib/statusTokens";
 import { formatBps } from "../lib/format";
@@ -22,6 +23,7 @@ interface DeviceRow {
   groupId: string | null;
   state: string | null;
   snmpCredsEnc?: string | null;
+  criticalAsset?: boolean;
 }
 
 const LEGEND_STATES: DeviceState[] = ["up", "degraded", "down", "flapping", "maintenance"];
@@ -174,8 +176,25 @@ export function Topology() {
     simRef.current = sim;
   }
 
+  const hasCenteredRef = useRef(false);
   useEffect(() => {
-    loadData().catch(() => {});
+    loadData()
+      .then(() => {
+        // Once, not on every reload — this effect also re-fires on container resize, and refiring
+        // the auto-center there would yank the view back to the core under someone's cursor mid-pan.
+        // The point is "open the page already looking at the network," not "always snap back."
+        //
+        // Gated on a real measured size, not just "has this run before": useContainerSize's
+        // ResizeObserver hasn't reported anything on the very first render, so this effect's first
+        // firing sees size.width/height still at 0 — computing a transform against a 0×0 viewport
+        // and never revisiting it (the ref was already flipped) is exactly what left the map
+        // rendered off-screen after every refresh until "Reset" recomputed it against the real size.
+        if (!hasCenteredRef.current && size.width > 0 && size.height > 0) {
+          hasCenteredRef.current = true;
+          centerOnCore();
+        }
+      })
+      .catch(() => {});
     return () => {
       simRef.current?.stop();
     };
@@ -320,8 +339,19 @@ export function Topology() {
     zoomAt(size.width / 2, size.height / 2, view.k * factor);
   }
 
-  function resetView() {
-    setView({ x: 0, y: 0, k: 1 });
+  // Centers the viewport on wherever the core node actually sits in simulation space — {x:0,y:0,k:1}
+  // (what this used to do) is only the identity transform, not "centered on anything." It happened
+  // to look centered by coincidence on a freshly-seeded graph where the core starts at
+  // width/2,height/2, but the moment the core is dragged, the window is resized, or the container
+  // ref reports a different size than it did at first paint, "reset" would leave the core (and the
+  // whole graph hanging off it) sitting off in a corner instead of front and center — the opposite
+  // of what a reset button is for.
+  function centerOnCore() {
+    const core = nodesRef.current.find((n) => n.id === CORE_ID);
+    const k = 1;
+    const cx = core?.x ?? 0;
+    const cy = core?.y ?? 0;
+    setView({ x: size.width / 2 - cx * k, y: size.height / 2 - cy * k, k });
   }
 
   async function toggleFullscreen() {
@@ -435,6 +465,9 @@ export function Topology() {
                         <text y={-24} textAnchor="middle" fontSize={11} fontWeight={600} fill="rgb(var(--color-text-secondary))">
                           {n.label}
                         </text>
+                        <title>
+                          {n.label} · {devices.filter((d) => (n.id === CORE_ID ? !d.groupId : d.groupId === n.groupId)).length} device(s)
+                        </title>
                       </g>
                     );
                   }
@@ -453,10 +486,23 @@ export function Topology() {
                     >
                       {n.device?.state === "down" && <circle r={18} fill="none" stroke={color} strokeWidth={1.5} opacity={0.5} />}
                       <circle r={14} fill="rgb(var(--color-bg-canvas))" stroke={isSelected ? "rgb(var(--color-accent))" : color} strokeWidth={isSelected ? 4 : 3} />
+                      {/* Critical-asset marker — same signal as Inventory's lightning-bolt indicator
+                          (pages instantly on DOWN, skips storm grouping), so the one property that
+                          changes how an outage here actually gets handled is visible on the map
+                          itself, not just buried in the device's own edit form. */}
+                      {n.device?.criticalAsset && (
+                        <circle cx={10} cy={-10} r={4} fill="rgb(var(--color-warning))" stroke="rgb(var(--color-bg-canvas))" strokeWidth={1.5} />
+                      )}
                       <text y={26} textAnchor="middle" fontSize={10} fill="rgb(var(--color-text-primary))">
                         {truncated ? n.label.slice(0, 12) + "…" : n.label}
                       </text>
-                      {truncated && <title>{n.label}</title>}
+                      {/* Always present now, not just when the label truncates — name alone was the
+                          only thing hovering a node ever told you; type/IP/status were a click away
+                          even though they're exactly what a glance at a topology map is for. */}
+                      <title>
+                        {n.label} · {DEVICE_TYPE_LABELS[n.device!.type]} · {n.device!.ip} · {n.device?.state ?? "unknown"}
+                        {n.device?.criticalAsset ? " · critical asset" : ""}
+                      </title>
                     </g>
                   );
                 })}
@@ -504,7 +550,7 @@ export function Topology() {
               <Minus size={14} aria-hidden="true" />
             </button>
             <button
-              onClick={resetView}
+              onClick={centerOnCore}
               aria-label="Reset pan and zoom"
               title="Reset pan/zoom"
               className="cursor-pointer border-t border-border p-2 text-text-secondary transition-colors duration-150 hover:bg-bg-subtle hover:text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -523,7 +569,7 @@ export function Topology() {
 
         {!fullscreen && (
           <div className="space-y-4">
-            <Card className="p-4">
+            <BentoCard className="p-4">
               <h3 className="mb-2 text-sm font-medium text-text-secondary">
                 {devices.length} devices · {groups.length} groups
               </h3>
@@ -564,9 +610,9 @@ export function Topology() {
                   zoom.
                 </p>
               )}
-            </Card>
+            </BentoCard>
 
-            <Card className="p-4">
+            <BentoCard className="p-4">
               <h3 className="mb-2 text-sm font-medium text-text-secondary">Groups</h3>
               <div className="space-y-1">
                 <button
@@ -591,7 +637,7 @@ export function Topology() {
                   </button>
                 ))}
               </div>
-            </Card>
+            </BentoCard>
           </div>
         )}
       </div>

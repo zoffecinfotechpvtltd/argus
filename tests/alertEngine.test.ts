@@ -78,6 +78,13 @@ async function seedDevice(app: AppContainer, overrides: Partial<Device> = {}): P
     snmpCredsEnc: null,
     tags: [],
     uplinkDeviceId: null,
+    criticalAsset: false,
+    model: null,
+    firmwareVersion: null,
+    serialNumber: null,
+    haRole: null,
+    apiVendor: null,
+    apiCredsEnc: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -316,6 +323,64 @@ describe("Storm guard", () => {
 
     // 15 individual per-device notifications to the owner (below the >20 storm threshold).
     expect(calls.filter((c) => c.target === owner.email).length).toBe(15);
+    engine.stop();
+  });
+});
+
+describe("Critical asset bypass", () => {
+  it("pages a critical-asset device immediately, without waiting for the storm buffer", async () => {
+    const { registry, calls } = makeRecordingRegistry();
+    const { app } = buildTestContainer({ notifiers: registry });
+    const owner = await seedUser(app);
+    await app.repos.notificationPrefs.upsert({
+      userId: owner.id,
+      tenantId: DEFAULT_TENANT_ID,
+      channels: ["email"],
+      severityFloor: "info",
+      quietHoursStart: null,
+      quietHoursEnd: null,
+      webhookUrl: null,
+      digestRecurrence: null,
+    });
+    const camera = await seedDevice(app, { type: "camera", criticalAsset: true, responsibleUserId: owner.id });
+
+    // A long storm window (5s) that this test's own sleep is far shorter than — if the camera's
+    // DOWN event went through bufferDownAlert like a normal device, no notification would exist yet.
+    const engine = new AlertEngine(app, { stormWindowMs: 5000 });
+    engine.start();
+
+    app.events.emit("monitoring.event", { type: "DeviceWentDown", deviceId: camera.id, tenantId: DEFAULT_TENANT_ID, at: app.clock.nowIso() });
+    await sleep(30);
+
+    expect(calls.some((c) => c.channel === "email" && c.target === owner.email && c.title.includes("DOWN"))).toBe(true);
+
+    engine.stop();
+  });
+
+  it("never throttles a flapping critical-asset device into a rate-limit summary", async () => {
+    const { registry, calls } = makeRecordingRegistry();
+    const { app } = buildTestContainer({ notifiers: registry });
+    const owner = await seedUser(app);
+    const firewall = await seedDevice(app, { type: "firewall", criticalAsset: true, responsibleUserId: owner.id });
+
+    const engine = new AlertEngine(app, { stormWindowMs: 10 });
+    engine.start();
+
+    for (let i = 0; i < 10; i++) {
+      app.events.emit("monitoring.event", { type: "DeviceFlapping", deviceId: firewall.id, tenantId: DEFAULT_TENANT_ID, at: app.clock.nowIso() });
+      await sleep(5);
+      app.events.emit("monitoring.event", { type: "DeviceRecovered", deviceId: firewall.id, tenantId: DEFAULT_TENANT_ID, at: app.clock.nowIso() });
+      await sleep(5);
+    }
+    await sleep(50);
+
+    const ownerCalls = calls.filter((c) => c.target === owner.email);
+    const individualCalls = ownerCalls.filter((c) => c.title.includes("FLAPPING"));
+    const summaryCalls = ownerCalls.filter((c) => c.title.includes("rate-limited"));
+
+    expect(individualCalls).toHaveLength(10); // all 10 paged — none held back for a summary
+    expect(summaryCalls).toHaveLength(0);
+
     engine.stop();
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -22,6 +22,8 @@ import {
   X,
   Fingerprint,
   Globe,
+  Shield,
+  Target,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
@@ -33,7 +35,9 @@ const NAV_ITEMS: Array<{ to: string; label: string; icon: LucideIcon; end?: bool
   { to: "/discovery", label: "Discovery", icon: Radar },
   { to: "/map", label: "Map", icon: Waypoints },
   { to: "/bandwidth", label: "Bandwidth", icon: Activity },
+  { to: "/firewalls", label: "Firewalls", icon: Shield },
   { to: "/alerts", label: "Alerts", icon: Siren },
+  { to: "/sla", label: "SLA", icon: Target },
   { to: "/reports", label: "Reports", icon: FileBarChart2 },
   { to: "/settings/notifications", label: "Notifications", icon: Bell },
   { to: "/settings/security", label: "Security", icon: Lock },
@@ -50,6 +54,15 @@ const ADMIN_ITEMS: Array<{ to: string; label: string; icon: LucideIcon }> = [
 ];
 
 const COLLAPSE_KEY = "argus.sidebar.collapsed";
+const ADMIN_OPEN_KEY = "argus.sidebar.adminOpen";
+
+// Module-level, not component state — Layout (and therefore Sidebar) currently remounts on every
+// route change (each page renders its own <Layout>, there's no persistent parent route/<Outlet>
+// wrapping them), so any state that lived only in a useState here reset to its initial value on
+// every single navigation. A module-level variable survives a remount — it's only reset by an
+// actual full page reload, which is the behavior someone actually expects from "restore my scroll
+// position," not "reset every time I click a nav link."
+let savedNavScrollTop = 0;
 
 /**
  * Active state per steps/04-component-spec.md: `bg-accent-subtle` background + `text-accent`,
@@ -75,18 +88,38 @@ function NavItem({ to, label, icon: Icon, collapsed, end }: { to: string; label:
 }
 
 export function Sidebar({ mobileOpen, onCloseMobile }: { mobileOpen: boolean; onCloseMobile: () => void }) {
-  const { user } = useAuth();
+  const { user, mode } = useAuth();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === "1");
-  const [adminOpen, setAdminOpen] = useState(location.pathname.startsWith("/admin"));
+  const [adminOpen, setAdminOpen] = useState(
+    () => localStorage.getItem(ADMIN_OPEN_KEY) === "1" || location.pathname.startsWith("/admin"),
+  );
+  const navRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
 
   useEffect(() => {
+    localStorage.setItem(ADMIN_OPEN_KEY, adminOpen ? "1" : "0");
+  }, [adminOpen]);
+
+  useEffect(() => {
     onCloseMobile();
   }, [location.pathname]);
+
+  // Restore scroll position lost on every remount (see savedNavScrollTop above), then keep
+  // tracking it so the next remount can restore it too.
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    el.scrollTop = savedNavScrollTop;
+    const onScroll = () => {
+      savedNavScrollTop = el.scrollTop;
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   const isAdmin = user?.role === "admin";
 
@@ -105,7 +138,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }: { mobileOpen: boolean; on
           </button>
         </div>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3" aria-label="Primary">
+        <nav ref={navRef} className="flex-1 space-y-0.5 overflow-y-auto px-3 py-3" aria-label="Primary">
           {NAV_ITEMS.map((item) => (
             <NavItem key={item.to} {...item} collapsed={collapsed} />
           ))}
@@ -140,7 +173,7 @@ export function Sidebar({ mobileOpen, onCloseMobile }: { mobileOpen: boolean; on
                 >
                   <div className="relative mt-1 space-y-0.5 pl-3">
                     <div className="absolute bottom-2 left-[5px] top-2 w-px bg-border" aria-hidden="true" />
-                    {ADMIN_ITEMS.map((item) => (
+                    {ADMIN_ITEMS.filter((item) => mode !== "exe" || item.to !== "/admin/sso").map((item) => (
                       <NavItem key={item.to} {...item} collapsed={false} />
                     ))}
                   </div>

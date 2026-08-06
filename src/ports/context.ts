@@ -8,6 +8,7 @@ import type {
   DiscoveryJobStore,
   EngineHeartbeat,
   EventBus,
+  ExternalUrlGuard,
   LeaseCoordinator,
   LicenseService,
   Logger,
@@ -62,6 +63,7 @@ export interface AppContainer {
   license: LicenseService;
   shutdownRequester: ShutdownRequester;
   secretCipher: SecretCipher;
+  externalUrlGuard: ExternalUrlGuard;
   systemEmail: SystemEmailSender;
   syslogForwarder: SyslogForwarder;
   /** M1: undefined in exe mode (single process, nothing to shard) and in the saas-mode API process

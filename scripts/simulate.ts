@@ -123,6 +123,13 @@ async function seedDevices(app: AppContainer, count: number): Promise<void> {
       snmpCredsEnc: null,
       tags: [],
       uplinkDeviceId: null,
+      criticalAsset: false,
+      model: null,
+      firmwareVersion: null,
+      serialNumber: null,
+      haRole: null,
+      apiVendor: null,
+      apiCredsEnc: null,
       createdAt: now,
       updatedAt: now,
     };

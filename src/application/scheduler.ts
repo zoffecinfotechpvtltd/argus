@@ -298,6 +298,22 @@ export class Scheduler {
           value: result.latencyMs,
         });
       }
+
+      if (result.deviceFacts) {
+        const facts = result.deviceFacts;
+        const patch: Partial<Device> = {};
+        if (facts.model !== undefined && facts.model !== device.model) patch.model = facts.model;
+        if (facts.firmwareVersion !== undefined && facts.firmwareVersion !== device.firmwareVersion) patch.firmwareVersion = facts.firmwareVersion;
+        if (facts.serialNumber !== undefined && facts.serialNumber !== device.serialNumber) patch.serialNumber = facts.serialNumber;
+        if (facts.haRole !== undefined && facts.haRole !== device.haRole) patch.haRole = facts.haRole;
+        // Mutate the in-memory device too — entry.device is reused for the rest of this device's
+        // life in the schedule map between periodic re-lists, so without this the fact would keep
+        // re-triggering an identical no-op update every poll until the next full refresh.
+        if (Object.keys(patch).length > 0) {
+          await this.app.repos.device.update(device.tenantId, device.id, patch);
+          Object.assign(device, patch);
+        }
+      }
     }
 
     const outcome = aggregateCheckResults(results);

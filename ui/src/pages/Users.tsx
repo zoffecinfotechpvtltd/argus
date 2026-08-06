@@ -1,9 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
-import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Input, Select, SkeletonRows, useToast } from "../components/ui";
-import { Users as UsersIcon, Link2, Copy } from "lucide-react";
+import { Badge, Button, Card, CardBody, CardHeader, EmptyState, FieldGroup, Input, Select, SkeletonRows, useConfirm, useToast } from "../components/ui";
+import { Users as UsersIcon, Link2, Copy, Dices, ShieldCheck } from "lucide-react";
+
+function randomPassword() {
+  const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let out = "";
+  const bytes = new Uint32Array(14);
+  crypto.getRandomValues(bytes);
+  for (const b of bytes) out += chars[b % chars.length];
+  return out;
+}
 
 interface AdminUser {
   id: string;
@@ -33,6 +42,12 @@ export function Users() {
   const [sessionsFor, setSessionsFor] = useState<string | null>(null);
   const [sessions, setSessions] = useState<SessionRow[]>([]);
   const toast = useToast();
+  const confirm = useConfirm();
+
+  const summary = useMemo(() => {
+    const list = users ?? [];
+    return { total: list.length, admins: list.filter((u) => u.role === "admin").length, disabled: list.filter((u) => u.disabled).length };
+  }, [users]);
 
   const shareUrl = `${window.location.protocol}//${window.location.host}`;
 
@@ -67,26 +82,57 @@ export function Users() {
   }
 
   async function changeRole(id: string, newRole: string) {
-    await api.patch(`/users/${id}/role`, { role: newRole });
-    toast.success("Role updated.");
-    await load();
+    try {
+      await api.patch(`/users/${id}/role`, { role: newRole });
+      toast.success("Role updated.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to update role.");
+    }
   }
 
   async function toggleDisabled(u: AdminUser) {
-    await api.patch(`/users/${u.id}/disabled`, { disabled: !u.disabled });
-    toast.success(u.disabled ? `${u.email} enabled.` : `${u.email} disabled.`);
-    await load();
+    if (!u.disabled) {
+      const ok = await confirm({
+        title: `Disable ${u.email}?`,
+        message: "They'll be signed out everywhere and can't log back in until you re-enable their account.",
+        confirmLabel: "Disable",
+      });
+      if (!ok) return;
+    }
+    try {
+      await api.patch(`/users/${u.id}/disabled`, { disabled: !u.disabled });
+      toast.success(u.disabled ? `${u.email} enabled.` : `${u.email} disabled.`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to update user.");
+    }
   }
 
   async function viewSessions(id: string) {
     setSessionsFor(id);
-    setSessions(await api.get<SessionRow[]>(`/users/${id}/sessions`));
+    try {
+      setSessions(await api.get<SessionRow[]>(`/users/${id}/sessions`));
+    } catch {
+      toast.error("Failed to load sessions.");
+      setSessions([]);
+    }
   }
 
   async function revokeSession(id: string) {
-    await api.delete(`/sessions/${id}`);
-    if (sessionsFor) setSessions(await api.get<SessionRow[]>(`/users/${sessionsFor}/sessions`));
-    toast.success("Session revoked.");
+    const ok = await confirm({
+      title: "Sign out this session?",
+      message: "Whoever's signed in there will need to log in again.",
+      confirmLabel: "Sign out",
+    });
+    if (!ok) return;
+    try {
+      await api.delete(`/sessions/${id}`);
+      if (sessionsFor) setSessions(await api.get<SessionRow[]>(`/users/${sessionsFor}/sessions`));
+      toast.success("Session signed out.");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to sign out that session.");
+    }
   }
 
   async function copyShareUrl() {
@@ -97,6 +143,23 @@ export function Users() {
   return (
     <Layout title="Users" subtitle="Invite teammates and manage roles and sessions">
       <div className="mx-auto max-w-4xl space-y-6">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Total users</p>
+            <p className="mt-1 text-sm font-semibold text-text-primary">{summary.total}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Admins</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-text-primary">
+              <ShieldCheck size={13} className="text-accent" aria-hidden="true" /> {summary.admins}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-bg-surface p-3">
+            <p className="text-2xs font-medium uppercase tracking-wide text-text-muted">Disabled</p>
+            <p className={`mt-1 text-sm font-semibold ${summary.disabled > 0 ? "text-critical" : "text-text-primary"}`}>{summary.disabled}</p>
+          </div>
+        </div>
+
         <Card>
           <CardBody>
             <CardHeader
@@ -122,22 +185,34 @@ export function Users() {
             <CardHeader title="Invite a user" description="They'll need this link, their email, and the temporary password to sign in for the first time." />
             <form onSubmit={invite} className="space-y-3">
               <div className="flex flex-wrap items-end gap-3">
-                <div>
-                  <label className="mb-1 block text-xs text-text-secondary">Email</label>
-                  <Input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-text-secondary">Role</label>
-                  <Select value={role} onChange={(e) => setRole(e.target.value as typeof role)}>
-                    <option value="viewer">Viewer</option>
-                    <option value="operator">Operator</option>
-                    <option value="admin">Admin</option>
-                  </Select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-text-secondary">Temporary password</label>
-                  <Input required minLength={10} value={tempPassword} onChange={(e) => setTempPassword(e.target.value)} />
-                </div>
+                <FieldGroup label="Email">
+                  {(ids) => <Input {...ids} required type="email" value={email} onChange={(e) => setEmail(e.target.value)} />}
+                </FieldGroup>
+                <FieldGroup label="Role">
+                  {(ids) => (
+                    <Select {...ids} value={role} onChange={(e) => setRole(e.target.value as typeof role)}>
+                      <option value="viewer">Viewer</option>
+                      <option value="operator">Operator</option>
+                      <option value="admin">Admin</option>
+                    </Select>
+                  )}
+                </FieldGroup>
+                <FieldGroup label="Temporary password">
+                  {(ids) => (
+                    <div className="flex items-center gap-1.5">
+                      <Input {...ids} required minLength={10} value={tempPassword} onChange={(e) => setTempPassword(e.target.value)} className="w-40" />
+                      <button
+                        type="button"
+                        onClick={() => setTempPassword(randomPassword())}
+                        title="Generate a random password"
+                        aria-label="Generate a random password"
+                        className="flex cursor-pointer items-center justify-center rounded-md border border-border p-2 text-text-secondary transition-colors duration-150 hover:bg-bg-subtle hover:text-text-primary"
+                      >
+                        <Dices size={14} aria-hidden="true" />
+                      </button>
+                    </div>
+                  )}
+                </FieldGroup>
                 <Button type="submit" disabled={inviting}>
                   {inviting ? "Inviting…" : "Invite"}
                 </Button>

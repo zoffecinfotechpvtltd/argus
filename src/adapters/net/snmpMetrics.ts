@@ -1,5 +1,7 @@
-import snmp from "net-snmp";
+import type snmp from "net-snmp";
 import { counterDeltaPerSecond } from "@domain/snmpMath";
+import type { SnmpCredential } from "@domain/snmpCredential";
+import { createSnmpSession } from "@adapters/net/snmpSession";
 
 const OID_SYS_UPTIME = "1.3.6.1.2.1.1.3.0";
 const OID_HR_PROCESSOR_LOAD_1 = "1.3.6.1.2.1.25.3.3.1.2.1";
@@ -21,7 +23,7 @@ function ifOutOctetsOid(ifIndex: number) {
 
 export interface SnmpPollInput {
   ip: string;
-  community: string;
+  credential: SnmpCredential;
   interfaces?: number[];
   timeoutMs?: number;
 }
@@ -65,11 +67,7 @@ export async function pollSnmpMetrics(input: SnmpPollInput): Promise<SnmpPollRes
   const values: Record<string, number> = {};
   let session: ReturnType<typeof snmp.createSession>;
   try {
-    session = snmp.createSession(input.ip, input.community, {
-      timeout: input.timeoutMs ?? 3000,
-      retries: 0,
-      version: snmp.Version2c,
-    });
+    session = createSnmpSession(input.ip, input.credential, input.timeoutMs ?? 3000);
   } catch (err) {
     return { ok: false, values: {}, error: err instanceof Error ? err.message : String(err) };
   }

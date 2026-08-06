@@ -63,7 +63,7 @@ const HOSTNAME_HINTS: Array<{ pattern: RegExp; type: DeviceType }> = [
   { pattern: /^(gw|gateway|router|modem)[-_]?/i, type: "router" },
   { pattern: /^sw(itch)?[-_]/i, type: "switch" },
   { pattern: /access-?point|^ap[-_]|unifi/i, type: "access_point" },
-  { pattern: /firewall|fortigate|pfsense|sonicwall/i, type: "firewall" },
+  { pattern: /firewall|forti(gate|wifi|adc)|sophos|sfos|pfsense|sonicwall/i, type: "firewall" },
   {
     pattern: /iphone|ipad|macbook|imac|android|galaxy-|pixel-|desktop|laptop|-pc$|workstation/i,
     type: "workstation",
@@ -99,7 +99,12 @@ export function classifyDevice(input: ClassifyInput): ClassifyResult {
     return { type: "printer", confidence: hint === "printer" ? 0.95 : 0.85 };
   }
 
-  if (/firewall|fortigate|fortios|sophos xg|pfsense|utm/.test(desc)) {
+  // Broadened from the original fortigate/fortios/"sophos xg"-only match, which missed real-world
+  // sysDescr strings from Fortinet's non-FortiGate line (FortiWiFi/FortiADC branch appliances) and
+  // from Sophos units that self-report as bare "SFOS ..." with neither "sophos" nor "firewall" in
+  // the string. "sophos" and "sfos" alone are safe signals here — Sophos's other SNMP-exposing
+  // products (endpoint agents) don't run an SNMP daemon to be probed in the first place.
+  if (/firewall|forti(gate|wifi|adc)|sophos|sfos|pfsense|utm/.test(desc)) {
     return { type: "firewall", confidence: 0.9 };
   }
   if (hint === "firewall" && (ports.has(PORT.HTTPS) || ports.has(PORT.SSH))) {

@@ -37,14 +37,22 @@ export function LicenseBanner() {
           : `Trial mode: ${info.deviceCount}/${info.deviceLimit} devices used.`;
 
   const severe = info.status === "expired" || info.status === "invalid";
+  // A trial approaching its device cap isn't a problem yet — it's expected, informational, and
+  // (unlike an overdue renewal or an actually-expired/invalid license) not urgent. Grouping it
+  // under the same amber "something needs attention" treatment as those genuinely alarming states
+  // overstated it every time a brand-new trial install added its 4th or 5th device. It gets the
+  // product's own accent color instead — a brand-colored nudge, not a status warning — while grace
+  // period and expired/invalid keep their real semantic warning/critical colors untouched.
+  const trialApproachingLimit = info.status === "unlicensed";
   const Icon = severe ? OctagonX : TriangleAlert;
+  const toneClass = severe
+    ? "border-critical/30 bg-critical-subtle text-critical"
+    : trialApproachingLimit
+      ? "border-accent/30 bg-accent-subtle text-accent"
+      : "border-warning/30 bg-warning-subtle text-warning";
 
   return (
-    <div
-      className={`flex items-center justify-center gap-2 border-b px-4 py-1.5 text-center text-xs ${
-        severe ? "border-critical/30 bg-critical-subtle text-critical" : "border-warning/30 bg-warning-subtle text-warning"
-      }`}
-    >
+    <div className={`flex items-center justify-center gap-2 border-b px-4 py-1.5 text-center text-xs ${toneClass}`}>
       <Icon size={13} className="shrink-0" aria-hidden="true" />
       <span>{text}</span>
       <Link to="/admin/license" className="underline underline-offset-2 transition-opacity duration-150 hover:opacity-80">

@@ -6,7 +6,8 @@ import { ArrowDown, ArrowUp, Gauge, Sliders } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api } from "../api/client";
 import type { Device } from "../api/types";
-import { Card, EmptyState, Input, SkeletonCards, useToast } from "../components/ui";
+import { EmptyState, Input, SkeletonCards, useToast } from "../components/ui";
+import { BentoCard } from "../components/charts/BentoCard";
 import { formatBps } from "../lib/format";
 
 interface Check {
@@ -232,27 +233,27 @@ export function Bandwidth() {
         ) : (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="space-y-6">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <Card className="p-4">
+              <BentoCard className="p-4">
                 <div className="flex items-center gap-2 text-xs text-text-secondary">
                   <ArrowDown size={14} className="text-info" aria-hidden="true" />
                   Total inbound (current)
                 </div>
                 <div className="mt-1 font-mono text-2xl font-bold tabular-nums tracking-tighter text-text-primary">{formatBps(totalInbound)}</div>
-              </Card>
-              <Card className="p-4">
+              </BentoCard>
+              <BentoCard className="p-4">
                 <div className="flex items-center gap-2 text-xs text-text-secondary">
                   <ArrowUp size={14} className="text-accent" aria-hidden="true" />
                   Total outbound (current)
                 </div>
                 <div className="mt-1 font-mono text-2xl font-bold tabular-nums tracking-tighter text-text-primary">{formatBps(totalOutbound)}</div>
-              </Card>
-              <Card className="p-4">
+              </BentoCard>
+              <BentoCard className="p-4">
                 <div className="text-xs text-text-secondary">Interfaces monitored</div>
                 <div className="mt-1 font-mono text-2xl font-bold tabular-nums tracking-tighter text-text-primary">{monitoredTargets.length}</div>
-              </Card>
+              </BentoCard>
             </div>
 
-            <Card className="p-4">
+            <BentoCard className="p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-sm font-medium text-text-primary">Aggregate throughput</div>
                 <div className="flex items-center gap-1 rounded-md border border-border p-0.5 text-xs">
@@ -279,6 +280,16 @@ export function Bandwidth() {
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+                    <defs>
+                      <linearGradient id="bw-agg-inbound" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2563EB" stopOpacity={0.45} />
+                        <stop offset="100%" stopColor="#2563EB" stopOpacity={0.03} />
+                      </linearGradient>
+                      <linearGradient id="bw-agg-outbound" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#4F46E5" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="#4F46E5" stopOpacity={0.03} />
+                      </linearGradient>
+                    </defs>
                     <XAxis
                       dataKey="ts"
                       type="number"
@@ -291,8 +302,8 @@ export function Bandwidth() {
                     />
                     <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} tickFormatter={(v: number) => formatBps(v)} width={64} />
                     <Tooltip content={<ChartTooltip />} />
-                    <Area type="monotone" dataKey="inbound" stroke="#2563EB" fill="#2563EB" fillOpacity={0.35} strokeWidth={1.5} isAnimationActive={false} />
-                    <Area type="monotone" dataKey="outbound" stroke="#4F46E5" fill="#4F46E5" fillOpacity={0.2} strokeWidth={1.5} isAnimationActive={false} />
+                    <Area type="monotone" dataKey="inbound" stroke="#2563EB" strokeWidth={1.75} fill="url(#bw-agg-inbound)" isAnimationActive={false} />
+                    <Area type="monotone" dataKey="outbound" stroke="#4F46E5" strokeWidth={1.75} fill="url(#bw-agg-outbound)" isAnimationActive={false} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
@@ -304,10 +315,10 @@ export function Bandwidth() {
                   <span className="inline-block h-2 w-2 rounded-full bg-accent" /> Outbound
                 </span>
               </div>
-            </Card>
+            </BentoCard>
 
             {rankedInterfaces.length > 0 && (
-              <Card className="p-4">
+              <BentoCard className="p-4">
                 <div className="mb-3 text-sm font-medium text-text-primary">Top interfaces by current throughput</div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -335,10 +346,10 @@ export function Bandwidth() {
                     </tbody>
                   </table>
                 </div>
-              </Card>
+              </BentoCard>
             )}
 
-            <Card className="p-4">
+            <BentoCard className="p-4">
               <button onClick={() => setShowConfig((v) => !v)} className="flex w-full cursor-pointer items-center justify-between text-left">
                 <span className="flex items-center gap-2 text-sm font-medium text-text-primary">
                   <Sliders size={15} className="text-text-secondary" aria-hidden="true" />
@@ -360,7 +371,7 @@ export function Bandwidth() {
                   })}
                 </div>
               )}
-            </Card>
+            </BentoCard>
           </motion.div>
         )}
       </div>

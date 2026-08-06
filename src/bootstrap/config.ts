@@ -32,6 +32,14 @@ const ConfigSchema = z.object({
     .string()
     .refine((u) => u === "" || u.startsWith("https://"), "updateCheckUrl must be https://")
     .default("https://argus.ztplsolutions.com/update-feed.json"),
+  // No sensible universal default the way updateCheckUrl has one — pointing every install at some
+  // third-party dead-man's-switch service by default would silently hand it install telemetry the
+  // admin never chose to share. Off ("") until the admin pastes in their own push-monitor URL
+  // (healthchecks.io, Cronitor, Uptime Kuma, ...).
+  heartbeatUrl: z
+    .string()
+    .refine((u) => u === "" || u.startsWith("https://"), "heartbeatUrl must be https://")
+    .default(""),
   polling: z
     .object({
       defaultIntervalSec: z.coerce.number().int().min(10).default(60),
@@ -83,6 +91,7 @@ function envOverrides(): Record<string, unknown> {
   if (env.LOG_LEVEL) out.logLevel = env.LOG_LEVEL;
   if (env.INSTANCE_NAME) out.instanceName = env.INSTANCE_NAME;
   if (env.UPDATE_CHECK_URL) out.updateCheckUrl = env.UPDATE_CHECK_URL;
+  if (env.HEARTBEAT_URL) out.heartbeatUrl = env.HEARTBEAT_URL;
   if (env.MODE) out.mode = env.MODE;
   // DATABASE_URL is the 12-factor/Docker-Compose convention every Postgres image and hosting
   // platform (Render, Fly, Railway, Heroku) already sets — matching it means no bespoke env var

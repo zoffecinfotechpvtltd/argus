@@ -8,6 +8,10 @@ export interface DefaultChecksInput {
   hasHttp: boolean;
   hasHttps: boolean;
   hasSnmp: boolean;
+  /** True when apiVendor + apiCredsEnc are both set — currently only "fortigate" exists, so this
+   * always means a fortigate_api check; will need to branch on the actual vendor once a second
+   * vendor API (Sophos) exists. */
+  hasVendorApi: boolean;
   nowIso: string;
 }
 
@@ -52,6 +56,19 @@ export function buildDefaultChecks(input: DefaultChecksInput): Check[] {
       deviceId: input.deviceId,
       kind: "snmp",
       config: { version: "2c" },
+      thresholds: {},
+      enabled: true,
+      createdAt: input.nowIso,
+    });
+  }
+
+  if (input.hasVendorApi) {
+    checks.push({
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      deviceId: input.deviceId,
+      kind: "fortigate_api",
+      config: { timeoutMs: 5000 },
       thresholds: {},
       enabled: true,
       createdAt: input.nowIso,

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import ReactECharts from "echarts-for-react";
-import { Card } from "../ui";
 import { api } from "../../api/client";
 import { useEchartsColors, echartsTooltipStyle } from "../../lib/echartsTheme";
 import type { Alert } from "../../api/alertTypes";
+import { BentoCard } from "./BentoCard";
 
 const BUCKETS = [
   { label: "<1m", maxMin: 1 },
@@ -84,15 +84,18 @@ export function AckTimeHistogram({ className = "" }: { className?: string }) {
   );
 
   return (
-    <Card className={`p-3 ${className}`}>
+    <BentoCard className={`p-3 ${className}`}>
       <div className="mb-1 text-xs text-text-secondary">Time to acknowledge{sampleSize > 0 ? ` (last ${sampleSize} acked)` : ""}</div>
       {loading ? (
         <div className="flex h-[140px] items-center justify-center text-xs text-text-muted">Loading…</div>
       ) : sampleSize === 0 ? (
-        <div className="flex h-[140px] items-center justify-center text-xs text-text-muted">No acknowledged alerts yet</div>
+        <div className="flex h-[140px] flex-col items-center justify-center gap-1 text-center text-xs text-text-muted">
+          <span>No acknowledged alerts yet</span>
+          <span>Fills in as your team acknowledges alerts from the table below</span>
+        </div>
       ) : (
         <ReactECharts option={option} style={{ height: 140, width: "100%" }} notMerge lazyUpdate />
       )}
-    </Card>
+    </BentoCard>
   );
 }

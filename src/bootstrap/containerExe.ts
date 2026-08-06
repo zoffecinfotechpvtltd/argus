@@ -32,6 +32,7 @@ import { DefaultNotifierRegistry } from "@adapters/notify/registry";
 import { DefaultSystemEmailSender } from "@adapters/notify/systemEmail";
 import { DefaultSyslogForwarder } from "@adapters/notify/syslogForwarder";
 import { HmacAckTokenSigner, InstanceKeySecretCipher } from "@adapters/crypto";
+import { DnsResolvingExternalUrlGuard } from "@adapters/net/externalUrlGuard";
 import { FileLicenseService } from "@adapters/license";
 import { LICENSE_PUBLIC_KEY_PEM } from "@domain/licensePublicKey";
 import { InMemoryQueue } from "@adapters/queue/inMemoryQueue";
@@ -99,6 +100,7 @@ export function buildExeContainer(config: AppConfig): AppContainer {
     license: new FileLicenseService(config.dataDir, LICENSE_PUBLIC_KEY_PEM, clock),
     shutdownRequester: { requestShutdown: () => {} }, // replaced once shutdown() exists (see bootstrap/mainExe.ts)
     secretCipher: new InstanceKeySecretCipher(instanceKey),
+    externalUrlGuard: new DnsResolvingExternalUrlGuard(),
     systemEmail: new DefaultSystemEmailSender(new SqliteSettingsRepo(db), instanceKey),
     syslogForwarder: new DefaultSyslogForwarder(new SqliteSettingsRepo(db), logger),
     repos: {

@@ -19,6 +19,9 @@ tools/
 .vercel/
 .superdesign
 .playwright-mcp/
+/test-results/
+/playwright-report/
+/e2e/.auth/
 # This project uses bun.lock exclusively (Bun, no Node.js) — never commit an npm/yarn/pnpm lockfile.
 package-lock.json
 yarn.lock

@@ -35,6 +35,39 @@ describe("createDevice", () => {
     expect(a.tenantId).toBe("tenant-a");
     expect(b.tenantId).toBe("tenant-b");
   });
+
+  it("defaults camera and firewall devices to criticalAsset, everything else to non-critical", async () => {
+    const { app } = buildTestContainer();
+    const camera = await createDevice(app, DEFAULT_TENANT_ID, "actor-1", { name: "cam", ip: "10.0.1.1", type: "camera" });
+    const firewall = await createDevice(app, DEFAULT_TENANT_ID, "actor-1", { name: "fw", ip: "10.0.1.2", type: "firewall" });
+    const workstation = await createDevice(app, DEFAULT_TENANT_ID, "actor-1", { name: "ws", ip: "10.0.1.3", type: "workstation" });
+    expect(camera.criticalAsset).toBe(true);
+    expect(firewall.criticalAsset).toBe(true);
+    expect(workstation.criticalAsset).toBe(false);
+  });
+
+  it("creates a fortigate_api check (and persists it to the real DB, exercising the checks.kind CHECK constraint) when apiCredsEnc is set", async () => {
+    const { app } = buildTestContainer();
+    const device = await createDevice(app, DEFAULT_TENANT_ID, "actor-1", {
+      name: "hq-fw",
+      ip: "10.0.2.1",
+      type: "firewall",
+      apiVendor: "fortigate",
+      apiCredsEnc: "encrypted-blob",
+    });
+
+    expect(device.apiVendor).toBe("fortigate");
+    const checks = await app.repos.check.listByDevice(DEFAULT_TENANT_ID, device.id);
+    expect(checks.map((c) => c.kind).sort()).toEqual(["fortigate_api", "icmp"]);
+  });
+
+  it("lets an explicit criticalAsset override the type-based default", async () => {
+    const { app } = buildTestContainer();
+    const quietCamera = await createDevice(app, DEFAULT_TENANT_ID, "actor-1", { name: "cam", ip: "10.0.1.4", type: "camera", criticalAsset: false });
+    const importantServer = await createDevice(app, DEFAULT_TENANT_ID, "actor-1", { name: "srv", ip: "10.0.1.5", type: "server", criticalAsset: true });
+    expect(quietCamera.criticalAsset).toBe(false);
+    expect(importantServer.criticalAsset).toBe(true);
+  });
 });
 
 describe("importDiscoveredDevices", () => {
