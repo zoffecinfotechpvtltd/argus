@@ -21,6 +21,57 @@ function ifOutOctetsOid(ifIndex: number) {
   return `1.3.6.1.2.1.2.2.1.16.${ifIndex}`;
 }
 
+// IF-MIB's ifTable (1.3.6.1.2.1.2.2.1) — column 2 is ifDescr, column 8 is ifOperStatus. Same MIB
+// virtually every SNMP-capable device on earth implements (it's part of MIB-II, RFC 1213, one of
+// the oldest and most universally-supported SNMP standards there is), unlike the vendor-specific
+// guesswork the FortiGate/Sophos REST/XML adapters have to do.
+const OID_IF_TABLE = "1.3.6.1.2.1.2.2.1";
+const IF_DESCR_COLUMN = "2";
+const IF_OPER_STATUS_COLUMN = "8";
+
+export interface DiscoveredInterface {
+  ifIndex: number;
+  ifDescr: string;
+  /** true if ifOperStatus reported 1 (up) at discovery time — a snapshot, not live state; the
+   * picker in the UI uses it only to sort "likely worth watching" interfaces first. */
+  up: boolean;
+}
+
+function snmpTable(session: ReturnType<typeof snmp.createSession>, oid: string): Promise<Record<string, Record<string, unknown>>> {
+  return new Promise((resolve, reject) => {
+    session.table(oid, 20, (err, table) => {
+      if (err) reject(err);
+      else resolve(table);
+    });
+  });
+}
+
+/** Walks ifTable and returns every interface the device reports, for the Bandwidth page's
+ * "Discover interfaces" picker — this is the alternative to making someone snmpwalk the device by
+ * hand and type ifIndex numbers into a text field. */
+export async function discoverSnmpInterfaces(ip: string, credential: SnmpCredential, timeoutMs = 5000): Promise<DiscoveredInterface[]> {
+  const session = createSnmpSession(ip, credential, timeoutMs);
+  try {
+    const table = await snmpTable(session, OID_IF_TABLE);
+    const results: DiscoveredInterface[] = [];
+    for (const [rowIndex, row] of Object.entries(table)) {
+      const ifIndex = Number(rowIndex);
+      if (!Number.isFinite(ifIndex)) continue;
+      const ifDescr = toStr(row[IF_DESCR_COLUMN]) || `if${ifIndex}`;
+      const operStatus = toNumber(row[IF_OPER_STATUS_COLUMN]);
+      results.push({ ifIndex, ifDescr, up: operStatus === 1 });
+    }
+    results.sort((a, b) => a.ifIndex - b.ifIndex);
+    return results;
+  } finally {
+    try {
+      session.close();
+    } catch {
+      /* already closed */
+    }
+  }
+}
+
 export interface SnmpPollInput {
   ip: string;
   credential: SnmpCredential;

@@ -30,6 +30,9 @@ declare module "net-snmp" {
 
   export interface Session {
     get(oids: string[], callback: (err: unknown, varbinds: VarBind[]) => void): void;
+    /** Walks a table OID, collecting every row up to maxRepetitions per GETBULK — the callback
+     * receives `{ [rowIndex: string]: { [columnNumber: string]: value } }`. */
+    table(oid: string, maxRepetitions: number, callback: (err: unknown, table: Record<string, Record<string, unknown>>) => void): void;
     close(): void;
   }
 

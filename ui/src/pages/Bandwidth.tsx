@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowDown, ArrowUp, Gauge, Sliders } from "lucide-react";
+import { ArrowDown, ArrowUp, Gauge, Radar, Sliders } from "lucide-react";
 import { Layout } from "../components/Layout";
-import { api } from "../api/client";
+import { api, ApiError } from "../api/client";
 import type { Device } from "../api/types";
 import { EmptyState, Input, SkeletonCards, useToast } from "../components/ui";
 import { BentoCard } from "../components/charts/BentoCard";
@@ -21,6 +21,12 @@ interface Check {
 interface MetricPoint {
   ts: string;
   value: number;
+}
+
+interface DiscoveredInterface {
+  ifIndex: number;
+  ifDescr: string;
+  up: boolean;
 }
 
 const RANGES = ["1h", "6h", "24h"] as const;
@@ -77,15 +83,12 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 function InterfaceConfigRow({ device, check, onSaved }: { device: Device; check: Check; onSaved: () => void }) {
   const [value, setValue] = useState((check.config.interfaces ?? []).join(", "));
   const [saving, setSaving] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [discovered, setDiscovered] = useState<DiscoveredInterface[] | null>(null);
+  const [picked, setPicked] = useState<Set<number>>(new Set(check.config.interfaces ?? []));
   const toast = useToast();
 
-  async function save() {
-    const interfaces = value
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map(Number)
-      .filter((n) => Number.isInteger(n) && n > 0);
+  async function saveInterfaces(interfaces: number[]) {
     setSaving(true);
     try {
       await api.patch(`/checks/${check.id}`, { config: { interfaces } });
@@ -98,12 +101,102 @@ function InterfaceConfigRow({ device, check, onSaved }: { device: Device; check:
     }
   }
 
+  function save() {
+    const interfaces = value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map(Number)
+      .filter((n) => Number.isInteger(n) && n > 0);
+    return saveInterfaces(interfaces);
+  }
+
+  async function discover() {
+    setDiscovering(true);
+    try {
+      const res = await api.get<{ interfaces: DiscoveredInterface[] }>(`/devices/${device.id}/snmp-interfaces`);
+      // Up interfaces first — those are the ones almost anyone actually wants to track.
+      setDiscovered([...res.interfaces].sort((a, b) => Number(b.up) - Number(a.up) || a.ifIndex - b.ifIndex));
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : `Couldn't reach ${device.name} over SNMP to list its interfaces.`);
+    } finally {
+      setDiscovering(false);
+    }
+  }
+
+  function togglePicked(ifIndex: number) {
+    setPicked((prev) => {
+      const next = new Set(prev);
+      if (next.has(ifIndex)) next.delete(ifIndex);
+      else next.add(ifIndex);
+      return next;
+    });
+  }
+
+  async function applyPicked() {
+    const interfaces = [...picked].sort((a, b) => a - b);
+    setValue(interfaces.join(", "));
+    setDiscovered(null);
+    await saveInterfaces(interfaces);
+  }
+
+  if (discovered) {
+    return (
+      <div className="border-t border-border py-3 first:border-t-0">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium text-text-primary">{device.name}</div>
+            <div className="truncate text-xs text-text-secondary font-mono">{device.ip}</div>
+          </div>
+          <button onClick={() => setDiscovered(null)} className="shrink-0 cursor-pointer text-xs text-text-secondary hover:text-text-primary">
+            Cancel
+          </button>
+        </div>
+        {discovered.length === 0 ? (
+          <p className="text-xs text-text-secondary">No interfaces reported by this device's SNMP agent.</p>
+        ) : (
+          <div className="max-h-56 space-y-0.5 overflow-y-auto rounded-md border border-border p-1">
+            {discovered.map((iface) => (
+              <label
+                key={iface.ifIndex}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-primary hover:bg-bg-subtle"
+              >
+                <input type="checkbox" checked={picked.has(iface.ifIndex)} onChange={() => togglePicked(iface.ifIndex)} className="cursor-pointer accent-accent" />
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${iface.up ? "bg-success" : "bg-text-muted"}`} aria-hidden="true" />
+                <span className="min-w-0 flex-1 truncate">{iface.ifDescr}</span>
+                <span className="shrink-0 font-mono text-2xs text-text-muted">if{iface.ifIndex}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        <div className="mt-2 flex justify-end">
+          <button
+            onClick={applyPicked}
+            disabled={saving}
+            className="cursor-pointer rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors duration-150 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {saving ? "Saving…" : `Use ${picked.size} interface${picked.size === 1 ? "" : "s"}`}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-3 border-t border-border py-3 first:border-t-0">
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium text-text-primary">{device.name}</div>
         <div className="truncate text-xs text-text-secondary font-mono">{device.ip}</div>
       </div>
+      <button
+        onClick={discover}
+        disabled={discovering}
+        title="List this device's interfaces over SNMP instead of typing indices by hand"
+        className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors duration-150 hover:border-border-strong hover:bg-bg-subtle hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <Radar size={12} aria-hidden="true" />
+        {discovering ? "Discovering…" : "Discover"}
+      </button>
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}

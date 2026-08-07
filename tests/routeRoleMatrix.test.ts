@@ -50,6 +50,7 @@ const ROUTES: RouteCase[] = [
   { method: "GET", path: "/api/topology/positions", minRole: "viewer" },
   { method: "PUT", path: "/api/topology/positions", minRole: "viewer", body: { nodeId: "x", x: 1, y: 1 } },
   { method: "GET", path: "/api/devices/x/checks", minRole: "viewer" },
+  { method: "GET", path: "/api/devices/x/snmp-interfaces", minRole: "operator" },
   { method: "PATCH", path: "/api/checks/x", minRole: "operator", body: { enabled: true } },
   { method: "GET", path: "/api/maintenance", minRole: "viewer" },
   { method: "POST", path: "/api/maintenance", minRole: "operator", body: { startsAt: "2026-01-01T00:00:00.000Z", endsAt: "2026-01-01T01:00:00.000Z" } },

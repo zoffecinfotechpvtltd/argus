@@ -6,8 +6,9 @@ import { requireAuthOrApiKey } from "@api/middleware/apiKey";
 import { validateJson, validateQuery, getValidated, getValidatedQuery } from "@api/middleware/validate";
 import { createDevice, deleteDevice, DuplicateDeviceError, updateDevice } from "@application/devices/deviceUseCases";
 import { LicenseLimitError } from "@application/license";
-import { encryptSecret } from "@adapters/crypto";
-import { serializeSnmpCredential } from "@domain/snmpCredential";
+import { encryptSecret, decryptSecret } from "@adapters/crypto";
+import { discoverSnmpInterfaces } from "@adapters/net/snmpMetrics";
+import { serializeSnmpCredential, parseSnmpCredential } from "@domain/snmpCredential";
 import { serializeVendorApiCredential, serializeSophosApiCredential } from "@domain/vendorApiCredential";
 import type { AppEnv } from "@api/honoTypes";
 
@@ -164,6 +165,23 @@ export function deviceRoutes(app: AppContainer) {
     const device = await app.repos.device.findById(tenantOf(c), c.req.param("id")!);
     if (!device) return c.json({ error: "NOT_FOUND" }, 404);
     return c.json(device);
+  });
+
+  // Live SNMP ifTable walk for the Bandwidth page's "Discover interfaces" picker — same trust
+  // level as editing a check's config (operator), since it round-trips this device's decrypted
+  // SNMP credentials over the network on demand rather than waiting for the next scheduled poll.
+  router.get("/devices/:id/snmp-interfaces", requireAuth(app), requireRole("operator"), assertGroupAccess(app), async (c) => {
+    const device = await app.repos.device.findById(tenantOf(c), c.req.param("id")!);
+    if (!device) return c.json({ error: "NOT_FOUND" }, 404);
+    if (!device.snmpCredsEnc) return c.json({ error: "NO_SNMP_CREDENTIALS" }, 400);
+
+    try {
+      const credential = parseSnmpCredential(decryptSecret(app.instanceKey, device.snmpCredsEnc));
+      const interfaces = await discoverSnmpInterfaces(device.ip, credential);
+      return c.json({ interfaces });
+    } catch (err) {
+      return c.json({ error: "DISCOVERY_FAILED", message: err instanceof Error ? err.message : String(err) }, 502);
+    }
   });
 
   router.post("/devices", requireAuth(app), requireRole("operator"), validateJson(CreateDeviceSchema), async (c) => {
