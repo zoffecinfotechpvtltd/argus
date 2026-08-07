@@ -1,5 +1,6 @@
 import type { Alert, CheckKind, Device, DeviceStatus, DiscoveredDevice, DiscoveryProgress, Metric, NotificationChannel } from "@domain/entities";
 import type { LicenseState } from "@domain/license";
+import type { SnmpCredential } from "@domain/snmpCredential";
 
 export interface Clock {
   now(): Date;
@@ -141,6 +142,19 @@ export interface DbMaintenance {
 export interface SecretCipher {
   encrypt(plaintext: string): string;
   decrypt(ciphertext: string): string;
+}
+
+export interface SnmpIdentity {
+  sysDescr: string | null;
+  sysName: string | null;
+  sysObjectId: string | null;
+}
+
+/** Best-effort SNMP identity probe (sysDescr/sysName/sysObjectId) for classification purposes —
+ * a port so application/ code (the scheduled reclassification job) never needs to import the
+ * net-snmp adapter directly. Never throws; a failed/timed-out probe resolves all-null. */
+export interface SnmpIdentityProber {
+  probe(ip: string, credential: SnmpCredential, timeoutMs?: number): Promise<SnmpIdentity>;
 }
 
 /** SSRF guard for any admin-configured "call out to an external URL" setting (update feed,

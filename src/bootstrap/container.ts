@@ -21,6 +21,7 @@ import { DefaultNotifierRegistry } from "@adapters/notify/registry";
 import { DefaultSystemEmailSender } from "@adapters/notify/systemEmail";
 import { DefaultSyslogForwarder } from "@adapters/notify/syslogForwarder";
 import { HmacAckTokenSigner, InstanceKeySecretCipher } from "@adapters/crypto";
+import { DefaultSnmpIdentityProber } from "@adapters/net/snmpProbe";
 import { DnsResolvingExternalUrlGuard } from "@adapters/net/externalUrlGuard";
 import { FileLicenseService } from "@adapters/license";
 import { LICENSE_PUBLIC_KEY_PEM } from "@domain/licensePublicKey";
@@ -114,6 +115,7 @@ function buildSqliteContainer(config: AppConfig): AppContainer {
     license: new FileLicenseService(config.dataDir, LICENSE_PUBLIC_KEY_PEM, clock),
     shutdownRequester: { requestShutdown: () => {} }, // replaced once shutdown() exists (see bootstrap/main.ts)
     secretCipher: new InstanceKeySecretCipher(instanceKey),
+    snmpIdentityProber: new DefaultSnmpIdentityProber(),
     externalUrlGuard: new DnsResolvingExternalUrlGuard(),
     systemEmail: new DefaultSystemEmailSender(new SqliteSettingsRepo(db), instanceKey),
     syslogForwarder: new DefaultSyslogForwarder(new SqliteSettingsRepo(db), logger),
@@ -195,6 +197,7 @@ async function buildPostgresContainer(config: AppConfig): Promise<AppContainer> 
     license: new PgTenantLicenseService(db),
     shutdownRequester: { requestShutdown: () => {} },
     secretCipher: new InstanceKeySecretCipher(instanceKey),
+    snmpIdentityProber: new DefaultSnmpIdentityProber(),
     externalUrlGuard: new DnsResolvingExternalUrlGuard(),
     systemEmail: new DefaultSystemEmailSender(settingsRepo, instanceKey),
     syslogForwarder: new DefaultSyslogForwarder(settingsRepo, logger),

@@ -1,4 +1,5 @@
 import type { SnmpCredential } from "@domain/snmpCredential";
+import type { SnmpIdentity, SnmpIdentityProber } from "@ports/services";
 import { createSnmpSession } from "@adapters/net/snmpSession";
 import type snmp from "net-snmp";
 
@@ -52,4 +53,11 @@ export function probeSnmp(ip: string, credential: SnmpCredential | string, timeo
       });
     });
   });
+}
+
+/** Thin port wrapper around probeSnmp — see @ports/services's SnmpIdentityProber doc comment for why this exists. */
+export class DefaultSnmpIdentityProber implements SnmpIdentityProber {
+  probe(ip: string, credential: SnmpCredential, timeoutMs?: number): Promise<SnmpIdentity> {
+    return probeSnmp(ip, credential, timeoutMs);
+  }
 }

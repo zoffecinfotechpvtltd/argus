@@ -17,6 +17,7 @@ import type {
   Queue,
   SecretCipher,
   ShutdownRequester,
+  SnmpIdentityProber,
   SyslogForwarder,
   SystemEmailSender,
   TickPersister,
@@ -63,6 +64,7 @@ export interface AppContainer {
   license: LicenseService;
   shutdownRequester: ShutdownRequester;
   secretCipher: SecretCipher;
+  snmpIdentityProber: SnmpIdentityProber;
   externalUrlGuard: ExternalUrlGuard;
   systemEmail: SystemEmailSender;
   syslogForwarder: SyslogForwarder;

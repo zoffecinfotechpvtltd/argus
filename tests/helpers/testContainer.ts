@@ -13,6 +13,7 @@ import { SqliteDbMaintenance } from "@adapters/db/sqlite/maintenance";
 import { InMemoryQueue } from "@adapters/queue/inMemoryQueue";
 import { FakeClock } from "@adapters/clock";
 import { HmacAckTokenSigner, InstanceKeySecretCipher } from "@adapters/crypto";
+import { DefaultSnmpIdentityProber } from "@adapters/net/snmpProbe";
 import { DefaultSystemEmailSender } from "@adapters/notify/systemEmail";
 import { DefaultSyslogForwarder } from "@adapters/notify/syslogForwarder";
 import type { AppContainer } from "@ports/context";
@@ -93,6 +94,7 @@ export function buildTestContainer(
     license: buildStubLicenseService(opts.license ?? UNLIMITED_LICENSE),
     shutdownRequester: { requestShutdown: () => {} },
     secretCipher: new InstanceKeySecretCipher(Buffer.alloc(32)),
+    snmpIdentityProber: new DefaultSnmpIdentityProber(),
     // Real DNS-resolving guard would try to hit the network for every test that touches a
     // heartbeat/update-check route — tests don't exercise the SSRF-rejection path itself (that's
     // externalUrlGuard's own unit tests' job), so a stub that always allows is correct here.

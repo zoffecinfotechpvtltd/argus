@@ -40,6 +40,7 @@ const ACTION_LABELS: Record<string, string> = {
   "backup.download": "downloaded a backup",
   "device.create": "added a device",
   "device.update": "updated a device",
+  "device.reclassify": "auto-reclassified a device",
   "device.delete": "deleted a device",
   "device.import": "imported devices from a scan",
   "group.create": "created a group",

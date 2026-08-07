@@ -15,6 +15,7 @@ import { Scheduler } from "@application/scheduler";
 import { RetentionScheduler } from "@application/retentionJob";
 import { DigestScheduler } from "@application/digestScheduler";
 import { HeartbeatScheduler } from "@application/heartbeatScheduler";
+import { ReclassificationScheduler } from "@application/reclassification";
 import { DiscoveryScheduleRunner } from "@application/discoveryScheduleRunner";
 import { BackupScheduler } from "@application/backupScheduler";
 import { AlertEngine } from "@application/alertEngine";
@@ -101,6 +102,7 @@ const alertEngine = new AlertEngine(app);
 const escalation = new EscalationWorker(app);
 const digest = new DigestScheduler(app);
 const heartbeat = new HeartbeatScheduler(app);
+const reclassification = new ReclassificationScheduler(app);
 const discoverySchedules = new DiscoveryScheduleRunner(app);
 const backupScheduler = new BackupScheduler(app);
 
@@ -111,6 +113,7 @@ alertEngine.start();
 escalation.start();
 digest.start();
 heartbeat.start();
+reclassification.start();
 discoverySchedules.start();
 backupScheduler.start();
 app.shutdownRequester = { requestShutdown: (reason) => shutdown(reason) };
@@ -151,6 +154,7 @@ function shutdown(signal: string) {
   digest.stop();
   discoverySchedules.stop();
   backupScheduler.stop();
+  reclassification.stop();
   server?.stop();
   scheduler
     .stop()
