@@ -29,7 +29,7 @@ function sleep(ms: number) {
  * re-run this immediately before every attempt (not just once) to keep that window as small as
  * practical; fully closing it needs connection-level IP pinning, which Bun's fetch doesn't expose.
  */
-async function validateWebhookUrl(target: string): Promise<string | null> {
+export async function validateWebhookUrl(target: string): Promise<string | null> {
   let parsed: URL;
   try {
     parsed = new URL(target);

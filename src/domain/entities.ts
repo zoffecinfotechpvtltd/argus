@@ -229,7 +229,7 @@ export interface Alert {
   escalationStep: number;
 }
 
-export type NotificationChannel = "email" | "webhook";
+export type NotificationChannel = "email" | "webhook" | "slack" | "teams" | "pagerduty";
 
 export interface NotificationLogEntry {
   id?: number;
@@ -275,6 +275,11 @@ export interface NotificationPrefs {
   quietHoursStart: string | null;
   quietHoursEnd: string | null;
   webhookUrl: string | null;
+  slackWebhookUrl: string | null;
+  teamsWebhookUrl: string | null;
+  /** Sent as PagerDuty Events API v2's `routing_key` — the integration key from a PagerDuty
+   * service's "Events API v2" integration, not an account-wide API token. */
+  pagerdutyRoutingKey: string | null;
   /** Opt-in personal summary email (SLA + open-alerts digest), independent of real-time channels above. */
   digestRecurrence: DigestRecurrence | null;
 }

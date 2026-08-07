@@ -190,6 +190,9 @@ export class SqliteNotificationPrefsRepo implements NotificationPrefsRepo {
       quietHoursStart: row.quiet_hours_start,
       quietHoursEnd: row.quiet_hours_end,
       webhookUrl: row.webhook_url,
+      slackWebhookUrl: row.slack_webhook_url ?? null,
+      teamsWebhookUrl: row.teams_webhook_url ?? null,
+      pagerdutyRoutingKey: row.pagerduty_routing_key ?? null,
       digestRecurrence: row.digest_recurrence ?? null,
     };
   }
@@ -197,11 +200,13 @@ export class SqliteNotificationPrefsRepo implements NotificationPrefsRepo {
   async upsert(p: NotificationPrefs): Promise<void> {
     this.db
       .query<any, any>(
-        `INSERT INTO user_notification_prefs (user_id, tenant_id, channels, severity_floor, quiet_hours_start, quiet_hours_end, webhook_url, digest_recurrence)
-         VALUES ($user_id,$tenant_id,$channels,$severity_floor,$qs,$qe,$webhook,$digest)
+        `INSERT INTO user_notification_prefs (user_id, tenant_id, channels, severity_floor, quiet_hours_start, quiet_hours_end, webhook_url, slack_webhook_url, teams_webhook_url, pagerduty_routing_key, digest_recurrence)
+         VALUES ($user_id,$tenant_id,$channels,$severity_floor,$qs,$qe,$webhook,$slack,$teams,$pagerduty,$digest)
          ON CONFLICT(user_id) DO UPDATE SET channels=excluded.channels, severity_floor=excluded.severity_floor,
            quiet_hours_start=excluded.quiet_hours_start, quiet_hours_end=excluded.quiet_hours_end,
-           webhook_url=excluded.webhook_url, digest_recurrence=excluded.digest_recurrence`
+           webhook_url=excluded.webhook_url, slack_webhook_url=excluded.slack_webhook_url,
+           teams_webhook_url=excluded.teams_webhook_url, pagerduty_routing_key=excluded.pagerduty_routing_key,
+           digest_recurrence=excluded.digest_recurrence`
       )
       .run({
         $user_id: p.userId,
@@ -211,6 +216,9 @@ export class SqliteNotificationPrefsRepo implements NotificationPrefsRepo {
         $qs: p.quietHoursStart,
         $qe: p.quietHoursEnd,
         $webhook: p.webhookUrl,
+        $slack: p.slackWebhookUrl,
+        $teams: p.teamsWebhookUrl,
+        $pagerduty: p.pagerdutyRoutingKey,
         $digest: p.digestRecurrence ?? null,
       });
   }
@@ -228,6 +236,9 @@ export class SqliteNotificationPrefsRepo implements NotificationPrefsRepo {
       quietHoursStart: row.quiet_hours_start,
       quietHoursEnd: row.quiet_hours_end,
       webhookUrl: row.webhook_url,
+      slackWebhookUrl: row.slack_webhook_url ?? null,
+      teamsWebhookUrl: row.teams_webhook_url ?? null,
+      pagerdutyRoutingKey: row.pagerduty_routing_key ?? null,
       digestRecurrence: row.digest_recurrence ?? null,
     }));
   }

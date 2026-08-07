@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Mail, Webhook, BellRing, ChevronDown, Radio, Check, Minus } from "lucide-react";
+import { Mail, Webhook, BellRing, ChevronDown, Radio, Check, Minus, MessageSquare, Users2, Siren } from "lucide-react";
 import { Layout } from "../components/Layout";
 import { api, ApiError } from "../api/client";
 import type { NotificationPrefs } from "../api/alertTypes";
@@ -152,7 +152,7 @@ export function SettingsNotifications() {
     }
   }
 
-  function toggleChannel(channel: "email" | "webhook") {
+  function toggleChannel(channel: NotificationPrefs["channels"][number]) {
     if (!prefs) return;
     const has = prefs.channels.includes(channel);
     setPrefs({ ...prefs, channels: has ? prefs.channels.filter((c) => c !== channel) : [...prefs.channels, channel] });
@@ -389,6 +389,70 @@ export function SettingsNotifications() {
                         placeholder="Your personal webhook URL"
                         value={prefs.webhookUrl ?? ""}
                         onChange={(e) => setPrefs({ ...prefs, webhookUrl: e.target.value || null })}
+                      />
+                    )}
+                  </div>
+                </label>
+
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${prefs.channels.includes("slack") ? "border-accent/40 bg-accent-subtle" : "border-border"}`}
+                >
+                  <input type="checkbox" checked={prefs.channels.includes("slack")} onChange={() => toggleChannel("slack")} className="mt-0.5 cursor-pointer accent-accent" />
+                  <div className="w-full">
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
+                      <MessageSquare size={13} aria-hidden="true" /> Slack
+                    </div>
+                    <p className="mb-2 text-xs text-text-secondary">
+                      Posts to a Slack Incoming Webhook — create one under your workspace's Incoming Webhooks app and paste the URL here.
+                    </p>
+                    {prefs.channels.includes("slack") && (
+                      <Input
+                        className="w-full"
+                        placeholder="https://hooks.slack.com/services/…"
+                        value={prefs.slackWebhookUrl ?? ""}
+                        onChange={(e) => setPrefs({ ...prefs, slackWebhookUrl: e.target.value || null })}
+                      />
+                    )}
+                  </div>
+                </label>
+
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${prefs.channels.includes("teams") ? "border-accent/40 bg-accent-subtle" : "border-border"}`}
+                >
+                  <input type="checkbox" checked={prefs.channels.includes("teams")} onChange={() => toggleChannel("teams")} className="mt-0.5 cursor-pointer accent-accent" />
+                  <div className="w-full">
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
+                      <Users2 size={13} aria-hidden="true" /> Microsoft Teams
+                    </div>
+                    <p className="mb-2 text-xs text-text-secondary">Posts to a Teams channel's Incoming Webhook connector URL.</p>
+                    {prefs.channels.includes("teams") && (
+                      <Input
+                        className="w-full"
+                        placeholder="https://….webhook.office.com/webhookb2/…"
+                        value={prefs.teamsWebhookUrl ?? ""}
+                        onChange={(e) => setPrefs({ ...prefs, teamsWebhookUrl: e.target.value || null })}
+                      />
+                    )}
+                  </div>
+                </label>
+
+                <label
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${prefs.channels.includes("pagerduty") ? "border-accent/40 bg-accent-subtle" : "border-border"}`}
+                >
+                  <input type="checkbox" checked={prefs.channels.includes("pagerduty")} onChange={() => toggleChannel("pagerduty")} className="mt-0.5 cursor-pointer accent-accent" />
+                  <div className="w-full">
+                    <div className="flex items-center gap-1.5 text-sm font-medium text-text-primary">
+                      <Siren size={13} aria-hidden="true" /> PagerDuty
+                    </div>
+                    <p className="mb-2 text-xs text-text-secondary">
+                      Pages via a PagerDuty service's Events API v2 integration key — resolving the alert in Argus resolves the page too.
+                    </p>
+                    {prefs.channels.includes("pagerduty") && (
+                      <Input
+                        className="w-full"
+                        placeholder="Events API v2 integration key"
+                        value={prefs.pagerdutyRoutingKey ?? ""}
+                        onChange={(e) => setPrefs({ ...prefs, pagerdutyRoutingKey: e.target.value || null })}
                       />
                     )}
                   </div>

@@ -21,11 +21,14 @@ export interface Alert {
 export interface NotificationPrefs {
   userId: string;
   tenantId: string;
-  channels: Array<"email" | "webhook">;
+  channels: Array<"email" | "webhook" | "slack" | "teams" | "pagerduty">;
   severityFloor: AlertSeverity;
   quietHoursStart: string | null;
   quietHoursEnd: string | null;
   webhookUrl: string | null;
+  slackWebhookUrl: string | null;
+  teamsWebhookUrl: string | null;
+  pagerdutyRoutingKey: string | null;
   digestRecurrence: "daily" | "weekly" | null;
 }
 

@@ -106,6 +106,9 @@ describe("AlertEngine — open/dedup/recover", () => {
       quietHoursStart: null,
       quietHoursEnd: null,
       webhookUrl: null,
+      slackWebhookUrl: null,
+      teamsWebhookUrl: null,
+      pagerdutyRoutingKey: null,
       digestRecurrence: null,
     });
     const device = await seedDevice(app, { responsibleUserId: user.id });
@@ -273,6 +276,9 @@ describe("Storm guard", () => {
       quietHoursStart: null,
       quietHoursEnd: null,
       webhookUrl: null,
+      slackWebhookUrl: null,
+      teamsWebhookUrl: null,
+      pagerdutyRoutingKey: null,
       digestRecurrence: null,
     });
 
@@ -340,6 +346,9 @@ describe("Critical asset bypass", () => {
       quietHoursStart: null,
       quietHoursEnd: null,
       webhookUrl: null,
+      slackWebhookUrl: null,
+      teamsWebhookUrl: null,
+      pagerdutyRoutingKey: null,
       digestRecurrence: null,
     });
     const camera = await seedDevice(app, { type: "camera", criticalAsset: true, responsibleUserId: owner.id });

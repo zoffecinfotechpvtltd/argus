@@ -2,9 +2,16 @@ import type { AppContainer } from "@ports/context";
 import type { Alert, Device, NotificationChannel } from "@domain/entities";
 import { shouldNotifyNow } from "@domain/notificationPolicy";
 
-function resolveTarget(channel: NotificationChannel, email: string, webhookUrl: string | null): string | null {
+function resolveTarget(
+  channel: NotificationChannel,
+  email: string,
+  targets: { webhookUrl: string | null; slackWebhookUrl: string | null; teamsWebhookUrl: string | null; pagerdutyRoutingKey: string | null }
+): string | null {
   if (channel === "email") return email;
-  if (channel === "webhook") return webhookUrl;
+  if (channel === "webhook") return targets.webhookUrl;
+  if (channel === "slack") return targets.slackWebhookUrl;
+  if (channel === "teams") return targets.teamsWebhookUrl;
+  if (channel === "pagerduty") return targets.pagerdutyRoutingKey;
   return null;
 }
 
@@ -40,7 +47,12 @@ export async function notifyUser(
 
   const nowIso = app.clock.nowIso();
   for (const channel of channels) {
-    const target = resolveTarget(channel, user.email, prefs?.webhookUrl ?? null);
+    const target = resolveTarget(channel, user.email, {
+      webhookUrl: prefs?.webhookUrl ?? null,
+      slackWebhookUrl: prefs?.slackWebhookUrl ?? null,
+      teamsWebhookUrl: prefs?.teamsWebhookUrl ?? null,
+      pagerdutyRoutingKey: prefs?.pagerdutyRoutingKey ?? null,
+    });
     if (!target) continue;
 
     const notifier = app.notifiers.get(channel);

@@ -153,6 +153,9 @@ function rowToPrefs(r: any): NotificationPrefs {
     quietHoursStart: r.quiet_hours_start,
     quietHoursEnd: r.quiet_hours_end,
     webhookUrl: r.webhook_url,
+    slackWebhookUrl: r.slack_webhook_url ?? null,
+    teamsWebhookUrl: r.teams_webhook_url ?? null,
+    pagerdutyRoutingKey: r.pagerduty_routing_key ?? null,
     digestRecurrence: r.digest_recurrence ?? null,
   };
 }
@@ -167,12 +170,26 @@ export class PgNotificationPrefsRepo implements NotificationPrefsRepo {
 
   async upsert(p: NotificationPrefs): Promise<void> {
     await this.db.query(
-      `INSERT INTO user_notification_prefs (user_id, tenant_id, channels, severity_floor, quiet_hours_start, quiet_hours_end, webhook_url, digest_recurrence)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      `INSERT INTO user_notification_prefs (user_id, tenant_id, channels, severity_floor, quiet_hours_start, quiet_hours_end, webhook_url, slack_webhook_url, teams_webhook_url, pagerduty_routing_key, digest_recurrence)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT (user_id) DO UPDATE SET channels=excluded.channels, severity_floor=excluded.severity_floor,
          quiet_hours_start=excluded.quiet_hours_start, quiet_hours_end=excluded.quiet_hours_end,
-         webhook_url=excluded.webhook_url, digest_recurrence=excluded.digest_recurrence`,
-      [p.userId, p.tenantId, JSON.stringify(p.channels), p.severityFloor, p.quietHoursStart, p.quietHoursEnd, p.webhookUrl, p.digestRecurrence ?? null]
+         webhook_url=excluded.webhook_url, slack_webhook_url=excluded.slack_webhook_url,
+         teams_webhook_url=excluded.teams_webhook_url, pagerduty_routing_key=excluded.pagerduty_routing_key,
+         digest_recurrence=excluded.digest_recurrence`,
+      [
+        p.userId,
+        p.tenantId,
+        JSON.stringify(p.channels),
+        p.severityFloor,
+        p.quietHoursStart,
+        p.quietHoursEnd,
+        p.webhookUrl,
+        p.slackWebhookUrl,
+        p.teamsWebhookUrl,
+        p.pagerdutyRoutingKey,
+        p.digestRecurrence ?? null,
+      ]
     );
   }
 

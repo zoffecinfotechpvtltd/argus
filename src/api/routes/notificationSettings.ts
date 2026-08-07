@@ -31,11 +31,14 @@ const SyslogConfigSchema = z.object({
 });
 
 const NotificationPrefsSchema = z.object({
-  channels: z.array(z.enum(["email", "webhook"])),
+  channels: z.array(z.enum(["email", "webhook", "slack", "teams", "pagerduty"])),
   severityFloor: z.enum(["info", "warning", "critical"]),
   quietHoursStart: z.string().nullable().optional(),
   quietHoursEnd: z.string().nullable().optional(),
   webhookUrl: z.string().nullable().optional(),
+  slackWebhookUrl: z.string().nullable().optional(),
+  teamsWebhookUrl: z.string().nullable().optional(),
+  pagerdutyRoutingKey: z.string().nullable().optional(),
   /** Opt-in personal SLA/alerts summary email, independent of the real-time channels above. */
   digestRecurrence: z.enum(["daily", "weekly"]).nullable().optional(),
 });
@@ -137,6 +140,9 @@ export function notificationSettingsRoutes(app: AppContainer) {
         quietHoursStart: null,
         quietHoursEnd: null,
         webhookUrl: null,
+        slackWebhookUrl: null,
+        teamsWebhookUrl: null,
+        pagerdutyRoutingKey: null,
         digestRecurrence: null,
       }
     );
@@ -153,6 +159,9 @@ export function notificationSettingsRoutes(app: AppContainer) {
       quietHoursStart: body.quietHoursStart ?? null,
       quietHoursEnd: body.quietHoursEnd ?? null,
       webhookUrl: body.webhookUrl ?? null,
+      slackWebhookUrl: body.slackWebhookUrl ?? null,
+      teamsWebhookUrl: body.teamsWebhookUrl ?? null,
+      pagerdutyRoutingKey: body.pagerdutyRoutingKey ?? null,
       digestRecurrence: body.digestRecurrence ?? null,
     });
     return c.json({ ok: true });

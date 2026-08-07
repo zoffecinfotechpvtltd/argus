@@ -4,6 +4,9 @@ import type { SettingsRepo } from "@ports/repos";
 import { decryptSecret } from "@adapters/crypto";
 import { SmtpNotifier, type SmtpConfig } from "@adapters/notify/smtpNotifier";
 import { WebhookNotifier, type WebhookConfig } from "@adapters/notify/webhookNotifier";
+import { SlackNotifier } from "@adapters/notify/slackNotifier";
+import { TeamsNotifier } from "@adapters/notify/teamsNotifier";
+import { PagerDutyNotifier } from "@adapters/notify/pagerdutyNotifier";
 
 export const SMTP_SETTINGS_KEY = "notify.smtp";
 export const WEBHOOK_SETTINGS_KEY = "notify.webhook";
@@ -35,6 +38,9 @@ export class DefaultNotifierRegistry implements NotifierRegistry {
         return { ...rest, pass: passEnc ? decryptSecret(instanceKey, passEnc) : undefined };
       }, baseUrl),
       webhook: new WebhookNotifier((tenantId) => readJsonSetting<WebhookConfig>(settings, tenantId, WEBHOOK_SETTINGS_KEY)),
+      slack: new SlackNotifier(),
+      teams: new TeamsNotifier(),
+      pagerduty: new PagerDutyNotifier(),
     };
   }
 
