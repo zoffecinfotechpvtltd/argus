@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
-import type { AlertNote, ApiKey, DiscoverySchedule, OnCallSchedule } from "@domain/entities";
-import type { AlertNoteRepo, ApiKeyRepo, DiscoveryScheduleRepo, OnCallScheduleRepo } from "@ports/repos";
+import type { AlertNote, ApiKey, DiscoverySchedule, OnCallSchedule, RemoteAgent } from "@domain/entities";
+import type { AlertNoteRepo, ApiKeyRepo, DiscoveryScheduleRepo, OnCallScheduleRepo, RemoteAgentRepo } from "@ports/repos";
 
 function rowToAlertNote(r: any): AlertNote {
   return { id: r.id, tenantId: r.tenant_id, alertId: r.alert_id, userId: r.user_id, body: r.body, createdAt: r.created_at };
@@ -87,6 +87,70 @@ export class SqliteApiKeyRepo implements ApiKeyRepo {
 
   async touchLastUsed(id: string, atIso: string): Promise<void> {
     this.db.query<any, any>("UPDATE api_keys SET last_used_at=$at WHERE id=$id").run({ $id: id, $at: atIso });
+  }
+}
+
+function rowToRemoteAgent(r: any): RemoteAgent {
+  return {
+    id: r.id,
+    tenantId: r.tenant_id,
+    name: r.name,
+    tokenHash: r.token_hash,
+    tokenPrefix: r.token_prefix,
+    createdAt: r.created_at,
+    lastSeenAt: r.last_seen_at,
+    revokedAt: r.revoked_at,
+  };
+}
+
+export class SqliteRemoteAgentRepo implements RemoteAgentRepo {
+  constructor(private db: Database) {}
+
+  async create(a: RemoteAgent): Promise<RemoteAgent> {
+    this.db
+      .query<any, any>(
+        `INSERT INTO remote_agents (id, tenant_id, name, token_hash, token_prefix, created_at, last_seen_at, revoked_at)
+         VALUES ($id,$tenant_id,$name,$token_hash,$token_prefix,$created_at,$last_seen_at,$revoked_at)`
+      )
+      .run({
+        $id: a.id,
+        $tenant_id: a.tenantId,
+        $name: a.name,
+        $token_hash: a.tokenHash,
+        $token_prefix: a.tokenPrefix,
+        $created_at: a.createdAt,
+        $last_seen_at: a.lastSeenAt,
+        $revoked_at: a.revokedAt,
+      });
+    return a;
+  }
+
+  async revoke(tenantId: string, id: string): Promise<boolean> {
+    const res = this.db
+      .query<any, any>("UPDATE remote_agents SET revoked_at=$now WHERE id=$id AND tenant_id=$tenant_id AND revoked_at IS NULL")
+      .run({ $id: id, $tenant_id: tenantId, $now: new Date().toISOString() });
+    return res.changes > 0;
+  }
+
+  async list(tenantId: string): Promise<RemoteAgent[]> {
+    const rows = this.db
+      .query<any, any>("SELECT * FROM remote_agents WHERE tenant_id=$tenant_id ORDER BY created_at DESC")
+      .all({ $tenant_id: tenantId }) as any[];
+    return rows.map(rowToRemoteAgent);
+  }
+
+  async findById(tenantId: string, id: string): Promise<RemoteAgent | null> {
+    const row = this.db.query<any, any>("SELECT * FROM remote_agents WHERE id=$id AND tenant_id=$tenant_id").get({ $id: id, $tenant_id: tenantId });
+    return row ? rowToRemoteAgent(row) : null;
+  }
+
+  async findByPrefix(prefix: string): Promise<RemoteAgent | null> {
+    const row = this.db.query<any, any>("SELECT * FROM remote_agents WHERE token_prefix=$prefix").get({ $prefix: prefix });
+    return row ? rowToRemoteAgent(row) : null;
+  }
+
+  async touchLastSeen(id: string, atIso: string): Promise<void> {
+    this.db.query<any, any>("UPDATE remote_agents SET last_seen_at=$at WHERE id=$id").run({ $id: id, $at: atIso });
   }
 }
 

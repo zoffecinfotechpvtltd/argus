@@ -1,4 +1,4 @@
-import type { Session, User } from "@domain/entities";
+import type { RemoteAgent, Session, User } from "@domain/entities";
 
 /** Shared Hono context variable shape so `c.get("user")` etc. are typed everywhere without manual casts. */
 export interface AppVariables {
@@ -7,6 +7,9 @@ export interface AppVariables {
   tenantId: string;
   validatedBody: unknown;
   validatedQuery: unknown;
+  /** Set by requireAgentToken instead of `user` for remote-agent-authenticated requests — an
+   * agent isn't a user, there's no session/role to synthesize. */
+  agent: RemoteAgent;
 }
 
 /** `Bun.serve({ fetch: hono.fetch })` passes the Bun `Server` instance as fetch's second

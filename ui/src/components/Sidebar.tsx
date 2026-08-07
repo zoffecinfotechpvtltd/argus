@@ -24,6 +24,7 @@ import {
   Globe,
   Shield,
   Target,
+  Radio,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
@@ -48,6 +49,7 @@ const ADMIN_ITEMS: Array<{ to: string; label: string; icon: LucideIcon }> = [
   { to: "/admin/audit", label: "Audit Log", icon: ScrollText },
   { to: "/admin/license", label: "License", icon: KeyRound },
   { to: "/admin/api-keys", label: "API Keys", icon: KeyRound },
+  { to: "/admin/remote-agents", label: "Remote Agents", icon: Radio },
   { to: "/admin/sso", label: "SSO / SAML", icon: Fingerprint },
   { to: "/admin/status-page", label: "Status Page", icon: Globe },
   { to: "/admin/settings", label: "General Settings", icon: Settings },

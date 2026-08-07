@@ -26,6 +26,7 @@ function rowToDevice(r: any): Device {
     haRole: r.ha_role,
     apiVendor: r.api_vendor,
     apiCredsEnc: r.api_creds_enc,
+    remoteAgentId: r.remote_agent_id ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -37,8 +38,8 @@ export class SqliteDeviceRepo implements DeviceRepo {
   async create(d: Device): Promise<Device> {
     this.db
       .query<any, any>(
-        `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, created_at, updated_at)
-         VALUES ($id,$tenant_id,$name,$ip,$mac,$vendor,$type,$location,$group_id,$responsible_user_id,$interval_sec,$enabled,$snmp_creds_enc,$tags,$uplink_device_id,$critical_asset,$model,$firmware_version,$serial_number,$ha_role,$api_vendor,$api_creds_enc,$created_at,$updated_at)`
+        `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, remote_agent_id, created_at, updated_at)
+         VALUES ($id,$tenant_id,$name,$ip,$mac,$vendor,$type,$location,$group_id,$responsible_user_id,$interval_sec,$enabled,$snmp_creds_enc,$tags,$uplink_device_id,$critical_asset,$model,$firmware_version,$serial_number,$ha_role,$api_vendor,$api_creds_enc,$remote_agent_id,$created_at,$updated_at)`
       )
       .run({
         $id: d.id,
@@ -63,6 +64,7 @@ export class SqliteDeviceRepo implements DeviceRepo {
         $ha_role: d.haRole,
         $api_vendor: d.apiVendor,
         $api_creds_enc: d.apiCredsEnc,
+        $remote_agent_id: d.remoteAgentId ?? null,
         $created_at: d.createdAt,
         $updated_at: d.updatedAt,
       });
@@ -79,7 +81,7 @@ export class SqliteDeviceRepo implements DeviceRepo {
          group_id=$group_id, responsible_user_id=$responsible_user_id, interval_sec=$interval_sec, enabled=$enabled,
          snmp_creds_enc=$snmp_creds_enc, tags=$tags, uplink_device_id=$uplink_device_id, critical_asset=$critical_asset,
          model=$model, firmware_version=$firmware_version, serial_number=$serial_number, ha_role=$ha_role,
-         api_vendor=$api_vendor, api_creds_enc=$api_creds_enc, updated_at=$updated_at
+         api_vendor=$api_vendor, api_creds_enc=$api_creds_enc, remote_agent_id=$remote_agent_id, updated_at=$updated_at
          WHERE id=$id AND tenant_id=$tenant_id`
       )
       .run({
@@ -105,6 +107,7 @@ export class SqliteDeviceRepo implements DeviceRepo {
         $ha_role: merged.haRole,
         $api_vendor: merged.apiVendor,
         $api_creds_enc: merged.apiCredsEnc,
+        $remote_agent_id: merged.remoteAgentId ?? null,
         $updated_at: new Date().toISOString(),
       });
     return this.findById(tenantId, id);
@@ -209,8 +212,8 @@ export class SqliteDeviceRepo implements DeviceRepo {
 
   async createBatchWithChecks(items: DeviceWithChecks[]): Promise<Device[]> {
     const insertDevice = this.db.query<any, any>(
-      `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, created_at, updated_at)
-       VALUES ($id,$tenant_id,$name,$ip,$mac,$vendor,$type,$location,$group_id,$responsible_user_id,$interval_sec,$enabled,$snmp_creds_enc,$tags,$uplink_device_id,$critical_asset,$model,$firmware_version,$serial_number,$ha_role,$api_vendor,$api_creds_enc,$created_at,$updated_at)`
+      `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, remote_agent_id, created_at, updated_at)
+       VALUES ($id,$tenant_id,$name,$ip,$mac,$vendor,$type,$location,$group_id,$responsible_user_id,$interval_sec,$enabled,$snmp_creds_enc,$tags,$uplink_device_id,$critical_asset,$model,$firmware_version,$serial_number,$ha_role,$api_vendor,$api_creds_enc,$remote_agent_id,$created_at,$updated_at)`
     );
     const insertCheck = this.db.query<any, any>(
       `INSERT INTO checks (id, tenant_id, device_id, kind, config, thresholds, enabled, created_at)
@@ -242,6 +245,7 @@ export class SqliteDeviceRepo implements DeviceRepo {
           $ha_role: device.haRole,
           $api_vendor: device.apiVendor,
           $api_creds_enc: device.apiCredsEnc,
+          $remote_agent_id: device.remoteAgentId ?? null,
           $created_at: device.createdAt,
           $updated_at: device.updatedAt,
         });

@@ -32,6 +32,7 @@ import type {
   DeviceRepo,
   DiscoveryScheduleRepo,
   GroupRepo,
+  RemoteAgentRepo,
   HistoryRepo,
   MaintenanceRepo,
   MetricRepo,
@@ -94,5 +95,6 @@ export interface AppContainer {
     apiKey: ApiKeyRepo;
     discoverySchedule: DiscoveryScheduleRepo;
     onCallSchedule: OnCallScheduleRepo;
+    remoteAgent: RemoteAgentRepo;
   };
 }

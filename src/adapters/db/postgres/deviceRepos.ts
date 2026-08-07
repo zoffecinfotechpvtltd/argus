@@ -26,6 +26,7 @@ function rowToDevice(r: any): Device {
     haRole: r.ha_role,
     apiVendor: r.api_vendor,
     apiCredsEnc: r.api_creds_enc,
+    remoteAgentId: r.remote_agent_id ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -41,8 +42,8 @@ export class PgDeviceRepo implements DeviceRepo {
 
   async create(d: Device): Promise<Device> {
     await this.db.query(
-      `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
+      `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, remote_agent_id, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)`,
       [
         d.id,
         d.tenantId,
@@ -66,6 +67,7 @@ export class PgDeviceRepo implements DeviceRepo {
         d.haRole,
         d.apiVendor,
         d.apiCredsEnc,
+        d.remoteAgentId,
         d.createdAt,
         d.updatedAt,
       ]
@@ -80,8 +82,8 @@ export class PgDeviceRepo implements DeviceRepo {
     await this.db.query(
       `UPDATE devices SET name=$1, ip=$2, mac=$3, vendor=$4, type=$5, location=$6, group_id=$7, responsible_user_id=$8,
        interval_sec=$9, enabled=$10, snmp_creds_enc=$11, tags=$12, uplink_device_id=$13, critical_asset=$14,
-       model=$15, firmware_version=$16, serial_number=$17, ha_role=$18, api_vendor=$19, api_creds_enc=$20, updated_at=$21
-       WHERE id=$22 AND tenant_id=$23`,
+       model=$15, firmware_version=$16, serial_number=$17, ha_role=$18, api_vendor=$19, api_creds_enc=$20, remote_agent_id=$21, updated_at=$22
+       WHERE id=$23 AND tenant_id=$24`,
       [
         merged.name,
         merged.ip,
@@ -103,6 +105,7 @@ export class PgDeviceRepo implements DeviceRepo {
         merged.haRole,
         merged.apiVendor,
         merged.apiCredsEnc,
+        merged.remoteAgentId,
         new Date().toISOString(),
         id,
         tenantId,
@@ -205,8 +208,8 @@ export class PgDeviceRepo implements DeviceRepo {
       await client.query("BEGIN");
       for (const { device, checks } of items) {
         await client.query(
-          `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, created_at, updated_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)`,
+          `INSERT INTO devices (id, tenant_id, name, ip, mac, vendor, type, location, group_id, responsible_user_id, interval_sec, enabled, snmp_creds_enc, tags, uplink_device_id, critical_asset, model, firmware_version, serial_number, ha_role, api_vendor, api_creds_enc, remote_agent_id, created_at, updated_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)`,
           [
             device.id,
             device.tenantId,
@@ -230,6 +233,7 @@ export class PgDeviceRepo implements DeviceRepo {
             device.haRole,
             device.apiVendor,
             device.apiCredsEnc,
+            device.remoteAgentId,
             device.createdAt,
             device.updatedAt,
           ]

@@ -23,6 +23,7 @@ import { AuditLog } from "./pages/AuditLog";
 import { SettingsGeneral } from "./pages/SettingsGeneral";
 import { SettingsLicense } from "./pages/SettingsLicense";
 import { AdminApiKeys } from "./pages/AdminApiKeys";
+import { AdminRemoteAgents } from "./pages/AdminRemoteAgents";
 import { StatusPage } from "./pages/StatusPage";
 import { SettingsSso } from "./pages/SettingsSso";
 import { SettingsStatusPage } from "./pages/SettingsStatusPage";
@@ -243,6 +244,14 @@ export function App() {
                   element={
                     <AdminGate>
                       <AdminApiKeys />
+                    </AdminGate>
+                  }
+                />
+                <Route
+                  path="/admin/remote-agents"
+                  element={
+                    <AdminGate>
+                      <AdminRemoteAgents />
                     </AdminGate>
                   }
                 />

@@ -32,6 +32,7 @@ async function seedDevice(app: ReturnType<typeof buildTestContainer>["app"], ove
     haRole: null,
     apiVendor: null,
     apiCredsEnc: null,
+    remoteAgentId: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,

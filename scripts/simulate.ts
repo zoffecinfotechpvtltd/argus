@@ -130,6 +130,7 @@ async function seedDevices(app: AppContainer, count: number): Promise<void> {
       haRole: null,
       apiVendor: null,
       apiCredsEnc: null,
+      remoteAgentId: null,
       createdAt: now,
       updatedAt: now,
     };

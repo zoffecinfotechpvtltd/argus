@@ -63,6 +63,7 @@ export async function createDevice(app: AppContainer, tenantId: string, actorUse
     haRole: null,
     apiVendor: input.apiVendor ?? null,
     apiCredsEnc: input.apiCredsEnc ?? null,
+    remoteAgentId: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -117,6 +118,7 @@ export interface UpdateDeviceInput {
   criticalAsset?: boolean;
   apiVendor?: "fortigate" | "sophos" | null;
   apiCredsEnc?: string | null;
+  remoteAgentId?: string | null;
 }
 
 export async function updateDevice(

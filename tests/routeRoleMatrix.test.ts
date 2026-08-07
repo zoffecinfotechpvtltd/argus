@@ -64,6 +64,9 @@ const ROUTES: RouteCase[] = [
   { method: "GET", path: "/api/settings/general", minRole: "admin" },
   { method: "GET", path: "/api/settings/update-check", minRole: "admin" },
   { method: "POST", path: "/api/settings/heartbeat-test", minRole: "admin" },
+  { method: "GET", path: "/api/remote-agents", minRole: "admin" },
+  { method: "POST", path: "/api/remote-agents", minRole: "admin", body: { name: "test-agent" } },
+  { method: "DELETE", path: "/api/remote-agents/x", minRole: "admin" },
 ];
 
 const ROLE_RANK: Record<Role, number> = { viewer: 0, operator: 1, admin: 2 };

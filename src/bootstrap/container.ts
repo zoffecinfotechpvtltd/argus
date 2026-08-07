@@ -7,7 +7,7 @@ import { SqliteCheckRepo, SqliteDeviceRepo, SqliteGroupRepo, SqliteStatusRepo } 
 import { SqliteAlertRepo, SqliteMetricRepo, SqliteNotificationLogRepo } from "@adapters/db/sqlite/metricAlertRepos";
 import { SqliteSessionRepo, SqliteUserRepo } from "@adapters/db/sqlite/authRepos";
 import { SqliteAuditRepo, SqliteMaintenanceRepo, SqliteNotificationPrefsRepo, SqliteSettingsRepo } from "@adapters/db/sqlite/miscRepos";
-import { SqliteAlertNoteRepo, SqliteApiKeyRepo, SqliteDiscoveryScheduleRepo, SqliteOnCallScheduleRepo } from "@adapters/db/sqlite/enterpriseRepos";
+import { SqliteAlertNoteRepo, SqliteApiKeyRepo, SqliteDiscoveryScheduleRepo, SqliteOnCallScheduleRepo, SqliteRemoteAgentRepo } from "@adapters/db/sqlite/enterpriseRepos";
 import { SqliteTickPersister } from "@adapters/db/sqlite/tickPersister";
 import { SqliteHistoryRepo, SqliteTopologyRepo } from "@adapters/db/sqlite/reportingRepos";
 import { SqliteTenantRepo } from "@adapters/db/sqlite/tenantRepos";
@@ -37,7 +37,7 @@ import { PgAlertRepo, PgNotificationLogRepo, PgAlertNoteRepo } from "@adapters/d
 import { PgTenantLicenseService } from "@adapters/db/postgres/tenantLicenseService";
 import { PgTickPersister } from "@adapters/db/postgres/tickPersister";
 import { notYetPortedRepo } from "@adapters/db/postgres/notImplemented";
-import { PgApiKeyRepo, PgDiscoveryScheduleRepo } from "@adapters/db/postgres/enterpriseRepos";
+import { PgApiKeyRepo, PgDiscoveryScheduleRepo, PgRemoteAgentRepo } from "@adapters/db/postgres/enterpriseRepos";
 import { PgHistoryRepo } from "@adapters/db/postgres/reportingRepos";
 import { PgMetricRepo } from "@adapters/db/postgres/metricRepo";
 import { getRedis } from "@adapters/redis/connection";
@@ -138,6 +138,7 @@ function buildSqliteContainer(config: AppConfig): AppContainer {
       tenant: new SqliteTenantRepo(db),
       alertNote: new SqliteAlertNoteRepo(db),
       apiKey: new SqliteApiKeyRepo(db),
+      remoteAgent: new SqliteRemoteAgentRepo(db),
       discoverySchedule: new SqliteDiscoveryScheduleRepo(db),
       onCallSchedule: new SqliteOnCallScheduleRepo(db),
     },
@@ -220,6 +221,7 @@ async function buildPostgresContainer(config: AppConfig): Promise<AppContainer> 
       tenant: new PgTenantRepo(db),
       alertNote: new PgAlertNoteRepo(db),
       apiKey: new PgApiKeyRepo(db),
+      remoteAgent: new PgRemoteAgentRepo(db),
       discoverySchedule: new PgDiscoveryScheduleRepo(db),
       onCallSchedule: new PgOnCallScheduleRepo(db),
     },

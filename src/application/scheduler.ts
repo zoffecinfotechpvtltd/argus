@@ -171,6 +171,17 @@ export class Scheduler {
   }
 
   private async loadDevice(device: Device): Promise<void> {
+    // A device assigned to a remote agent is polled by that agent's own local process, not by this
+    // instance's Scheduler — see application/agentIngest.ts. Removed here rather than filtered out
+    // of listAllEnabled() itself so re-assigning a device away from an agent (remoteAgentId set
+    // back to null) picks it back up on the very next device.changed event / refresh cycle without
+    // needing its own separate code path.
+    if (device.remoteAgentId) {
+      this.schedule.delete(device.id);
+      this.statusCache.delete(device.id);
+      return;
+    }
+
     const checks = await this.app.repos.check.listByDevice(device.tenantId, device.id);
     const enabledChecks = checks.filter((c) => c.enabled);
 

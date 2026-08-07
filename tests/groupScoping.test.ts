@@ -54,6 +54,7 @@ async function makeDevice(app: App, groupId: string | null): Promise<Device> {
     haRole: null,
     apiVendor: null,
     apiCredsEnc: null,
+    remoteAgentId: null,
     createdAt: now,
     updatedAt: now,
   };

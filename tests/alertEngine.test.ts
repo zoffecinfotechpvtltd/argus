@@ -85,6 +85,7 @@ async function seedDevice(app: AppContainer, overrides: Partial<Device> = {}): P
     haRole: null,
     apiVendor: null,
     apiCredsEnc: null,
+    remoteAgentId: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,

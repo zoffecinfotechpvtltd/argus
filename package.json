@@ -7,6 +7,7 @@
     "dev": "concurrently -k -n SERVER,UI -c blue,green \"bun run dev:server\" \"bun run dev:ui\"",
     "dev:server": "bun run generate:embeds && bun --watch src/bootstrap/main.ts",
     "poller": "bun run src/bootstrap/pollerMain.ts",
+    "agent": "bun run src/bootstrap/agentMain.ts",
     "dev:ui": "cd ui && bunx vite",
     "build:ui": "cd ui && bunx vite build",
     "generate:ui-manifest": "bun run scripts/generate-ui-manifest.ts",

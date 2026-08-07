@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
-import type { ApiKey, DiscoverySchedule } from "@domain/entities";
-import type { ApiKeyRepo, DiscoveryScheduleRepo } from "@ports/repos";
+import type { ApiKey, DiscoverySchedule, RemoteAgent } from "@domain/entities";
+import type { ApiKeyRepo, DiscoveryScheduleRepo, RemoteAgentRepo } from "@ports/repos";
 
 function rowToApiKey(r: any): ApiKey {
   return {
@@ -50,6 +50,60 @@ export class PgApiKeyRepo implements ApiKeyRepo {
 
   async touchLastUsed(id: string, atIso: string): Promise<void> {
     await this.db.query("UPDATE api_keys SET last_used_at=$1 WHERE id=$2", [atIso, id]);
+  }
+}
+
+function rowToRemoteAgent(r: any): RemoteAgent {
+  return {
+    id: r.id,
+    tenantId: r.tenant_id,
+    name: r.name,
+    tokenHash: r.token_hash,
+    tokenPrefix: r.token_prefix,
+    createdAt: r.created_at,
+    lastSeenAt: r.last_seen_at,
+    revokedAt: r.revoked_at,
+  };
+}
+
+export class PgRemoteAgentRepo implements RemoteAgentRepo {
+  constructor(private db: Pool) {}
+
+  async create(a: RemoteAgent): Promise<RemoteAgent> {
+    await this.db.query(
+      `INSERT INTO remote_agents (id, tenant_id, name, token_hash, token_prefix, created_at, last_seen_at, revoked_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [a.id, a.tenantId, a.name, a.tokenHash, a.tokenPrefix, a.createdAt, a.lastSeenAt, a.revokedAt]
+    );
+    return a;
+  }
+
+  async revoke(tenantId: string, id: string): Promise<boolean> {
+    const res = await this.db.query("UPDATE remote_agents SET revoked_at=$1 WHERE id=$2 AND tenant_id=$3 AND revoked_at IS NULL", [
+      new Date().toISOString(),
+      id,
+      tenantId,
+    ]);
+    return (res.rowCount ?? 0) > 0;
+  }
+
+  async list(tenantId: string): Promise<RemoteAgent[]> {
+    const { rows } = await this.db.query("SELECT * FROM remote_agents WHERE tenant_id=$1 ORDER BY created_at DESC", [tenantId]);
+    return rows.map(rowToRemoteAgent);
+  }
+
+  async findById(tenantId: string, id: string): Promise<RemoteAgent | null> {
+    const { rows } = await this.db.query("SELECT * FROM remote_agents WHERE id=$1 AND tenant_id=$2", [id, tenantId]);
+    return rows[0] ? rowToRemoteAgent(rows[0]) : null;
+  }
+
+  async findByPrefix(prefix: string): Promise<RemoteAgent | null> {
+    const { rows } = await this.db.query("SELECT * FROM remote_agents WHERE token_prefix=$1", [prefix]);
+    return rows[0] ? rowToRemoteAgent(rows[0]) : null;
+  }
+
+  async touchLastSeen(id: string, atIso: string): Promise<void> {
+    await this.db.query("UPDATE remote_agents SET last_seen_at=$1 WHERE id=$2", [atIso, id]);
   }
 }
 

@@ -22,6 +22,7 @@ export interface Device {
   serialNumber: string | null;
   haRole: "primary" | "secondary" | null;
   apiVendor: "fortigate" | "sophos" | null;
+  remoteAgentId: string | null;
   createdAt: string;
   updatedAt: string;
 }

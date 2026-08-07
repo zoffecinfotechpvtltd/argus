@@ -21,6 +21,7 @@ import { backupRoutes } from "@api/routes/backup";
 import { generalSettingsRoutes } from "@api/routes/generalSettings";
 import { licenseRoutes } from "@api/routes/license";
 import { apiKeyRoutes } from "@api/routes/apiKeys";
+import { remoteAgentRoutes } from "@api/routes/remoteAgents";
 import { signupRoutes } from "@api/routes/signup";
 import { ssoRoutes } from "@api/routes/sso";
 import { statusPageRoutes } from "@api/routes/statusPage";
@@ -159,6 +160,7 @@ export function buildServer(app: AppContainer) {
   hono.route("/api", generalSettingsRoutes(app));
   hono.route("/api", licenseRoutes(app));
   hono.route("/api", apiKeyRoutes(app));
+  hono.route("/api", remoteAgentRoutes(app));
   // M6: the one route tree in this app with a genuinely unauthenticated GET — see
   // statusPageRoutes for why it's still safe to register alongside every authenticated route
   // above rather than needing its own carve-out (no requireAuth() call on the public leg is what

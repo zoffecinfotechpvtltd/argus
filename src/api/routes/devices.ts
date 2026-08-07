@@ -127,6 +127,10 @@ const UpdateDeviceSchema = z.object({
   tags: z.array(z.string().min(1).max(50)).max(20).optional(),
   uplinkDeviceId: z.string().nullable().optional(),
   criticalAsset: z.boolean().optional(),
+  /** Null = polled locally by this instance (the default for every device). Set to a remote
+   * agent's id to hand this device's polling off to that agent instead — see remoteAgents.ts and
+   * application/agentIngest.ts. */
+  remoteAgentId: z.string().nullable().optional(),
 });
 
 const ListDevicesQuerySchema = z.object({

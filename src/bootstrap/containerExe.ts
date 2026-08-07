@@ -18,7 +18,7 @@ import { SqliteCheckRepo, SqliteDeviceRepo, SqliteGroupRepo, SqliteStatusRepo } 
 import { SqliteAlertRepo, SqliteMetricRepo, SqliteNotificationLogRepo } from "@adapters/db/sqlite/metricAlertRepos";
 import { SqliteSessionRepo, SqliteUserRepo } from "@adapters/db/sqlite/authRepos";
 import { SqliteAuditRepo, SqliteMaintenanceRepo, SqliteNotificationPrefsRepo, SqliteSettingsRepo } from "@adapters/db/sqlite/miscRepos";
-import { SqliteAlertNoteRepo, SqliteApiKeyRepo, SqliteDiscoveryScheduleRepo, SqliteOnCallScheduleRepo } from "@adapters/db/sqlite/enterpriseRepos";
+import { SqliteAlertNoteRepo, SqliteApiKeyRepo, SqliteDiscoveryScheduleRepo, SqliteOnCallScheduleRepo, SqliteRemoteAgentRepo } from "@adapters/db/sqlite/enterpriseRepos";
 import { SqliteTickPersister } from "@adapters/db/sqlite/tickPersister";
 import { SqliteHistoryRepo, SqliteTopologyRepo } from "@adapters/db/sqlite/reportingRepos";
 import { SqliteTenantRepo } from "@adapters/db/sqlite/tenantRepos";
@@ -124,6 +124,7 @@ export function buildExeContainer(config: AppConfig): AppContainer {
       tenant: new SqliteTenantRepo(db),
       alertNote: new SqliteAlertNoteRepo(db),
       apiKey: new SqliteApiKeyRepo(db),
+      remoteAgent: new SqliteRemoteAgentRepo(db),
       discoverySchedule: new SqliteDiscoveryScheduleRepo(db),
       onCallSchedule: new SqliteOnCallScheduleRepo(db),
     },

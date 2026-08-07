@@ -43,6 +43,7 @@ describe("SqliteDeviceRepo", () => {
       haRole: null,
       apiVendor: null,
       apiCredsEnc: null,
+      remoteAgentId: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -99,6 +100,7 @@ describe("SqliteDeviceRepo", () => {
       haRole: null,
       apiVendor: null,
       apiCredsEnc: null,
+      remoteAgentId: null,
       createdAt: now,
       updatedAt: now,
     });

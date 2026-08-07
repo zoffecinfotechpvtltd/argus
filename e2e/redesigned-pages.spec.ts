@@ -20,6 +20,7 @@ const PAGES: Array<{ path: string; heading: string }> = [
   { path: "/admin/audit", heading: "Audit Log" },
   { path: "/admin/license", heading: "License" },
   { path: "/admin/api-keys", heading: "API Keys" },
+  { path: "/admin/remote-agents", heading: "Remote Agents" },
   { path: "/admin/sso", heading: "SSO / SAML" },
 ];
 

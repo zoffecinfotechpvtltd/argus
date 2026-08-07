@@ -67,6 +67,7 @@ export async function importDiscoveredDevices(
       haRole: null,
       apiVendor: null,
       apiCredsEnc: null,
+      remoteAgentId: null,
       createdAt: now,
       updatedAt: now,
     };

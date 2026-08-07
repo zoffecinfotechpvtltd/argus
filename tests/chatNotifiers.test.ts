@@ -46,6 +46,7 @@ function makeDevice(overrides: Partial<Device> = {}): Device {
     haRole: null,
     apiVendor: null,
     apiCredsEnc: null,
+    remoteAgentId: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,

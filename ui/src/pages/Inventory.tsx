@@ -81,6 +81,9 @@ interface DeviceForm {
   tagsText: string;
   uplinkDeviceId: string;
   criticalAsset: boolean;
+  /** "" = polled locally by this instance (the default). Otherwise a remote agent's id — see
+   * AdminRemoteAgents.tsx and application/agentIngest.ts. */
+  remoteAgentId: string;
 }
 
 /** Mirrors DEFAULT_CRITICAL_TYPES in src/application/devices/deviceUseCases.ts — pre-checks the
@@ -114,6 +117,7 @@ const emptyForm: DeviceForm = {
   tagsText: "",
   uplinkDeviceId: "",
   criticalAsset: false,
+  remoteAgentId: "",
 };
 
 function parseTagsText(text: string): string[] {
@@ -126,6 +130,7 @@ function parseTagsText(text: string): string[] {
 export function Inventory() {
   const [devices, setDevices] = useState<DeviceRow[] | null>(null);
   const [groups, setGroups] = useState<DeviceGroup[]>([]);
+  const [agents, setAgents] = useState<Array<{ id: string; name: string; revokedAt: string | null }>>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [groupFilter, setGroupFilter] = useState("");
@@ -171,6 +176,17 @@ export function Inventory() {
     setGroups(await api.get<DeviceGroup[]>("/groups"));
   }
 
+  async function loadAgents() {
+    try {
+      const list = await api.get<Array<{ id: string; name: string; revokedAt: string | null }>>("/remote-agents");
+      setAgents(list.filter((a) => !a.revokedAt));
+    } catch {
+      // Listing agents is admin-only — an operator just won't see the "polled by" field's options
+      // beyond whatever's already assigned; same graceful-degrade as loadUsers above.
+      setAgents([]);
+    }
+  }
+
   async function loadUsers() {
     try {
       setUsers(await api.get<DirectoryUser[]>("/users"));
@@ -188,6 +204,7 @@ export function Inventory() {
   useEffect(() => {
     loadGroups().catch(() => {});
     loadUsers().catch(() => {});
+    loadAgents().catch(() => {});
   }, []);
 
   function openCreate() {
@@ -209,6 +226,7 @@ export function Inventory() {
       tagsText: d.tags.join(", "),
       uplinkDeviceId: d.uplinkDeviceId ?? "",
       criticalAsset: d.criticalAsset,
+      remoteAgentId: d.remoteAgentId ?? "",
     });
     setError(null);
     setDrawerOpen(true);
@@ -265,6 +283,7 @@ export function Inventory() {
         tags: parseTagsText(form.tagsText),
         uplinkDeviceId: form.uplinkDeviceId || null,
         criticalAsset: form.criticalAsset,
+        remoteAgentId: form.remoteAgentId || null,
       };
       if (form.id) {
         await api.patch(`/devices/${form.id}`, payload);
@@ -1011,6 +1030,25 @@ export function Inventory() {
                 {(devices ?? []).filter((d) => d.id !== form.id).map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name} ({d.ip})
+                  </option>
+                ))}
+              </Select>
+            )}
+          </FieldGroup>
+          <FieldGroup
+            label="Polled by"
+            hint={
+              form.remoteAgentId
+                ? "A remote agent only runs ICMP/TCP/HTTP checks — SNMP and vendor-API checks configured on this device won't update while it's agent-assigned."
+                : "Devices on a network segment this instance can't reach directly need a remote agent — see Admin → Remote Agents."
+            }
+          >
+            {(ids) => (
+              <Select {...ids} className="w-full" value={form.remoteAgentId} onChange={(e) => setForm({ ...form, remoteAgentId: e.target.value })}>
+                <option value="">This instance (default)</option>
+                {agents.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
                   </option>
                 ))}
               </Select>

@@ -15,6 +15,7 @@ import type {
   NotificationLogEntry,
   NotificationPrefs,
   OnCallSchedule,
+  RemoteAgent,
   Session,
   Tenant,
   User,
@@ -242,6 +243,16 @@ export interface ApiKeyRepo {
   /** Cross-tenant lookup by key prefix — the incoming key is opaque to the caller until looked up by its prefix, then verified by hash. */
   findByPrefix(prefix: string): Promise<ApiKey | null>;
   touchLastUsed(id: string, atIso: string): Promise<void>;
+}
+
+export interface RemoteAgentRepo {
+  create(agent: RemoteAgent): Promise<RemoteAgent>;
+  revoke(tenantId: string, id: string): Promise<boolean>;
+  list(tenantId: string): Promise<RemoteAgent[]>;
+  findById(tenantId: string, id: string): Promise<RemoteAgent | null>;
+  /** Cross-tenant lookup by token prefix — the incoming token is opaque until looked up by its prefix, then verified by hash, same pattern as ApiKeyRepo.findByPrefix. */
+  findByPrefix(prefix: string): Promise<RemoteAgent | null>;
+  touchLastSeen(id: string, atIso: string): Promise<void>;
 }
 
 export interface OnCallScheduleRepo {

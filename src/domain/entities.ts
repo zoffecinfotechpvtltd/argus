@@ -133,8 +133,34 @@ export interface Device {
    * check kind buildDefaultChecks attaches. Null = no vendor API configured for this device. */
   apiVendor: "fortigate" | "sophos" | null;
   apiCredsEnc: string | null;
+  /** When set, this device is polled by a remote agent (see RemoteAgent below), not by this
+   * instance's own local Scheduler — segmented networks the central instance can't route to
+   * directly need a small process running inside that segment instead. Null (the default) means
+   * "polled locally," unchanged from every device before remote agents existed. */
+  remoteAgentId: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * A remote poller: a lightweight standalone process (see scripts/agent — `bun run agent`) running
+ * inside a network segment the central Argus instance can't directly reach, running its own local
+ * checks against the devices assigned to it and pushing results back over HTTPS. Deliberately a
+ * separate credential type from ApiKey, not a reuse of it — API keys are documented and enforced
+ * as read-only ("can never create, edit, or delete anything"); an agent needs exactly one narrow
+ * write action (push check results for devices explicitly assigned to it), and overloading the
+ * read-only guarantee of the existing key type to allow that would quietly weaken a security
+ * invariant every existing API key holder is relying on.
+ */
+export interface RemoteAgent {
+  id: string;
+  tenantId: string;
+  name: string;
+  tokenHash: string;
+  tokenPrefix: string;
+  createdAt: string;
+  lastSeenAt: string | null;
+  revokedAt: string | null;
 }
 
 export type CheckKind = "icmp" | "tcp" | "http" | "snmp" | "fortigate_api" | "sophos_api";
