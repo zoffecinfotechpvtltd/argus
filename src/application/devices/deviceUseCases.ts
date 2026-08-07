@@ -21,7 +21,7 @@ export interface CreateDeviceInput {
   tags?: string[];
   uplinkDeviceId?: string | null;
   criticalAsset?: boolean;
-  apiVendor?: "fortigate" | null;
+  apiVendor?: "fortigate" | "sophos" | null;
   /** Already-encrypted at the API layer. */
   apiCredsEnc?: string | null;
 }
@@ -73,7 +73,7 @@ export async function createDevice(app: AppContainer, tenantId: string, actorUse
     hasHttp: !!input.hasHttp,
     hasHttps: !!input.hasHttps,
     hasSnmp: !!input.snmpCredsEnc,
-    hasVendorApi: !!input.apiCredsEnc,
+    apiVendor: input.apiCredsEnc ? (input.apiVendor ?? null) : null,
     nowIso: now,
   });
 
@@ -115,7 +115,7 @@ export interface UpdateDeviceInput {
   tags?: string[];
   uplinkDeviceId?: string | null;
   criticalAsset?: boolean;
-  apiVendor?: "fortigate" | null;
+  apiVendor?: "fortigate" | "sophos" | null;
   apiCredsEnc?: string | null;
 }
 

@@ -61,6 +61,21 @@ describe("createDevice", () => {
     expect(checks.map((c) => c.kind).sort()).toEqual(["fortigate_api", "icmp"]);
   });
 
+  it("creates a sophos_api check (and persists it to the real DB, exercising the checks.kind CHECK constraint) when apiCredsEnc is set", async () => {
+    const { app } = buildTestContainer();
+    const device = await createDevice(app, DEFAULT_TENANT_ID, "actor-1", {
+      name: "hq-sophos",
+      ip: "10.0.2.2",
+      type: "firewall",
+      apiVendor: "sophos",
+      apiCredsEnc: "encrypted-blob",
+    });
+
+    expect(device.apiVendor).toBe("sophos");
+    const checks = await app.repos.check.listByDevice(DEFAULT_TENANT_ID, device.id);
+    expect(checks.map((c) => c.kind).sort()).toEqual(["icmp", "sophos_api"]);
+  });
+
   it("lets an explicit criticalAsset override the type-based default", async () => {
     const { app } = buildTestContainer();
     const quietCamera = await createDevice(app, DEFAULT_TENANT_ID, "actor-1", { name: "cam", ip: "10.0.1.4", type: "camera", criticalAsset: false });

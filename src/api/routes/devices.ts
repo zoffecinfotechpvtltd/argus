@@ -8,7 +8,7 @@ import { createDevice, deleteDevice, DuplicateDeviceError, updateDevice } from "
 import { LicenseLimitError } from "@application/license";
 import { encryptSecret } from "@adapters/crypto";
 import { serializeSnmpCredential } from "@domain/snmpCredential";
-import { serializeVendorApiCredential } from "@domain/vendorApiCredential";
+import { serializeVendorApiCredential, serializeSophosApiCredential } from "@domain/vendorApiCredential";
 import type { AppEnv } from "@api/honoTypes";
 
 const DeviceTypeEnum = z.enum(["camera", "firewall", "switch", "router", "server", "workstation", "printer", "access_point", "nas", "iot", "unknown"]);
@@ -51,23 +51,41 @@ function buildSnmpCredsEnc(
 
 class InvalidSnmpV3Error extends Error {}
 
-/** Only "fortigate" exists today (Sophos to follow) — kept as its own enum rather than folded into
- * DeviceTypeEnum since a device's *type* (firewall) and *which vendor REST API* it exposes are
- * independent facts (a device could be type=firewall with no API configured at all). */
-const VendorApiSchema = z.object({
-  vendor: z.literal("fortigate"),
-  apiToken: z.string().min(1).max(500),
-  port: z.number().int().min(1).max(65535).optional(),
-  verifyTls: z.boolean().optional(),
-});
+/** Discriminated on `vendor` — a device's *type* (firewall) and *which vendor REST API* it exposes
+ * are independent facts (a device could be type=firewall with no API configured at all), and each
+ * vendor's credential shape is different (FortiGate: a bearer token; Sophos: username+password for
+ * its per-request XML login). */
+const VendorApiSchema = z.discriminatedUnion("vendor", [
+  z.object({
+    vendor: z.literal("fortigate"),
+    apiToken: z.string().min(1).max(500),
+    port: z.number().int().min(1).max(65535).optional(),
+    verifyTls: z.boolean().optional(),
+  }),
+  z.object({
+    vendor: z.literal("sophos"),
+    username: z.string().min(1).max(200),
+    password: z.string().min(1).max(500),
+    port: z.number().int().min(1).max(65535).optional(),
+    verifyTls: z.boolean().optional(),
+  }),
+]);
 
 /** Mirrors buildSnmpCredsEnc: returns undefined ("no change") when vendorApi isn't present, so
  * an update that isn't touching the vendor API doesn't clobber an existing apiCredsEnc. */
-function buildApiCredsEnc(app: AppContainer, body: { vendorApi?: z.infer<typeof VendorApiSchema> | null }): { apiVendor: "fortigate" | null; apiCredsEnc: string | null } | undefined {
+function buildApiCredsEnc(
+  app: AppContainer,
+  body: { vendorApi?: z.infer<typeof VendorApiSchema> | null }
+): { apiVendor: "fortigate" | "sophos" | null; apiCredsEnc: string | null } | undefined {
   if (body.vendorApi === null) return { apiVendor: null, apiCredsEnc: null }; // explicit clear
   if (!body.vendorApi) return undefined; // untouched
-  const { vendor, ...cred } = body.vendorApi;
-  return { apiVendor: vendor, apiCredsEnc: encryptSecret(app.instanceKey, serializeVendorApiCredential(cred)) };
+  const vendorApi = body.vendorApi;
+  if (vendorApi.vendor === "fortigate") {
+    const { vendor, ...cred } = vendorApi;
+    return { apiVendor: vendor, apiCredsEnc: encryptSecret(app.instanceKey, serializeVendorApiCredential(cred)) };
+  }
+  const { vendor, ...cred } = vendorApi;
+  return { apiVendor: vendor, apiCredsEnc: encryptSecret(app.instanceKey, serializeSophosApiCredential(cred)) };
 }
 
 const CreateDeviceSchema = z.object({

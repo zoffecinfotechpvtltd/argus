@@ -21,7 +21,7 @@ export interface Device {
   firmwareVersion: string | null;
   serialNumber: string | null;
   haRole: "primary" | "secondary" | null;
-  apiVendor: "fortigate" | null;
+  apiVendor: "fortigate" | "sophos" | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -71,8 +71,10 @@ interface DeviceForm {
   snmpV3AuthKey: string;
   snmpV3PrivProtocol: "des" | "aes";
   snmpV3PrivKey: string;
-  vendorApiVendor: "" | "fortigate";
+  vendorApiVendor: "" | "fortigate" | "sophos";
   vendorApiToken: string;
+  vendorApiUsername: string;
+  vendorApiPassword: string;
   vendorApiPort: string;
   vendorApiVerifyTls: boolean;
   location: string;
@@ -104,6 +106,8 @@ const emptyForm: DeviceForm = {
   snmpV3PrivKey: "",
   vendorApiVendor: "",
   vendorApiToken: "",
+  vendorApiUsername: "",
+  vendorApiPassword: "",
   vendorApiPort: "",
   vendorApiVerifyTls: true,
   location: "",
@@ -241,6 +245,17 @@ export function Inventory() {
               vendorApi: {
                 vendor: form.vendorApiVendor,
                 apiToken: form.vendorApiToken,
+                port: form.vendorApiPort ? Number(form.vendorApiPort) : undefined,
+                verifyTls: form.vendorApiVerifyTls,
+              },
+            }
+          : {}),
+        ...(form.vendorApiVendor === "sophos" && form.vendorApiUsername && form.vendorApiPassword
+          ? {
+              vendorApi: {
+                vendor: form.vendorApiVendor,
+                username: form.vendorApiUsername,
+                password: form.vendorApiPassword,
                 port: form.vendorApiPort ? Number(form.vendorApiPort) : undefined,
                 verifyTls: form.vendorApiVerifyTls,
               },
@@ -1137,7 +1152,10 @@ export function Inventory() {
               )}
             </FieldGroup>
           )}
-          <FieldGroup label="Vendor API (optional)" hint="For a FortiGate firewall — polls CPU/mem/session/VPN-tunnel metrics and firmware/serial/HA role over its REST API, in addition to any SNMP/HTTP checks above.">
+          <FieldGroup
+            label="Vendor API (optional)"
+            hint="FortiGate polls CPU/mem/session/VPN-tunnel metrics and firmware/serial/HA role over its REST API. Sophos (on-prem SFOS/XG) validates the device is reachable and reports IPsec tunnel status — its API doesn't expose CPU/mem, so pair it with SNMP above for those. Either way, in addition to any SNMP/HTTP checks above."
+          >
             {(ids) => (
               <Select
                 {...ids}
@@ -1147,6 +1165,7 @@ export function Inventory() {
               >
                 <option value="">None</option>
                 <option value="fortigate">FortiGate</option>
+                <option value="sophos">Sophos (on-prem SFOS/XG)</option>
               </Select>
             )}
           </FieldGroup>
@@ -1184,6 +1203,54 @@ export function Inventory() {
                   className="cursor-pointer accent-accent"
                 />
                 Verify TLS certificate (turn off only for a self-signed lab appliance)
+              </label>
+            </div>
+          )}
+          {form.vendorApiVendor === "sophos" && (
+            <div className="grid grid-cols-2 gap-3">
+              <FieldGroup label="API username" hint="A dedicated local admin account with API access enabled, not your personal login.">
+                {(ids) => (
+                  <Input
+                    {...ids}
+                    className="w-full"
+                    value={form.vendorApiUsername}
+                    onChange={(e) => setForm({ ...form, vendorApiUsername: e.target.value })}
+                    placeholder="argus-api"
+                  />
+                )}
+              </FieldGroup>
+              <FieldGroup label="Password">
+                {(ids) => (
+                  <Input
+                    {...ids}
+                    type="password"
+                    className="w-full"
+                    value={form.vendorApiPassword}
+                    onChange={(e) => setForm({ ...form, vendorApiPassword: e.target.value })}
+                    placeholder={form.id ? "Leave blank to keep unchanged" : ""}
+                  />
+                )}
+              </FieldGroup>
+              <FieldGroup label="Port (optional)">
+                {(ids) => (
+                  <Input
+                    {...ids}
+                    type="number"
+                    className="w-full"
+                    value={form.vendorApiPort}
+                    onChange={(e) => setForm({ ...form, vendorApiPort: e.target.value })}
+                    placeholder="4444"
+                  />
+                )}
+              </FieldGroup>
+              <label className="flex cursor-pointer items-center gap-2 self-end pb-2 text-sm text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={form.vendorApiVerifyTls}
+                  onChange={(e) => setForm({ ...form, vendorApiVerifyTls: e.target.checked })}
+                  className="cursor-pointer accent-accent"
+                />
+                Verify TLS certificate
               </label>
             </div>
           )}

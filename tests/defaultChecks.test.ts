@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { buildDefaultChecks } from "@domain/defaultChecks";
 
 describe("buildDefaultChecks", () => {
-  const base = { tenantId: "local", deviceId: "dev-1", nowIso: "2026-01-01T00:00:00.000Z", hasVendorApi: false };
+  const base = { tenantId: "local", deviceId: "dev-1", nowIso: "2026-01-01T00:00:00.000Z", apiVendor: null as "fortigate" | "sophos" | null };
 
   it("always includes an ICMP check", () => {
     const checks = buildDefaultChecks({ ...base, hasHttp: false, hasHttps: false, hasSnmp: false });
@@ -36,12 +36,17 @@ describe("buildDefaultChecks", () => {
     expect(checks.map((c) => c.kind).sort()).toEqual(["http", "icmp", "snmp"]);
   });
 
-  it("adds a fortigate_api check only when a vendor API is configured", () => {
-    const withApi = buildDefaultChecks({ ...base, hasHttp: false, hasHttps: false, hasSnmp: false, hasVendorApi: true });
+  it("adds a fortigate_api check only when a FortiGate vendor API is configured", () => {
+    const withApi = buildDefaultChecks({ ...base, hasHttp: false, hasHttps: false, hasSnmp: false, apiVendor: "fortigate" });
     expect(withApi.map((c) => c.kind)).toEqual(["icmp", "fortigate_api"]);
 
-    const withoutApi = buildDefaultChecks({ ...base, hasHttp: false, hasHttps: false, hasSnmp: false, hasVendorApi: false });
+    const withoutApi = buildDefaultChecks({ ...base, hasHttp: false, hasHttps: false, hasSnmp: false, apiVendor: null });
     expect(withoutApi.map((c) => c.kind)).toEqual(["icmp"]);
+  });
+
+  it("adds a sophos_api check only when a Sophos vendor API is configured", () => {
+    const withApi = buildDefaultChecks({ ...base, hasHttp: false, hasHttps: false, hasSnmp: false, apiVendor: "sophos" });
+    expect(withApi.map((c) => c.kind)).toEqual(["icmp", "sophos_api"]);
   });
 
   it("every generated check belongs to the given tenant and device", () => {

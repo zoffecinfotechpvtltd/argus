@@ -77,7 +77,7 @@ export async function importDiscoveredDevices(
       hasHttp: sel.openPorts.includes(80),
       hasHttps: sel.openPorts.includes(443),
       hasSnmp: !!sel.snmpCredsEnc,
-      hasVendorApi: false, // vendor API creds aren't collected during discovery; add via device edit
+      apiVendor: null, // vendor API creds aren't collected during discovery; add via device edit
       nowIso: now,
     });
 

@@ -5,6 +5,7 @@ import { TcpChecker } from "@adapters/net/checkers/tcpChecker";
 import { HttpChecker } from "@adapters/net/checkers/httpChecker";
 import { SnmpChecker } from "@adapters/net/checkers/snmpChecker";
 import { FortiGateApiChecker } from "@adapters/net/checkers/fortigateApiChecker";
+import { SophosApiChecker } from "@adapters/net/checkers/sophosApiChecker";
 
 export class DefaultCheckerProvider implements CheckerProvider {
   private checkers: Record<CheckKind, Checker>;
@@ -16,6 +17,7 @@ export class DefaultCheckerProvider implements CheckerProvider {
       http: new HttpChecker(),
       snmp: new SnmpChecker(instanceKey),
       fortigate_api: new FortiGateApiChecker(instanceKey),
+      sophos_api: new SophosApiChecker(instanceKey),
     };
   }
 

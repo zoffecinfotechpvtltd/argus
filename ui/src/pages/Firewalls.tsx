@@ -125,9 +125,9 @@ export function Firewalls() {
                       <div className="truncate text-sm font-semibold text-text-primary">{device.name}</div>
                       <div className="truncate font-mono text-xs text-text-secondary">{device.ip}</div>
                     </div>
-                    {device.apiVendor === "fortigate" && (
+                    {device.apiVendor && (
                       <span className="shrink-0 rounded-full bg-bg-subtle px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-text-secondary">
-                        FortiGate API
+                        {device.apiVendor === "fortigate" ? "FortiGate API" : "Sophos API"}
                       </span>
                     )}
                   </div>

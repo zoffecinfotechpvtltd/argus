@@ -131,13 +131,13 @@ export interface Device {
   haRole: "primary" | "secondary" | null;
   /** Which vendor REST API apiCredsEnc's decrypted+parsed JSON should be interpreted as, and which
    * check kind buildDefaultChecks attaches. Null = no vendor API configured for this device. */
-  apiVendor: "fortigate" | null;
+  apiVendor: "fortigate" | "sophos" | null;
   apiCredsEnc: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export type CheckKind = "icmp" | "tcp" | "http" | "snmp" | "fortigate_api";
+export type CheckKind = "icmp" | "tcp" | "http" | "snmp" | "fortigate_api" | "sophos_api";
 
 export interface CheckConfig {
   // tcp/http

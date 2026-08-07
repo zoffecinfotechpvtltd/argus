@@ -238,9 +238,13 @@ export function DeviceDetail() {
   // CPU/mem come from either source — SNMP's generic hrProcessorLoad/hrStorage OIDs, or (for a
   // FortiGate) the vendor API's own resource/usage endpoint — so gating the charts on hasSnmp
   // alone silently hid them for every API-monitored firewall, which populates these exact same
-  // metric names through a different checker. Session count / VPN tunnels are API-only.
-  const hasCpuMemSource = hasSnmp || !!device.apiVendor;
-  const hasVendorApi = !!device.apiVendor;
+  // metric names through a different checker. Sophos's on-prem API has no equivalent endpoint (it's
+  // a config-object API, not a stats feed — see sophosApiChecker.ts), so it doesn't get a CPU/mem
+  // source of its own here; pair a Sophos device with SNMP for that instead.
+  const hasCpuMemSource = hasSnmp || device.apiVendor === "fortigate";
+  // Session count is FortiGate-only. VPN tunnel status is API-only but both vendors report it.
+  const hasSessionSource = device.apiVendor === "fortigate";
+  const hasVpnSource = !!device.apiVendor;
 
   return (
     <Layout>
@@ -337,8 +341,8 @@ export function DeviceDetail() {
               <ChartCard title="Packet loss (%)" data={lossPct} unit="%" syncId="device-metrics" />
               {hasCpuMemSource && <ChartCard title="CPU (%)" data={cpuPct} unit="%" syncId="device-metrics" />}
               {hasCpuMemSource && <ChartCard title="Memory used (%)" data={memPct} unit="%" syncId="device-metrics" />}
-              {hasVendorApi && <ChartCard title="Active sessions" data={sessionCount} unit="" syncId="device-metrics" />}
-              {hasVendorApi && <ChartCard title="VPN tunnels up" data={vpnTunnelsUp} unit="" syncId="device-metrics" />}
+              {hasSessionSource && <ChartCard title="Active sessions" data={sessionCount} unit="" syncId="device-metrics" />}
+              {hasVpnSource && <ChartCard title="VPN tunnels up" data={vpnTunnelsUp} unit="" syncId="device-metrics" />}
             </div>
           </div>
         )}
