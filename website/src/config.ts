@@ -18,6 +18,6 @@ export const RELEASE = {
 // placeholder, not a real inbox — the site should never ship with a wrong or stale email baked in.
 export const SITE = {
   contactEmail: import.meta.env.VITE_CONTACT_EMAIL || "sales@ztplsolutions.com",
-  companyName: import.meta.env.VITE_COMPANY_NAME || "",
-  companyUrl: import.meta.env.VITE_COMPANY_URL || "",
+  companyName: import.meta.env.VITE_COMPANY_NAME || "ZTPL",
+  companyUrl: import.meta.env.VITE_COMPANY_URL || "https://ztplsolutions.com",
 };

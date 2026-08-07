@@ -1,5 +1,5 @@
 // Pure state machine — no I/O, no Date.now(); every timestamp comes in as an argument so this is
-// fully deterministic and testable. This is the heart of the monitoring engine (see PROGRESS.md).
+// fully deterministic and testable. This is the heart of the monitoring engine.
 import type { Check, DeviceState, DeviceStatus, TransitionEvent } from "@domain/entities";
 import type { DomainEvent } from "@domain/events";
 

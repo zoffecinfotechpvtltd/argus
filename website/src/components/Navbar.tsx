@@ -23,7 +23,10 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
         <a href="#top" className="flex items-center gap-2.5">
           <ArgusMark size={34} />
-          <span className="font-display text-fluid-lg font-semibold tracking-tight text-fog">Argus</span>
+          <div className="leading-tight">
+            <div className="font-display text-fluid-lg font-semibold tracking-tight text-fog">Argus</div>
+            {SITE.companyName && <div className="text-fluid-xs text-dim">Built by {SITE.companyName}</div>}
+          </div>
         </a>
 
         <div className="hidden items-center gap-8 md:flex">

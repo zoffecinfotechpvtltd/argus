@@ -23,7 +23,7 @@ export interface NotificationDecisionInput {
 
 /**
  * Non-critical alerts are suppressed during quiet hours (simplification: dropped rather than
- * queued as a digest — see PROGRESS.md). Critical alerts always page through regardless of hours.
+ * queued as a digest). Critical alerts always page through regardless of hours.
  */
 export function shouldNotifyNow(input: NotificationDecisionInput): boolean {
   if (!meetsSeverityFloor(input.severity, input.severityFloor)) return false;

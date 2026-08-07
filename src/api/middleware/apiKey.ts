@@ -48,8 +48,8 @@ function syntheticViewerUser(tenantId: string, apiKeyId: string, apiKeyName: str
 /**
  * Accepts either the normal session cookie (delegating verbatim to `requireAuth`'s checks) or a
  * Bearer API key (`Authorization: Bearer argus_<prefix>_<secret>`). Deliberately used only on a
- * narrow, hand-picked set of GET routes (see docs/improvement-plan/00-MASTER-IMPROVEMENT-PLAN.md
- * §6) for external read-only integrations — an API-key-authenticated request is always treated as
+ * narrow, hand-picked set of GET routes for external read-only integrations — an
+ * API-key-authenticated request is always treated as
  * role "viewer" regardless of who created the key, since every route this guards is read-only.
  * Every key use updates `lastUsedAt` so a stale/forgotten key is visible on the Admin → API Keys
  * page, not silently working forever unnoticed.

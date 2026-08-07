@@ -28,7 +28,7 @@ function isDue(lastRunIso: string | null, recurrence: string, nowMs: number): bo
  * "Download" button uses, then prunes down to the configured `keepCount` (oldest-first) — this
  * doesn't give live failover, but it means the on-prem box failing outright no longer means losing
  * every bit of monitoring history with it, which is the actual risk worth closing without a full
- * HA rearchitecture (see docs/improvement-plan §7). */
+ * HA rearchitecture. */
 export async function runBackupCycle(app: AppContainer): Promise<void> {
   const raw = await app.repos.settings.get(DEFAULT_TENANT_ID, BACKUP_SCHEDULE_KEY);
   if (!raw) return;
