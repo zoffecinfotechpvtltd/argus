@@ -10,15 +10,7 @@ export function Footer({ downloadUrl }: { downloadUrl: string }) {
     <footer className="border-t border-border bg-canvas">
       <div className="mx-auto max-w-6xl px-6 py-16">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
-          <FooterCol
-            title="Product"
-            links={[
-              { href: "#features", label: "Features" },
-              { href: "#alerting", label: "Alerting" },
-              { href: "#faq", label: "FAQ" },
-              { href: "/product-specification", label: "Product Specification" },
-            ]}
-          />
+          <FooterCol title="Product" links={[{ href: "#features", label: "Features" }, { href: "#alerting", label: "Alerting" }, { href: "#faq", label: "FAQ" }]} />
           <FooterCol
             title="Download"
             links={[

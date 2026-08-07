@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { FileText } from "lucide-react";
 import { ProductShot } from "./ProductShot";
 import { Atmosphere } from "./Atmosphere";
 import { SITE } from "../config";
@@ -52,6 +53,14 @@ export function Hero({ downloadUrl }: { downloadUrl: string }) {
             className="inline-flex cursor-pointer items-center rounded-full bg-accent px-6 py-3 text-base font-semibold text-accent-text-on transition-colors hover:bg-accent-hover"
           >
             Download for Windows
+          </a>
+          <a
+            href="/Argus-Product-Specification.pdf"
+            download
+            className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-6 py-3 text-base font-semibold text-fog transition-colors hover:border-dim"
+          >
+            <FileText size={17} aria-hidden="true" />
+            Download spec (PDF)
           </a>
           <a
             href="#pricing"

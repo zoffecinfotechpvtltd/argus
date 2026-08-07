@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, FileText } from "lucide-react";
 import { ArgusMark } from "./ArgusMark";
 import { SITE } from "../config";
 import { useTheme } from "../hooks/useTheme";
@@ -53,6 +53,15 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
             Contact sales
           </a>
           <a
+            href="/Argus-Product-Specification.pdf"
+            download
+            aria-label="Download product specification PDF"
+            title="Download product specification (PDF)"
+            className="hidden cursor-pointer rounded-full p-1.5 text-muted transition-colors hover:text-fog sm:block"
+          >
+            <FileText size={17} aria-hidden="true" />
+          </a>
+          <a
             href={downloadUrl}
             download
             className="hidden cursor-pointer items-center rounded-full bg-fog px-5 py-2 text-fluid-sm font-medium text-canvas transition-opacity hover:opacity-80 sm:inline-flex"
@@ -83,6 +92,9 @@ export function Navbar({ downloadUrl }: { downloadUrl: string }) {
             </a>
             <a href={downloadUrl} download className="rounded-full bg-fog px-4 py-2.5 text-center text-fluid-sm font-medium text-canvas">
               Download for Windows
+            </a>
+            <a href="/Argus-Product-Specification.pdf" download className="rounded-full border border-border px-4 py-2.5 text-center text-fluid-sm font-medium text-fog">
+              Download spec (PDF)
             </a>
           </div>
         </div>
