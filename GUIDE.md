@@ -14,6 +14,7 @@ for the short version.
 3. [What runs in the background](#3-what-runs-in-the-background)
 4. [Every page — what it does, how to use it](#4-every-page--what-it-does-how-to-use-it)
 5. [Network reachability & multi-site / VPN deployments](#5-network-reachability--multi-site--vpn-deployments)
+   - [5.1 Remote agents for segmented networks without a VPN](#51-remote-agents-for-segmented-networks-without-a-vpn)
 6. [Security posture](#6-security-posture)
 7. [Building from source](#7-building-from-source)
 8. [Cutting a release](#8-cutting-a-release)
@@ -34,10 +35,12 @@ for the short version.
 
 ## 1. What Argus is
 
-Argus discovers devices on a network, monitors them continuously (ICMP, TCP, HTTP/HTTPS, SNMP),
-raises alerts the moment something goes down or degrades, and notifies the right people by email
-or webhook, walking a tiered escalation chain (Tier 1 → Tier 2 → Tier 3…) if nobody acknowledges in
-time. It ships as a Windows installer — run the wizard once and Argus installs itself as a
+Argus discovers devices on a network, monitors them continuously (ICMP, TCP, HTTP/HTTPS, SNMP
+v1/v2c/v3, and — for FortiGate and Sophos firewalls specifically — the vendor's own management
+API), raises alerts the moment something goes down or degrades, and notifies the right people by
+email, webhook, Slack, Microsoft Teams, or PagerDuty, walking a tiered escalation chain (Tier 1 →
+Tier 2 → Tier 3…) if nobody acknowledges in time. It ships as a Windows installer — run the wizard
+once and Argus installs itself as a
 background Windows service: no console window, no need to keep anything open, and it keeps running
 across logout/reboot. Everything it stores (device inventory, metrics history, alerts, settings)
 lives in a local SQLite database next to the exe. No account, no cloud dependency, no internet
@@ -96,6 +99,15 @@ The moment the exe starts, five things spin up alongside the HTTP server:
   schedule set in Settings → General (default: 30 days raw, 365 days rolled up).
 - **WebSocket broadcast** — pushes device-status and alert changes to every connected browser tab
   live, which is why the Dashboard updates without a manual refresh.
+- **HeartbeatScheduler** — pings an external dead-man's-switch URL (healthchecks.io, Cronitor,
+  Uptime Kuma, or similar) every 5 minutes if one's configured (Settings → General → Heartbeat
+  URL). This is the one failure mode nothing else in Argus can detect from the inside: if the whole
+  process, the Windows service, or the machine itself dies, only something watching from outside
+  can notice a run of missed pings and page someone.
+- **ReclassificationScheduler** — once shortly after startup, then once a day, re-probes SNMP
+  sysDescr for every device still sitting at type "unknown" with SNMP configured, and reclassifies
+  it if a confident (≥80%) signal now exists. Never touches a device that already has a specific
+  type, whether the classifier set it originally or an admin corrected it by hand.
 
 Two more things happen on-demand, not continuously:
 
@@ -127,11 +139,30 @@ device to open its detail page. The side panel is a live alert feed.
 
 ### Inventory (`/inventory`)
 The full device list as a table, with add/edit/delete. Click "+ Add device" to add one manually
-(name, IP, type, group, poll interval, whether it answers HTTP/HTTPS, optional SNMP community
-string). Click a row to edit it. The IP address can't be changed after creation — delete and re-add
-if it changes. Groups (used for escalation chains and dashboard breakdowns) are managed at the
+(name, IP, type, group, poll interval, whether it answers HTTP/HTTPS, optional SNMP credentials).
+Click a row to edit it. The IP address can't be changed after creation — delete and re-add if it
+changes. Sortable by state (down-first by default), with a critical-asset (⚡) indicator next to
+flagged devices. Groups (used for escalation chains and dashboard breakdowns) are managed at the
 bottom of this page — click "Edit escalation" on a group to set up its Tier 1/2/3 alert contacts and
 the delay before each tier fires (see [§9.7](#97-setting-up-the-escalation-hierarchy-tier-1--2--3-contacts)).
+
+**SNMP** (edit device → SNMP section): pick v1, v2c (community string), or v3 (username +
+security level + auth/priv protocols and keys). Same credential UI regardless of device type — a
+switch, a router, or a firewall from any vendor all use it identically.
+
+**Vendor API** (edit device → Vendor API section, optional, on top of any SNMP/HTTP checks above)
+— for a FortiGate or Sophos firewall specifically:
+- **FortiGate**: paste a REST API admin token. Polls CPU, memory, active sessions, IPsec VPN
+  tunnel status, and identity facts (model, firmware, serial, HA role) straight from the device.
+- **Sophos** (standalone on-prem SFOS/XG): enter a dedicated API username + password (port
+  defaults to 4444, not 443 — Sophos reserves 443 for the SSL VPN portal on most models). Validates
+  the device is reachable and reports IPsec VPN tunnel status. Sophos's classic on-prem API has no
+  live CPU/memory endpoint the way FortiGate's does — pair with SNMP above for those two metrics.
+
+Either way, check the **Firewalls** page (below) for the fleet-wide view once configured.
+
+**Remote agent** (edit device → Remote agent dropdown, optional) — assigns this device to a remote
+poller agent instead of being checked locally. See [§5.1](#51-remote-agents-for-segmented-networks-without-a-vpn).
 
 ### Discovery (`/discovery`)
 Enter a subnet in CIDR form (e.g. `192.168.1.0/24`, capped at `/22` — 1024 addresses — to protect
@@ -143,11 +174,16 @@ marked and pre-deselected. For a multi-subnet estate, run one scan per subnet �
 
 ### Device Detail (`/devices/:id`)
 Reached by clicking any device elsewhere in the app. Four tabs:
-- **Metrics** — latency, packet loss, and (if SNMP is configured) CPU/memory charts over a
-  selectable time range (1h/6h/24h/7d/30d).
+- **Metrics** — latency, packet loss, and CPU/memory charts (from SNMP or, for a FortiGate, the
+  vendor API) over a selectable time range (1h/6h/24h/7d/30d). A FortiGate or Sophos device with a
+  vendor API configured also gets Active Sessions (FortiGate only) and VPN Tunnels Up (both) charts.
 - **Alerts** — every alert this device has ever raised.
-- **Checks** — the ICMP/TCP/HTTP/SNMP checks running against it; toggle them on/off and edit
-  latency/loss alert thresholds inline.
+- **Checks** — the ICMP/TCP/HTTP/SNMP/vendor-API checks running against it; toggle them on/off and
+  edit latency/loss alert thresholds inline. If a check is currently failing, its last error message
+  (e.g. "system/status HTTP 403", "The operation timed out") shows right there — this is the check's
+  own health, independent of the device's overall up/down state: ICMP is authoritative for
+  reachability, so a misconfigured secondary check never marks a genuinely reachable device down,
+  but its own failure is still visible here for diagnosing.
 - **Maintenance** — schedule a maintenance window (suppresses alerting) or cancel one.
 
 ### Map (`/map`)
@@ -157,25 +193,51 @@ automatically). Drag the background to pan, scroll to zoom, or use the +/−/res
 corner.
 
 ### Bandwidth (`/bandwidth`)
-SNMP interface throughput (in/out) for devices with SNMP configured — pick which interfaces to
-track per device, view aggregate and per-interface charts over 1h/6h/24h.
+SNMP interface throughput (in/out) for devices with SNMP configured — view aggregate and
+per-interface charts over 1h/6h/24h. Click **Discover** next to a device to list every interface it
+actually reports (name, index, up/down) over a live SNMP walk, and tick which ones to track —
+no more hand-snmpwalking a device outside Argus to find index numbers first. Manual index entry
+still works too, for anyone who'd rather just type them.
+
+### Firewalls (`/firewalls`)
+Fleet-wide view of every device with type "Firewall" — live CPU/memory/session/VPN-tunnel stat
+tiles per device (from SNMP and/or a configured vendor API), plus model/firmware/HA-role badges for
+anything a FortiGate or Sophos vendor API has reported. A device with neither SNMP nor a vendor API
+configured shows a "no SNMP/API creds configured" hint instead of blank tiles.
 
 ### Alerts (`/alerts`)
 Every alert, filterable by status (open/acknowledged/resolved) and severity
 (critical/warning/info). Acknowledge silences escalation for that alert; Resolve closes it (also
 happens automatically when the device recovers).
 
+### SLA (`/sla`)
+Availability chart and table per device against a target (default 99.9%), plus three stat tiles:
+devices meeting target, total downtime, and the worst performer. Filter by group and time period.
+
 ### Reports (`/reports`)
-Two views: an SLA/availability chart showing downtime-minutes per device against a 99.9% target
-(exportable as CSV, printable), and a day-by-severity alert-volume heatmap. Filter by group and
-time period (24h/7d/30d).
+A day-by-severity alert-volume heatmap and a scheduled email report (sends the SLA summary above
+plus an open-alerts summary, on whatever recurrence you set). Filter by group and time period
+(24h/7d/30d).
 
 ### Notifications (`/settings/notifications`)
-Two parts on this page. The top two cards (SMTP and Webhook) are **instance-wide** — admin-only,
-configure once for the whole install: mail server credentials for email alerts, and/or a webhook
-URL + optional HMAC signing secret for a receiving endpoint you control. Both have a "send test"
-button. The bottom card is **per-user**: which channels you personally want alerts on, your minimum
-severity, your own webhook URL, and quiet hours.
+Two parts on this page. The top cards (SMTP, Webhook, Syslog) are **instance-wide** — admin-only,
+configure once for the whole install: mail server credentials for email alerts, a webhook URL +
+optional HMAC signing secret, and/or a syslog (CEF) forwarding target for an existing SIEM. Each
+has a "send test" button. The bottom card is **per-user**: which channels you personally want
+alerts on, your minimum severity, and quiet hours. Six channels, each with its own target:
+- **Email** — to your account's address, via the instance SMTP above.
+- **Webhook** — your own URL, separate from the shared instance-wide one above.
+- **Slack** — a Slack Incoming Webhook URL (create one under your workspace's Incoming Webhooks
+  app). Posts a severity-colored message.
+- **Microsoft Teams** — a channel's Incoming Webhook connector URL. Posts a card with a one-click
+  Acknowledge action.
+- **PagerDuty** — a service's Events API v2 integration key (not an account-wide API token).
+  Resolving the alert in Argus resolves the PagerDuty incident too, not just a second notification.
+- **Syslog** — instance-wide only, no per-user target (it's a fire-and-forget forward, not a
+  personal notification).
+
+Plus an opt-in personal digest email (daily/weekly SLA + open-alerts summary), independent of the
+real-time channels above.
 
 ### Security (`/settings/security`)
 Change your own password, and set up two-factor authentication (TOTP — any standard authenticator
@@ -197,7 +259,14 @@ restore from one — the app restarts automatically after a restore).
 
 ### Admin → API Keys (`/admin/api-keys`)
 Create/revoke keys for the public REST API (`/api/v1/...`, documented at `/api/docs` when logged in
-as admin) — for scripting or integrating with something else you run.
+as admin) — for scripting or integrating with something else you run. Enforced read-only at the
+route level, not just by convention.
+
+### Admin → Remote Agents (`/admin/remote-agents`)
+Create/revoke remote poller agents for network segments this Argus instance can't reach directly.
+Click "Create agent," name it, and copy the one-time token shown (it's never shown again). See
+[§5.1](#51-remote-agents-for-segmented-networks-without-a-vpn) for running the agent itself and
+assigning devices to it.
 
 ### Admin → License (`/admin/license`)
 Shows current license status (trial / licensed / renewal overdue / expired / invalid), customer
@@ -220,16 +289,16 @@ state are ever shown — no IPs, config, or credentials.
 
 ## 5. Network reachability & multi-site / VPN deployments
 
-Argus is **agentless**: every check (ICMP ping, TCP connect, HTTP/HTTPS, SNMP) is a normal outbound
-network call made **from the single machine running Argus.exe**. There's no per-site collector, no
-distributed poller, nothing installed at the remote locations themselves — the shipped `exe` build
-is always one process on one machine. (A sharded, multi-poller mode exists in the codebase for a
-separate hosted/SaaS deployment, but it's not part of the single-instance product this is built and
-sold as — ignore it for this question.)
+By default, Argus is **agentless**: every check (ICMP ping, TCP connect, HTTP/HTTPS, SNMP, a vendor
+API) is a normal outbound network call made **from the single machine running Argus.exe**. For most
+multi-site setups the real question is never "does Argus support multi-site" — it's **"does this
+one machine have a network path to the other sites,"** exactly as if you opened a command prompt on
+it and typed `ping 10.20.30.5`. If there's a working site-to-site VPN, one instance genuinely can
+monitor every site through it — see the worked example below.
 
-So the real question is never "does Argus support multi-site" — it's **"does this one machine have
-a network path to the other sites,"** exactly as if you opened a command prompt on it and typed
-`ping 10.20.30.5`.
+For a segment with **no VPN at all** — no routed path back to wherever Argus runs, full stop — a
+lightweight **remote agent** can run inside that segment instead and push results back over HTTPS.
+See [§5.1](#51-remote-agents-for-segmented-networks-without-a-vpn).
 
 ### Worked example
 
@@ -297,6 +366,40 @@ inside that site, rather than relying on the hub to see through a dead tunnel.
 Argus adds no prerequisite beyond "can this machine reach that IP, on that port." Everything that
 determines whether a specific remote device gets monitored is routing and firewall configuration on
 the network itself, not anything inside the product.
+
+### 5.1 Remote agents for segmented networks without a VPN
+
+When there's no site-to-site VPN at all — a segment genuinely unreachable from wherever the central
+Argus instance runs — a small standalone agent process runs inside that segment instead, checks its
+assigned devices locally, and pushes results back to the central instance over HTTPS. It's a
+separate, deliberately minimal process (`bun run agent`, or `bun run src/bootstrap/agentMain.ts` if
+building from source) — not a mode flag on `Argus.exe`, not installed by the Windows installer.
+
+**Set it up:**
+
+1. **Central instance**: Admin → Remote Agents → "Create agent" → name it (e.g. `branch-office`).
+   Copy the token shown — it's a one-time display, same as an API key.
+2. **On a machine inside the segment** (any OS Bun runs on — doesn't have to be Windows, doesn't
+   need the full Argus install): set two environment variables and run the agent:
+   ```bash
+   ARGUS_AGENT_TOKEN=argus_agent_... \
+   ARGUS_CENTRAL_URL=https://central.example.com \
+   bun run agent
+   ```
+   Optional: `ARGUS_AGENT_INTERVAL_MS` (default `30000`) to change how often it polls its assigned
+   devices. Keep it running as a scheduled task, a systemd unit, `pm2`, or whatever process
+   supervisor fits that machine — there's no built-in service registration for the agent the way
+   the installer does for the main product.
+3. **Central instance**: Inventory → edit each device in that segment → "Remote agent" dropdown →
+   pick the agent you created. That device is now checked by the agent instead of locally.
+
+**What an agent can and can't do:** ICMP, TCP, and HTTP/HTTPS checks only — the same three that need
+no credential material. SNMP and vendor-API checks (which need encrypted credentials the agent has
+no secure way to hold) still run centrally, so a device split across both needs to be reachable from
+the central instance for those specifically even while its ICMP/TCP/HTTP checks run from the agent.
+Results flow through the exact same state-machine, alerting, and metrics pipeline a locally-polled
+device uses — an agent-monitored device looks identical everywhere in the UI to a local one, except
+for which process actually reached it.
 
 ## 6. Security posture
 
@@ -768,6 +871,15 @@ installer already runs `--install-service` for you:
 | `LOG_LEVEL` | `debug` / `info` (default) / `warn` / `error` |
 | `INSTANCE_NAME` | default `Argus` |
 | `UPDATE_CHECK_URL` | must be `https://`; empty disables auto-update |
+
+**Remote agent only** (read by `bun run agent` / `src/bootstrap/agentMain.ts` — not by the main exe;
+see [§5.1](#51-remote-agents-for-segmented-networks-without-a-vpn)):
+
+| Variable | Meaning |
+|---|---|
+| `ARGUS_AGENT_TOKEN` | Required. The one-time token shown when the agent was created (Admin → Remote Agents) |
+| `ARGUS_CENTRAL_URL` | Required. The central Argus instance's base URL the agent reports back to |
+| `ARGUS_AGENT_INTERVAL_MS` | How often the agent polls its assigned devices, in milliseconds (default `30000`) |
 
 **Build-time only** (read by `scripts/release.ts` / `scripts/license-admin.ts`, not by the shipped
 exe):
